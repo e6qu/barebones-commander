@@ -19,7 +19,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **1** | next | Strip every out-of-scope module (protocols, archive formats, viewers, terminal, OS adapters) | one PR |
 | **2** | pending | Drop OSGi runtime — replace Felix + bnd manifests + bundle activators with a plain Java app + fat JAR | one PR |
 | **3** | pending | Java 25 LTS upgrade | one PR |
-| **4** | pending | Dependency upgrades + Dependabot config + dependency-review CI | one PR |
+| **4** | pending | Dependency upgrades + Dependabot + dependency-review CI; **modernize S3 backend** (replace abandoned `jets3t` with AWS SDK v2) | one PR |
 | **5** | pending | Code-level security fixes (XOR cipher → keychain, XXE-harden SAX, refactor `KdeConfig.exec`, CI grep gate against `setDefaultSSLSocketFactory`) | one PR |
 | **7** | pending | Build polish (Kotlin DSL + version catalog) | one PR |
 | **8** | pending | Release pipeline (DMG/DEB/RPM/AppImage via `jpackage`) + commit signing + SBOM | one PR |
@@ -32,7 +32,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 ## 1. Goals
 
 1. Ship a **small** dual-pane file manager built on the well-tested muCommander UI core.
-2. **One** remote protocol family: SSH/SFTP. Local FS + SFTP only.
+2. **Three remote-data backends**: SSH/SFTP, S3-compatible object storage (AWS S3, MinIO, etc.), and NFS. Local FS is always available.
 3. **Two** OS targets: Linux (x86_64, aarch64) and macOS (Apple Silicon + Intel).
 4. **No** unpatched Critical/High vulnerabilities at v1.0 release.
 5. **Latest LTS Java** (Java 25 LTS) as the runtime target.
@@ -40,6 +40,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 7. Modern, **non-OSGi** packaging — single fat JAR / native installers, no Felix container.
 8. Clean **rename and rebrand** to remove muCommander trademark concerns. *(Done in #2.)*
 9. **PR-only** workflow on `e6qu/barebones-commander` — every change lands via a reviewed PR. **One PR in flight at a time.** The user decides scope and pacing of the next PR.
+10. **Preserve the VFS extensibility** — the upstream `barebones-commons-file` abstraction (`AbstractFile`) and the `barebones-protocol-api` SPI stay, so future backends (rsync, WebDAV, etc.) can be added without core changes.
 
 ## 2. Non-goals (explicitly removed scope)
 
@@ -48,9 +49,8 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | Windows / OpenVMS / macOS-Java-8 OS adapters | Out of stated scope. |
 | FTP, HTTP, HTTPS browsing | Out of scope; HTTP bundle also carries the JVM-wide TLS bypass (SECURITY_REVIEW §5.1). |
 | SMB (`jcifs-ng` + `smbj`) | Out of scope. |
-| S3 (`jets3t`) | Out of scope. Drops `mail.osgi-1.4.jar` (legacy JavaMail) along with it. |
-| Dropbox / Google Drive / OneDrive / Google Cloud Storage / Azure | Out of scope. Drops `azure-identity`, `microsoft-graph`, `dropbox-core-sdk`, `google-api-client`, `google-oauth-client-jetty`. |
-| Hadoop / HDFS, NFS, oVirt, vSphere, ADB, Windows Registry | Out of scope. Drops `hadoop-client`, `avro`, `vim25.jar`, `jadb-v1.2.1.jar`. |
+| Dropbox / Google Drive / OneDrive / Google Cloud Storage / Azure | Out of scope. Drops `azure-identity`, `microsoft-graph`, `dropbox-core-sdk`, `google-api-client`, `google-oauth-client-jetty`. (S3-compatible providers are covered by the kept S3 backend in §5.1.) |
+| Hadoop / HDFS, oVirt, vSphere, ADB, Windows Registry | Out of scope. Drops `hadoop-client`, `avro`, `vim25.jar`, `jadb-v1.2.1.jar`. (NFS is kept — see §5.1.) |
 | RAR / 7z / ISO / RPM / cpio / ar / lst archive formats | Out of scope. Drops `junrar` (CVE-2026-28208, CVE-2026-41245) + `sevenzipjbinding` (license-grey via UnRAR). |
 | `libguestfs` format (WIP upstream) | Out of scope. |
 | Image viewer / PDF viewer / binary (hex) viewer | Out of scope. Drops `icepdf-viewer` and the entire TwelveMonkeys imageio set. |
@@ -101,6 +101,7 @@ For the pruned dependency set (SFTP-only barebones build):
 | SnakeYAML | Apache 2.0 | ✅ |
 | Bouncy Castle | MIT-style | ✅ |
 | `mwiede:jsch` | BSD-3 | ✅ |
+| `software.amazon.awssdk:s3` (Phase 4) | Apache 2.0 | ✅ |
 | `commons-compress` | Apache 2.0 | ✅ |
 | XZ for Java | Public Domain | ✅ |
 | Apache bzip2 (vendored from Ant) | Apache 2.0 | ✅ |
@@ -157,8 +158,11 @@ For the pruned dependency set (SFTP-only barebones build):
 | `barebones-encoding` | Keep. |
 | `barebones-process` | Keep. |
 | `barebones-command` | Custom-command feature. **Apply XXE hardening.** |
-| `barebones-protocol-api` | SPI. Keep. |
-| `barebones-protocol-sftp` | **The only protocol module.** Bump `jsch` to fix Terrapin (Phase 4). |
+| `barebones-protocol-api` | SPI. Keep — this is the VFS plug-in contract; future backends (rsync, WebDAV) can hook in here. |
+| `barebones-protocol-sftp` | SFTP backend. Bump `jsch` to fix Terrapin (Phase 4). |
+| `barebones-protocol-s3` | S3-compatible object storage backend. **Replace `jets3t` with AWS SDK v2 in Phase 4** (also drops the bundled `mail.osgi-1.4.jar`). |
+| `barebones-protocol-nfs` | NFS backend (Yanfs-based via the vendored `sun-net-www`). |
+| `sun-net-www` (vendored) | Keep — required by `barebones-protocol-nfs` (Yanfs / NFS RPC support). |
 | `barebones-os-api` | Keep. |
 | `barebones-os-linux` | Keep. **Refactor `KdeConfig` to `ProcessBuilder(List)` in Phase 5.** |
 | `barebones-os-macos` | Keep. |
@@ -174,17 +178,17 @@ For the pruned dependency set (SFTP-only barebones build):
 
 ### 5.2 REMOVE in Phase 1
 
-- **Protocols**: `adb`, `bonjour`, `dropbox`, `ftp`, `gcs`, `gdrive`, `hadoop`, `http`, `nfs`, `onedrive`, `ovirt`, `registry`, `s3`, `smb`, `vsphere`. (15 modules.)
+- **Protocols**: `adb`, `bonjour`, `dropbox`, `ftp`, `gcs`, `gdrive`, `hadoop`, `http`, `onedrive`, `ovirt`, `registry`, `smb`, `vsphere`. (13 modules. **`s3` and `nfs` are kept** — the S3 module's `jets3t` internals are rewritten on top of AWS SDK v2 in Phase 4; the NFS module keeps the Yanfs-based implementation via `sun-net-www`.)
 - **Archive formats**: `ar`, `cpio`, `iso`, `libguestfs`, `lst`, `rar`, `rpm`, `sevenzip`. Removes `junrar` (CVEs), `commons-vfs2` (CVE-2025-27553), `sevenzipjbinding` (license-grey). (8 modules.)
 - **Viewers**: `binary` (hex), `image`, `pdf`. Drops `icepdf-viewer` and the entire TwelveMonkeys imageio set. (3 modules.)
 - **OS adapters**: `win`, `openvms`, `macos-java8`. (3 modules.)
-- **Vendored helpers**: `jetbrains-jediterm`, `sevenzipjbindings`, `gson` (re-bundled), `kotlin-reflect`, `sun-net-www`. (5 modules.)
+- **Vendored helpers**: `jetbrains-jediterm`, `sevenzipjbindings`, `gson` (re-bundled), `kotlin-reflect`. (4 modules. `sun-net-www` is kept because NFS needs it.)
 - **Embedded terminal**: the `barebones-core/.../ui/terminal/*` package + its `pty4j` / `purejavacomm` dependency lines.
 
 ### 5.3 Effective module count
 
 - **Before Phase 1**: 56 sub-projects (post-rename).
-- **After Phase 1**: ~22 sub-projects.
+- **After Phase 1**: ~25 sub-projects (S3, NFS, and `sun-net-www` retained on top of the original keep list).
 - Source LOC drop estimate: ≥ 30 %.
 
 ## 6. Phased delivery — one PR per phase
@@ -226,9 +230,9 @@ Single sweeping PR doing the full §5.2 deletion list:
 - Removes junrar CVEs (§4.1.1, §4.1.2) by deleting the RAR module.
 - Removes `commons-vfs2` CVE-2025-27553 by deleting the RAR module's transitive dep.
 - Removes `hadoop-client` CVE-2025-27821 by deleting the Hadoop module.
-- Removes `mail.osgi-1.4.jar` by deleting the S3 module.
+- The S3 module **stays** but still uses `jets3t` (and pulls `mail.osgi-1.4.jar` as a transitive dep) until Phase 4 modernizes it to AWS SDK v2. This is acceptable for Phase 1's exit because no Critical/High CVEs are filed against `jets3t 0.9.7` directly; the concern is staleness, addressed in Phase 4.
 
-**Exit criteria**: app builds on Linux + macOS with only local + SFTP file panels; `./gradlew test` green.
+**Exit criteria**: app builds on Linux + macOS with local + SFTP + S3 + NFS file panels; `./gradlew test` green.
 
 ### Phase 2 — Drop OSGi runtime (one PR)
 
@@ -253,8 +257,15 @@ OSGi via Apache Felix is upstream's modularity choice; for a one-protocol app it
 
 **Exit criteria**: app builds & passes tests on Java 25.
 
-### Phase 4 — Dependency upgrades (one PR)
+### Phase 4 — Dependency upgrades + S3 backend modernization (one PR)
 
+**Replace abandoned `jets3t` with AWS SDK v2** for the S3 module (the largest single change in this PR):
+- Drop `org.jets3t:jets3t:0.9.7` and the bundled `mail.osgi-1.4.jar`.
+- Add `software.amazon.awssdk:s3` (latest 2.x) as the new backend.
+- Rewrite `S3File`, `S3Panel`, `S3FileURL`, and the OSGi `Activator` against the new SDK. Keep the existing `barebones-protocol-api` SPI shape so the rest of the app sees no behavioural change beyond authentication / endpoint configuration improvements.
+- Verify against AWS S3 + MinIO (S3-compatible) in manual smoke tests before merge.
+
+**Bumps**:
 - `mwiede:jsch` 0.2.10 → ≥ 0.2.21 (fixes Terrapin CVE-2023-48795).
 - Logback 1.2.13 → 1.5.x.
 - SLF4J 1.7.36 → 2.0.x.
@@ -267,10 +278,12 @@ OSGi via Apache Felix is upstream's modularity choice; for a one-protocol app it
 - `commons-compress` 1.28.0 → latest.
 - `log4j-core` 2.25.3 → latest.
 - `jcommander` 1.82 → latest.
+
+**Tooling**:
 - Add **Dependabot config** (`.github/dependabot.yml`) for `gradle` ecosystem, weekly cadence.
 - Add `dependency-review-action` step to `tests.yaml`.
 
-**Exit criteria**: no Critical / High dependency CVEs in `SECURITY_REVIEW.md` §4.1 still apply.
+**Exit criteria**: no Critical / High dependency CVEs in `SECURITY_REVIEW.md` §4.1 still apply; `jets3t` and `mail.osgi-1.4.jar` are gone from the build.
 
 ### Phase 5 — Code-level security fixes (one PR)
 
@@ -335,6 +348,9 @@ We may want to **pull bug fixes from upstream muCommander** for at least 1 year.
 5. **Translation maintenance** — keep upstream `dictionary_*.properties` files. New translation contributions: blocked by §2 (no contributions) until v1.0.
 6. **macOS L&F: keep VAqua or rely on FlatLaf macOS variant** — drop VAqua in Phase 1 (§5.2 vendored helpers — also covers the upstream `fix #1458` "filter out vaqua for macOS 13+" workaround).
 7. **JRE submodule** (`.gitmodules` still points at `mucommander/JRE`) — replace with a build-time-downloaded JDK or unbundled assumption in Phase 8.
+8. **rsync support** — not present in upstream and not in scope for v1.0. The kept VFS SPI (`barebones-protocol-api`, see §1.10) means a future `barebones-protocol-rsync` plug-in can be added as an additive PR without core changes when there is a use case.
+9. **WebDAV / SMB return** — same path as rsync: out of scope for v1.0; pluggable later. (NFS is in scope per §5.1.)
+10. **S3 endpoint configuration UI** — AWS SDK v2 makes `--endpoint-override` for MinIO / Ceph / R2 trivial in code, but a UX surface for non-AWS S3 endpoints needs design. Treat as a follow-up after Phase 4 lands the SDK swap.
 
 ## 10. Quick reference — workflow conventions
 
