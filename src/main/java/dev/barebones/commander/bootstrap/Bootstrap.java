@@ -10,108 +10,124 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package dev.barebones.commander.bootstrap;
 
-import dev.barebones.commander.commons.file.osgi.LocalBundleContext;
-import org.osgi.framework.BundleActivator;
-
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Map;
 
 /**
- * Replacement for the Apache Felix container.
+ * Plain-Java replacement for the Apache Felix container.
  *
- * Creates an in-process {@link LocalBundleContext} from a property map
- * (typically built from CLI args), then walks each {@code Activator}
- * class and calls its {@code start(BundleContext)} in dependency order.
+ * Calls each module's {@code Activator.register()} (or, for modules that
+ * need the property map, {@code Activator.register(Map)}) in dependency
+ * order. Activator classes are resolved by FQN via {@link Class#forName}
+ * so the root project does not need a compile-time dep on every leaf
+ * module — only the runtime classpath needs them, which is what
+ * {@code runtimeOnly project(...)} in the root build.gradle provides.
  *
- * Activator class names are listed by FQN and resolved with
- * {@link Class#forName(String)}, so this launcher only needs the
- * subproject jars on the runtime classpath — it does not have a
- * compile-time dep on each subproject.
- *
- * The order matters: {@code commons-file}'s Activator opens the file
- * service trackers first so subsequent producer Activators register
- * services into a context that is already listening; the {@code core}
- * Activator runs last because its {@code start()} eventually shows the
- * Swing UI.
+ * Order matters: commons-file's no-op activator first, then translator /
+ * preferences / preload, then producers (protocols, formats, viewer),
+ * then OS adapters, then core last (its {@code register()} ends up
+ * showing the Swing UI).
  */
 public final class Bootstrap {
-
-    /**
-     * Activators in dependency order. Anything not on the runtime
-     * classpath is silently skipped — that lets the Linux Activator and
-     * macOS Activator both appear in the list with only one of them
-     * actually loading on a given JVM (e.g., the macOS jar is excluded
-     * from the Linux installer).
-     */
-    private static final String[] ACTIVATOR_CLASSES = {
-            // commons-file first so trackers are listening before producers register
-            "dev.barebones.commander.commons.file.osgi.Activator",
-            // basic services
-            "dev.barebones.commander.text.Activator",
-            "dev.barebones.commander.conf.Activator",
-            "dev.barebones.commander.preload.Activator",
-            // protocols
-            "dev.barebones.commander.commons.file.protocol.sftp.Activator",
-            "dev.barebones.commander.commons.file.protocol.s3.Activator",
-            "dev.barebones.commander.commons.file.protocol.nfs.Activator",
-            // archive formats
-            "dev.barebones.commander.commons.file.archive.zip.Activator",
-            "dev.barebones.commander.commons.file.archive.tar.Activator",
-            "dev.barebones.commander.commons.file.archive.gzip.Activator",
-            "dev.barebones.commander.commons.file.archive.bzip2.Activator",
-            "dev.barebones.commander.commons.file.archive.xz.Activator",
-            // text viewer
-            "dev.barebones.commander.viewer.text.Activator",
-            // os adapters (one per OS — load-class will fail silently for the wrong one)
-            "dev.barebones.commander.desktop.linux.Activator",
-            "dev.barebones.commander.desktop.macos.Activator",
-            // core last — its start() ends up showing the UI
-            "dev.barebones.commander.Activator",
-    };
 
     private Bootstrap() {
     }
 
-    /**
-     * Creates a {@link LocalBundleContext} from {@code properties} and
-     * runs every Activator's {@code start(BundleContext)} in order.
-     *
-     * @return the live bundle context (kept by the caller for an
-     *     orderly shutdown via {@link #stop(LocalBundleContext)}).
-     */
-    public static LocalBundleContext start(Map<String, String> properties) throws Exception {
-        LocalBundleContext context = new LocalBundleContext(properties);
-        for (String className : ACTIVATOR_CLASSES) {
-            BundleActivator activator;
-            try {
-                activator = (BundleActivator) Class.forName(className).getDeclaredConstructor().newInstance();
-            } catch (ClassNotFoundException notFound) {
-                // Module not on the runtime classpath (e.g. the wrong-OS adapter). Skip silently.
-                continue;
-            }
-            activator.start(context);
-        }
-        return context;
+    public static void start(Map<String, String> properties) {
+        // Core SPI / no-op
+        invoke("dev.barebones.commander.commons.file.osgi.Activator", "register");
+
+        // Basic services
+        invoke("dev.barebones.commander.text.Activator", "register");
+        invoke("dev.barebones.commander.conf.Activator", "register", Map.class, properties);
+        invoke("dev.barebones.commander.preload.Activator", "register");
+
+        // Protocols
+        invoke("dev.barebones.commander.commons.file.protocol.sftp.Activator", "register");
+        invoke("dev.barebones.commander.commons.file.protocol.s3.Activator", "register");
+        invoke("dev.barebones.commander.commons.file.protocol.nfs.Activator", "register");
+
+        // Archive formats
+        invoke("dev.barebones.commander.commons.file.archive.zip.Activator", "register");
+        invoke("dev.barebones.commander.commons.file.archive.tar.Activator", "register");
+        invoke("dev.barebones.commander.commons.file.archive.gzip.Activator", "register");
+        invoke("dev.barebones.commander.commons.file.archive.bzip2.Activator", "register");
+        invoke("dev.barebones.commander.commons.file.archive.xz.Activator", "register");
+
+        // Text viewer
+        invoke("dev.barebones.commander.viewer.text.Activator", "register");
+
+        // OS adapters — only one will load on a given JVM (the wrong-OS
+        // jar can be excluded from per-OS installer images).
+        invoke("dev.barebones.commander.desktop.linux.Activator", "register");
+        invoke("dev.barebones.commander.desktop.macos.Activator", "register");
+
+        // Core — instantiated with the property map; its register() shows the UI.
+        instantiateAndRegister("dev.barebones.commander.Activator", properties);
     }
 
     /**
-     * Best-effort shutdown. Each Activator's {@code stop} is invoked in
-     * reverse order; exceptions are swallowed so a failing module does
-     * not prevent the rest from cleaning up.
+     * Calls a static {@code register(...)} on the named class. If the
+     * class is not on the runtime classpath (for example, the wrong-OS
+     * adapter), the call is silently skipped — the same tolerance the
+     * Felix discoverer used to give us.
      */
-    public static void stop(LocalBundleContext context) {
-        for (int i = ACTIVATOR_CLASSES.length - 1; i >= 0; i--) {
-            try {
-                BundleActivator activator = (BundleActivator) Class.forName(ACTIVATOR_CLASSES[i]).getDeclaredConstructor().newInstance();
-                activator.stop(context);
-            } catch (Throwable ignored) {
-                // best-effort
+    private static void invoke(String className, String methodName, Object... typedArgs) {
+        Class<?> cls;
+        try {
+            cls = Class.forName(className);
+        } catch (ClassNotFoundException notFound) {
+            return; // module not present on this classpath
+        }
+        Method method;
+        Object[] args;
+        try {
+            if (typedArgs.length == 0) {
+                method = cls.getDeclaredMethod(methodName);
+                args = new Object[0];
+            } else {
+                Class<?>[] paramTypes = new Class<?>[typedArgs.length / 2];
+                args = new Object[typedArgs.length / 2];
+                for (int i = 0; i < typedArgs.length; i += 2) {
+                    paramTypes[i / 2] = (Class<?>) typedArgs[i];
+                    args[i / 2] = typedArgs[i + 1];
+                }
+                method = cls.getDeclaredMethod(methodName, paramTypes);
             }
+            method.setAccessible(true);
+            method.invoke(null, args);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new IllegalStateException("Activator " + className + " missing register(...)", e);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            throw new IllegalStateException("Activator " + className + " failed to register", cause != null ? cause : e);
+        }
+    }
+
+    /**
+     * Instantiates the core Activator with the property map and calls
+     * its {@code register()}. The core Activator is the only one that
+     * needs an instance: its accessor methods (assoc(), bookmark(), ...)
+     * read CLI args from the map, and {@code Application.run(activator)}
+     * holds the instance for the lifetime of the UI.
+     */
+    private static void instantiateAndRegister(String className, Map<String, String> properties) {
+        Class<?> cls;
+        try {
+            cls = Class.forName(className);
+        } catch (ClassNotFoundException notFound) {
+            throw new IllegalStateException("Required core Activator " + className + " not on classpath", notFound);
+        }
+        try {
+            Object activator = cls.getDeclaredConstructor(Map.class).newInstance(properties);
+            cls.getMethod("register").invoke(activator);
+        } catch (ReflectiveOperationException e) {
+            Throwable cause = e instanceof InvocationTargetException && e.getCause() != null ? e.getCause() : e;
+            throw new IllegalStateException("Failed to start core Activator", cause);
         }
     }
 }

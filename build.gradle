@@ -31,7 +31,6 @@ subprojects {
     compileTestJava.options.encoding = 'UTF-8'
     dependencies {
         implementation 'org.slf4j:slf4j-api:1.7.36'
-        implementation 'org.osgi:osgi.core:8.0.0'
         constraints {
             implementation 'com.squareup.okio:okio-jvm:3.11.0'
             implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.1.20'
@@ -51,10 +50,6 @@ application {
 }
 
 dependencies {
-    // osgi.core is not provided transitively (subprojects declare it as
-    // 'implementation', i.e. private to the producer). Bootstrap calls
-    // BundleActivator.start() so the root project needs it directly.
-    implementation 'org.osgi:osgi.core:8.0.0'
     implementation 'com.beust:jcommander:1.82'
     implementation 'com.formdev:flatlaf:2.6'
 

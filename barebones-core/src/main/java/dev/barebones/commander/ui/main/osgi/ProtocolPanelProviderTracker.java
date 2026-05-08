@@ -1,8 +1,19 @@
+/*
+ * Copyright (C) 2002-2026 muCommander contributors
+ * Copyright (C) 2026 barebones-commander contributors
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
 package dev.barebones.commander.ui.main.osgi;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,29 +21,30 @@ import dev.barebones.commander.protocol.ui.ProtocolPanelProvider;
 import dev.barebones.commander.ui.dialog.server.ServerConnectDialog;
 import dev.barebones.commander.ui.main.DrivePopupButton;
 
-public class ProtocolPanelProviderTracker extends ServiceTracker<ProtocolPanelProvider, ProtocolPanelProvider> {
+/**
+ * Static fan-out for {@link ProtocolPanelProvider} registrations. Was an
+ * OSGi {@code ServiceTracker} pre-Phase-2; is now a plain registry that
+ * wires the provider into {@link ServerConnectDialog} and (if it has a
+ * panel class) {@link DrivePopupButton}.
+ */
+public final class ProtocolPanelProviderTracker {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolPanelProviderTracker.class);
 
-
-	public ProtocolPanelProviderTracker(BundleContext context) {
-        super(context, ProtocolPanelProvider.class, null);
+    private ProtocolPanelProviderTracker() {
     }
 
-    @Override
-    public ProtocolPanelProvider addingService(ServiceReference<ProtocolPanelProvider> reference) {
-        ProtocolPanelProvider service = super.addingService(reference);
+    public static void register(ProtocolPanelProvider service) {
         ServerConnectDialog.register(service);
-        if (service.getPanelClass() != null)
+        if (service.getPanelClass() != null) {
             DrivePopupButton.register(service);
+        }
         LOGGER.info("ProtocolPanelProvider is registered: " + service);
-        return service;
     }
 
-    @Override
-    public void removedService(ServiceReference<ProtocolPanelProvider> reference, ProtocolPanelProvider service) {
+    public static void unregister(ProtocolPanelProvider service) {
         ServerConnectDialog.unregister(service);
         DrivePopupButton.unregister(service);
-        super.removedService(reference, service);
         LOGGER.info("ProtocolPanelProvider is unregistered: " + service);
     }
 }
