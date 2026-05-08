@@ -26,7 +26,7 @@ import dev.barebones.commander.commons.file.protocol.ProtocolProvider;
 import dev.barebones.commander.protocol.ui.ProtocolPanelProvider;
 import dev.barebones.commander.protocol.ui.ServerPanel;
 import dev.barebones.commander.protocol.ui.ServerPanelListener;
-import dev.barebones.commander.ui.main.osgi.ProtocolPanelProviderTracker;
+import dev.barebones.commander.protocol.ui.ProtocolPanelRegistry;
 
 public final class Activator {
 
@@ -43,7 +43,7 @@ public final class Activator {
             }
         });
 
-        ProtocolPanelProviderTracker.register(new ProtocolPanelProvider() {
+        ProtocolPanelRegistry.register(new ProtocolPanelProvider() {
             @Override public String getSchema() { return "s3"; }
             @Override public ServerPanel get(ServerPanelListener listener, JFrame mainFrame) {
                 return new S3Panel(listener, mainFrame);

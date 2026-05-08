@@ -79,8 +79,19 @@ public class Activator {
         MuSnapshot.registerHandler(new EditorSnapshot());
         // Register the application-specific 'bookmark' protocol.
         FileProtocolServiceTracker.register(createBookmarkProtocolService());
-        // Register core functionality service. The CoreServiceTracker on macOS
-        // exposes this via getCoreService().
+        // Drain protocol panel providers contributed by individual protocol
+        // modules (sftp/s3/nfs) and wire each one into ServerConnectDialog
+        // and DrivePopupButton. Pre-Phase-2 this fan-out lived in an OSGi
+        // ServiceTracker; producers now stage panels in the api-side
+        // ProtocolPanelRegistry and core drains it here.
+        for (dev.barebones.commander.protocol.ui.ProtocolPanelProvider provider :
+                dev.barebones.commander.protocol.ui.ProtocolPanelRegistry.all()) {
+            dev.barebones.commander.ui.dialog.server.ServerConnectDialog.register(provider);
+            if (provider.getPanelClass() != null) {
+                dev.barebones.commander.ui.main.DrivePopupButton.register(provider);
+            }
+        }
+        // Register core functionality service for macOS' EAWTHandler.
         dev.barebones.commander.os.api.CoreServiceHolder.set(createCoreService());
         // Trap VM shutdown.
         Runtime.getRuntime().addShutdownHook(shutdownHook = new ShutdownHook());
