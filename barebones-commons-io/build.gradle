@@ -1,13 +1,10 @@
 repositories.mavenCentral()
 
 dependencies {
-    comprise 'com.ibm.icu:icu4j:78.3'
+    implementation 'com.ibm.icu:icu4j:78.3'
 
     testImplementation 'org.testng:testng:7.11.0'
 }
 
 jar {
-    from configurations.comprise.collect { it.isDirectory() ? it : zipTree(it).matching {
-        include 'com/ibm/icu/text/**'
-    } }
 }

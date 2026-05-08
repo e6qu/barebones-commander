@@ -10,12 +10,11 @@ dependencies {
     api project(":barebones-preferences")
 
     compileOnly 'com.google.code.findbugs:jsr305:1.3.9'
-    comprise group: 'com.fifesoft', name: 'rsyntaxtextarea', version: '3.6.2'
+    implementation group: 'com.fifesoft', name: 'rsyntaxtextarea', version: '3.6.2'
 
     testImplementation 'org.testng:testng:7.11.0'
 }
 
 jar {
-    from configurations.comprise.collect { it.isDirectory() ? it : zipTree(it)}
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
