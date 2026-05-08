@@ -68,18 +68,9 @@ public final class Main {
 
         // Resolve the user preferences folder before Bootstrap so logback can
         // pick up MUCOMMANDER_USER_PREFERENCES on first init.
-        File preferencesFolder;
-        if (configuration.preferences != null) {
-            preferencesFolder = new File(configuration.preferences);
-            try {
-                UserPreferencesDir.setPreferencesFolder(preferencesFolder);
-            } catch (Exception e) {
-                System.err.println("Failed to set preferences folder: " + e.getMessage());
-                return;
-            }
-        } else {
-            preferencesFolder = UserPreferencesDir.getDefaultPreferencesFolder();
-        }
+        File preferencesFolder = configuration.preferences != null
+                ? new File(configuration.preferences)
+                : UserPreferencesDir.getDefaultPreferencesFolder();
         configuration.preferences = preferencesFolder.getAbsolutePath();
         System.setProperty("MUCOMMANDER_USER_PREFERENCES", configuration.preferences);
 
