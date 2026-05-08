@@ -26,7 +26,7 @@ public final class Activator {
     private Activator() {
     }
 
-    public static void register(Map<String, String> properties) {
+    public static void register(Map<String, String> properties) throws java.io.IOException {
         LOGGER.debug("starting");
         PlatformManager.setPreferencesFolder(properties.get("mucommander.preferences"));
         MuConfigurations.loadPreferences();
