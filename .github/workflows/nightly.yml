@@ -1,8 +1,9 @@
 name: Nightly Build
 
-on: 
-  schedule:
-    - cron:  '0 0 * * *'
+# Auto schedule disabled in this fork: the workflow is upstream-coupled (refs
+# the private mucommander/release repo and Apple notarization secrets we do
+# not have). Manual-only until Phase 8 of PLAN.md replaces the release pipeline.
+on:
   workflow_dispatch:
 
 jobs:
