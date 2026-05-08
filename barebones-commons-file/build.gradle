@@ -38,34 +38,6 @@ jar {
         exclude 'com/sun/jna/darwin/**'
         exclude 'META-INF/**'
     } }
-
-    bundle {
-        bnd ('Bundle-Name': 'barebones-commander-commons-file',
-                'Bundle-Vendor': 'barebones-commander',
-                'Bundle-Description': 'Component with file-level utilities',
-                'Bundle-DocURL': 'https://github.com/e6qu/barebones-commander',
-                'Bundle-Activator': 'dev.barebones.commander.commons.file.osgi.Activator',
-                'Export-Package':
-                        'dev.barebones.commander.commons.file,' +
-                                'dev.barebones.commander.commons.file.archive,' +
-                                'dev.barebones.commander.commons.file.connection,' +
-                                'dev.barebones.commander.commons.file.filter,' +
-                                'dev.barebones.commander.commons.file.icon,' +
-                                'dev.barebones.commander.commons.file.icon.impl,' +
-                                'dev.barebones.commander.commons.file.osgi,' +
-                                'dev.barebones.commander.commons.file.protocol,' +
-                                'dev.barebones.commander.commons.file.protocol.local,' +
-                                'dev.barebones.commander.commons.file.protocol.search,' +
-                                'dev.barebones.commander.commons.file.util,' +
-                                'com.sun.jna.platform.win32',
-                'Specification-Title': "barebones-commander",
-                'Specification-Vendor': "barebones-commander contributors",
-                'Specification-Version': project.version,
-                'Implementation-Title': "barebones-commander",
-                'Implementation-Vendor': "barebones-commander contributors",
-                'Implementation-Version': revision,
-                'Build-Date': new Date().format('yyyyMMdd'))
-    }
 }
 
 test {

@@ -7,10 +7,6 @@
  * User Manual available at https://docs.gradle.org/6.2/userguide/java_library_plugin.html
  */
 
-plugins {
-    id 'biz.aQute.bnd.builder'
-}
-
 test.useTestNG()
 
 repositories.mavenCentral()
@@ -46,21 +42,4 @@ jar {
         exclude 'com/sun/jna/platform/win32/**'
         exclude 'com/sun/jna/platform/wince/**'
     } }
-
-    bundle {
-        bnd ('Bundle-Name': 'barebones-commander-os-macos',
-                'Bundle-Vendor': 'barebones-commander',
-                'Bundle-Description': 'macOS specifics',
-                'Bundle-DocURL': 'https://github.com/e6qu/barebones-commander',
-                'Bundle-Activator': 'dev.barebones.commander.desktop.macos.Activator',
-                'Export-Package': 'dev.barebones.commander.ui.process',
-                'Import-Package': '!com.sun.jna.*,*',
-                'Specification-Title': "barebones-commander",
-                'Specification-Vendor': "barebones-commander contributors",
-                'Specification-Version': project.version,
-                'Implementation-Title': "barebones-commander",
-                'Implementation-Vendor': "barebones-commander contributors",
-                'Implementation-Version': revision,
-                'Build-Date': new Date().format('yyyyMMdd'))
-    }
 }
