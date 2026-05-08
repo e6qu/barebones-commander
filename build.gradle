@@ -69,6 +69,40 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:1.3.9'
 
+    // Compile-time deps for the new (non-Felix) Bootstrap launcher in
+    // src/main/java/dev/barebones/commander/bootstrap/. Bootstrap.java
+    // imports LocalBundleContext from barebones-commons-file; it discovers
+    // each Activator class by FQN at runtime via Class.forName, so other
+    // subprojects only need to be on the runtime classpath.
+    implementation project(':barebones-commons-file')
+    runtimeOnly project(':barebones-core')
+    runtimeOnly project(':barebones-command')
+    runtimeOnly project(':barebones-commons-collections')
+    runtimeOnly project(':barebones-commons-conf')
+    runtimeOnly project(':barebones-commons-io')
+    runtimeOnly project(':barebones-commons-runtime')
+    runtimeOnly project(':barebones-core-preload')
+    runtimeOnly project(':apache-bzip2')
+    runtimeOnly project(':barebones-encoding')
+    runtimeOnly project(':barebones-preferences')
+    runtimeOnly project(':barebones-process')
+    runtimeOnly project(':barebones-translator')
+    runtimeOnly project(':barebones-protocol-sftp')
+    runtimeOnly project(':barebones-protocol-s3')
+    runtimeOnly project(':barebones-protocol-nfs')
+    runtimeOnly project(':barebones-format-zip')
+    runtimeOnly project(':barebones-format-tar')
+    runtimeOnly project(':barebones-format-bzip2')
+    runtimeOnly project(':barebones-format-gzip')
+    runtimeOnly project(':barebones-format-xz')
+    runtimeOnly project(':barebones-archiver')
+    runtimeOnly project(':barebones-viewer-text')
+    runtimeOnly project(':barebones-os-api')
+    runtimeOnly project(':barebones-os-macos')
+    runtimeOnly project(':barebones-os-linux')
+
+    // Felix-driven path (will be removed in a later commit). osgiRuntime
+    // entries below feed createBundlesDir → runOsgi.
     osgiRuntime project('barebones-core')
     osgiRuntime project('barebones-command')
     osgiRuntime project('barebones-commons-collections')
