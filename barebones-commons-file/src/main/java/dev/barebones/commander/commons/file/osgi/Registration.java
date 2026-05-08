@@ -117,8 +117,13 @@ final class Registration<S> implements ServiceRegistration<S> {
 
         @Override
         public int compareTo(Object o) {
-            if (!(o instanceof Ref)) return 0;
-            return Long.compare(((Ref) o).owner.id, id);
+            if (o instanceof ServiceReference<?>) {
+                Object oid = ((ServiceReference<?>) o).getProperty("service.id");
+                if (oid instanceof Long) {
+                    return Long.compare((Long) oid, id);
+                }
+            }
+            return 0;
         }
 
         @Override
