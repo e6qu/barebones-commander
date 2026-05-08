@@ -51,6 +51,10 @@ application {
 }
 
 dependencies {
+    // osgi.core is not provided transitively (subprojects declare it as
+    // 'implementation', i.e. private to the producer). Bootstrap calls
+    // BundleActivator.start() so the root project needs it directly.
+    implementation 'org.osgi:osgi.core:8.0.0'
     implementation 'com.beust:jcommander:1.82'
     implementation 'com.formdev:flatlaf:2.6'
 
