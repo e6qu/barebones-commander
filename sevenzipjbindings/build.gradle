@@ -2,9 +2,12 @@ repositories {
     repositories.mavenCentral()
     // Upstream-hosted Maven repo serving `com.mucommander:sevenzipjbinding-all-platforms`
     // (a patched build with Apple-silicon support — see upstream PR mucommander/mucommander#1237).
-    // This module is on the Phase-1 delete list; once it goes, this repo dependency is gone too.
+    // This is upstream's project website, not a GitHub URL; my earlier mass URL sweep
+    // incorrectly pointed it at our fork. Restored here verbatim from upstream's build.gradle.
+    // The whole `sevenzipjbindings` module is on the Phase-1 delete list, so this dep on
+    // upstream's hosted artifact goes away with that PR.
     maven {
-        url = uri("https://github.com/mucommander/mucommander/maven/")
+        url = uri("https://www.mucommander.com/maven/")
     }
 }
 
