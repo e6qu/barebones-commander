@@ -24,6 +24,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **7** | pending | Build polish (Kotlin DSL + version catalog) | one PR |
 | **8** | pending | Release pipeline (DMG/DEB/RPM/AppImage via `jpackage`) + commit signing + SBOM | one PR |
 | **9** | pending | SAST in CI (SpotBugs + FindSecBugs + OWASP Dependency-Check) | one PR |
+| **10** | pending | Connectivity: Tailscale peer discovery + Taildrop, OS-level mount helper for NFSv4/SMB/SSHFS on Linux & macOS | one PR |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -32,7 +33,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 ## 1. Goals
 
 1. Ship a **small** dual-pane file manager built on the well-tested muCommander UI core.
-2. **Three remote-data backends**: SSH/SFTP, S3-compatible object storage (AWS S3, MinIO, etc.), and NFS. Local FS is always available.
+2. **Remote-data backends**: SSH/SFTP, S3-compatible object storage (AWS S3, MinIO, etc.), in-process NFSv2/v3 (via the existing Yanfs-based module), and — via Phase 10's mount helper — anything the OS can mount (NFSv4, SMB/CIFS, SSHFS). Local FS is always available.
 3. **Two** OS targets: Linux (x86_64, aarch64) and macOS (Apple Silicon + Intel).
 4. **No** unpatched Critical/High vulnerabilities at v1.0 release.
 5. **Latest LTS Java** (Java 25 LTS) as the runtime target.
@@ -41,6 +42,8 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 8. Clean **rename and rebrand** to remove muCommander trademark concerns. *(Done in #2.)*
 9. **PR-only** workflow on `e6qu/barebones-commander` — every change lands via a reviewed PR. **One PR in flight at a time.** The user decides scope and pacing of the next PR.
 10. **Preserve the VFS extensibility** — the upstream `barebones-commons-file` abstraction (`AbstractFile`) and the `barebones-protocol-api` SPI stay, so future backends (rsync, WebDAV, etc.) can be added without core changes.
+11. **Be Tailscale-aware** — discover tailnet peers, surface them as quick-connect targets for SFTP / NFS / mount-helper, and (optional) integrate Taildrop send/receive. See Phase 10.
+12. **Mount-as-local UX on Linux & macOS** — pick a remote share (NFSv4, SMB, SSHFS), the app shells out to the OS mount command, and the share opens in a panel as if it were local. See Phase 10.
 
 ## 2. Non-goals (explicitly removed scope)
 
@@ -161,7 +164,7 @@ For the pruned dependency set (SFTP-only barebones build):
 | `barebones-protocol-api` | SPI. Keep — this is the VFS plug-in contract; future backends (rsync, WebDAV) can hook in here. |
 | `barebones-protocol-sftp` | SFTP backend. Bump `jsch` to fix Terrapin (Phase 4). |
 | `barebones-protocol-s3` | S3-compatible object storage backend. **Replace `jets3t` with AWS SDK v2 in Phase 4** (also drops the bundled `mail.osgi-1.4.jar`). |
-| `barebones-protocol-nfs` | NFS backend (Yanfs-based via the vendored `sun-net-www`). |
+| `barebones-protocol-nfs` | In-process NFSv2/v3 backend (Yanfs-based via the vendored `sun-net-www`). NFSv4 is delivered via Phase 10's OS mount helper rather than this module — Yanfs has no v4 support and a Java NFSv4 client is not worth carrying. |
 | `sun-net-www` (vendored) | Keep — required by `barebones-protocol-nfs` (Yanfs / NFS RPC support). |
 | `barebones-os-api` | Keep. |
 | `barebones-os-linux` | Keep. **Refactor `KdeConfig` to `ProcessBuilder(List)` in Phase 5.** |
@@ -193,11 +196,11 @@ For the pruned dependency set (SFTP-only barebones build):
 
 ## 6. Phased delivery — one PR per phase
 
-Each phase = **one** branch + **one** PR against `master`. Squash-merge. Tests must remain green at the merge point. The user signals when a PR is "good" and when the next branch starts. The LLM does not open the next PR autonomously.
+Each phase = **one** branch + **one** PR against `main`. Squash-merge. Tests must remain green at the merge point. The user signals when a PR is "good" and when the next branch starts. The LLM does not open the next PR autonomously.
 
 ### Phase 0 — Bootstrap *(ongoing — last PR closes it)*
 
-Already landed in PR #2 (`master`):
+Already landed in PR #2 (`main`):
 - `LIBRARIES.md`, `SECURITY_REVIEW.md`, `PLAN.md`.
 - Project rename (Phase 6 work, done early).
 - CI cleanup: removed `.travis.yml`, `nightly.yml`, `stable.yml`; kept only `tests.yaml`.
@@ -310,7 +313,7 @@ Maps 1:1 to `SECURITY_REVIEW.md` §5:
 - Replace upstream nightly / stable workflows (already deleted) with a fresh `release.yml` triggered on tag push:
   - Linux x86_64 / aarch64 AppImage + DEB + RPM via `jpackage`.
   - macOS aarch64 / x86_64 DMG via `jpackage` + `notarytool` (when an Apple Developer ID is configured; until then, ad-hoc-signed DMG).
-- Enable **commit signing** + branch-protection rule on `master` requiring signed commits.
+- Enable **commit signing** + branch-protection rule on `main` requiring signed commits.
 - Add **SBOM** generation (`org.cyclonedx.bom` Gradle plugin); publish `bom.cdx.json` per release.
 - Add **SLSA-style provenance** via `actions/attest-build-provenance`.
 - Replace upstream icon set with new artwork.
@@ -320,11 +323,43 @@ Maps 1:1 to `SECURITY_REVIEW.md` §5:
 - Add **SpotBugs + FindSecBugs** as a Gradle-driven CI step. Fail the build on any High-severity finding.
 - Add **OWASP Dependency-Check** as a scheduled weekly CI run. Fail on CVSS ≥ 7.0.
 
+### Phase 10 — Connectivity: Tailscale + mount helper (one PR)
+
+The first feature-add phase after the cleanup wave. Three sub-features in one PR; all use the same shell-out pattern (no native code, no Go/Rust deps).
+
+**OS-level mount helper** — a small Swing dialog that:
+- Asks for a remote share URL / host / share-path / credentials.
+- Resolves a target mountpoint under `${user.home}/.barebones-commander/mounts/<host>-<share>` (Linux) or `/Volumes/<host>-<share>` (macOS).
+- Invokes the OS mount command via `ProcessBuilder(List.of(...))` (never string-concatenated):
+  - **Linux**: `mount.nfs4` for NFSv4; `mount.nfs` for v2/v3; `mount -t cifs` for SMB; `sshfs` for SSHFS (FUSE).
+  - **macOS**: `mount_nfs` (NFSv2/v3/v4); `mount -t smbfs` for SMB; `sshfs` for SSHFS (macFUSE if installed).
+- On success, opens the mountpoint as a regular folder in the active panel.
+- Tracks active mounts and offers an "Unmount" action. Best-effort cleanup on app exit.
+- Privileged mounts (Linux NFS) require `sudo` or a setuid `mount.*` helper — surface this in the dialog rather than silently failing.
+
+**NFSv4** — delivered by the mount helper above. The in-process `barebones-protocol-nfs` module is unchanged and continues to handle direct NFSv2/v3 sessions for environments where mounting is not desired.
+
+**Tailscale integration**:
+- Detect Tailscale by probing for the `tailscale` binary on `$PATH` and the local API socket (`/var/run/tailscale/tailscaled.sock` on Linux, `~/Library/Containers/io.tailscale.ipn.macsys/Data/IPN/tailscaled.sock` on macOS GUI install).
+- List tailnet peers via `tailscale status --json`. Surface them in a "Tailscale peers" quick-list (similar in spirit to upstream's deleted Bonjour list).
+- Selecting a peer pre-fills the SFTP / NFS / mount dialog with the peer's MagicDNS hostname (`*.ts.net`).
+- (Optional) Taildrop send: a "Send to peer (Taildrop)" action shells out to `tailscale file cp <path> <peer>:`.
+- (Optional) Taildrop receive: a "Tailscale inbox" panel shows files received via Taildrop (`tailscale file get`).
+- All Tailscale invocations go through the OS-mount-style `ProcessBuilder(List<String>)` path — no shell-injection risk.
+
+**Implementation discipline**:
+- All shell-outs use `ProcessBuilder(List<String>)`. No `Runtime.exec(String)`. No string concatenation of user input into command lines. (Same SAST gate from Phase 5.)
+- Failure modes (binary missing, daemon not running, mount denied) bubble up as user-visible dialogs, never silent.
+- No bundled Tailscale client. The user installs Tailscale via their OS; we just detect and integrate.
+- No bundled `sshfs` / `mount.nfs4` / `mount.cifs`. Same posture.
+
+**Exit criteria**: app can mount an NFSv4 share on both Linux and macOS via the mount dialog and browse it; tailnet peer list populates from `tailscale status --json`; Taildrop send works in a manual smoke test.
+
 ## 7. Compatibility with upstream
 
 We may want to **pull bug fixes from upstream muCommander** for at least 1 year. To keep this cheap:
 
-- Do not rewrite history of `master`. Use **squash merges** on every PR to keep `master` linear.
+- Do not rewrite history of `main`. Use **squash merges** on every PR to keep `main` linear.
 - Track upstream as `git remote upstream` (already configured locally). Periodically `git fetch upstream` and cherry-pick relevant fixes.
 - Resolve path conflicts manually (`com/mucommander/` → `dev/barebones/commander/`).
 
@@ -349,8 +384,10 @@ We may want to **pull bug fixes from upstream muCommander** for at least 1 year.
 6. **macOS L&F: keep VAqua or rely on FlatLaf macOS variant** — drop VAqua in Phase 1 (§5.2 vendored helpers — also covers the upstream `fix #1458` "filter out vaqua for macOS 13+" workaround).
 7. **JRE submodule** (`.gitmodules` still points at `mucommander/JRE`) — replace with a build-time-downloaded JDK or unbundled assumption in Phase 8.
 8. **rsync support** — not present in upstream and not in scope for v1.0. The kept VFS SPI (`barebones-protocol-api`, see §1.10) means a future `barebones-protocol-rsync` plug-in can be added as an additive PR without core changes when there is a use case.
-9. **WebDAV / SMB return** — same path as rsync: out of scope for v1.0; pluggable later. (NFS is in scope per §5.1.)
+9. **WebDAV** — same path as rsync: out of scope for v1.0; pluggable later. (SMB is reachable via Phase 10's mount helper; NFS — both v2/v3 in-process and v4 via the mount helper — is in scope per §5.1 / §1.2.)
 10. **S3 endpoint configuration UI** — AWS SDK v2 makes `--endpoint-override` for MinIO / Ceph / R2 trivial in code, but a UX surface for non-AWS S3 endpoints needs design. Treat as a follow-up after Phase 4 lands the SDK swap.
+11. **Tailscale auth fallback** — `tailscale status --json` requires the local user to be the same user running tailscaled (or `sudo`). Decide what we do on macOS sandboxed installs of Tailscale where the socket isn't reachable: degrade to "Tailscale not detected" and let the user type peer hostnames manually (MagicDNS still resolves them).
+12. **Mount-helper privilege escalation** — Linux NFS mounts typically need root. Either prompt for `pkexec` / `sudo` and re-invoke, or document that the user must pre-add their account to `/etc/fstab` with `users` mount option. Phase 10 picks `pkexec` first if available, falls back to documenting fstab.
 
 ## 10. Quick reference — workflow conventions
 
@@ -358,6 +395,6 @@ We may want to **pull bug fixes from upstream muCommander** for at least 1 year.
 - **Branch naming**: `phase-N/short-description` (e.g. `phase-1/strip-out-of-scope`).
 - **Commit author** for all our commits: `Adrian Mârza <adi11235 at gmail dot com>` (intentional non-RFC email; configured per-repo, not globally).
 - **Commits unsigned** until Phase 8; from then on all commits must be signed.
-- **PRs always squash-merge** to `master`. PR title = future commit title. PR body = brief "what + why + test plan".
-- **No direct pushes to `master`.** No `--no-verify` for hooks. No `--amend` of pushed commits.
+- **PRs always squash-merge** to `main`. PR title = future commit title. PR body = brief "what + why + test plan".
+- **No direct pushes to `main`.** No `--no-verify` for hooks. No `--amend` of pushed commits.
 - **No CONTRIBUTING.md / no outside contributions** until v1.0. The user lifts this when ready.
