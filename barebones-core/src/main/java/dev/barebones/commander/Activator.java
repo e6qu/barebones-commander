@@ -81,7 +81,7 @@ public class Activator {
         FileProtocolServiceTracker.register(createBookmarkProtocolService());
         // Register core functionality service. The CoreServiceTracker on macOS
         // exposes this via getCoreService().
-        dev.barebones.commander.desktop.macos.CoreServiceTracker.register(createCoreService());
+        dev.barebones.commander.os.api.CoreServiceHolder.set(createCoreService());
         // Trap VM shutdown.
         Runtime.getRuntime().addShutdownHook(shutdownHook = new ShutdownHook());
 
