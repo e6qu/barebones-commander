@@ -216,7 +216,9 @@ public class ServerConnectDialog extends FocusDialog implements ServerPanelListe
             LOGGER.warn("failed to open URL in browser: {}", url, e);
             InformationDialog.showErrorDialog(this,
                 Translator.get("error"),
-                Translator.get("cannot_open_url", url));
+                Translator.get("cannot_open_url", url),
+                e.getMessage(),
+                e);
         }
     }
 

@@ -296,23 +296,26 @@ emitted by AWS SDK v2.
 Loading a 50k-entry SFTP directory freezes the panel; no spinner
 or partial-load indicator.
 
-### 2.3 Destructive ops missing confirmation
-- Bookmark deletion is currently *disabled* per a TODO in
-  `BookmarkManager.java:228` ("quick fix for #329"). Re-enable
-  with a confirmation prompt.
-- Batch rename has no preview-before-apply.
+### 2.3 ~~Destructive ops missing confirmation~~ **MOSTLY FIXED**
+`DynamicList.RemoveAction` (the action wired to the Delete /
+Backspace keystroke and to the EditBookmarksDialog /
+EditCredentialsDialog "Remove" buttons) now prompts with a
+`JOptionPane.showConfirmDialog` before deleting. The deletion
+disabled-by-TODO note in `BookmarkFile.java:228` is about the
+file-system-abstraction `BookmarkFile.delete()` — a different
+layer from the user-facing dialog — and is left as-is for now.
 
-### 2.4 "Operation failed" with no root cause
-`TransferFileJob` and several siblings catch the underlying
-exception and surface a generic translator string. Reveal the
-root cause in an expandable detail section.
+Batch rename preview-before-apply is still missing.
 
 ### 2.5 ~~Mount errors don't suggest next step~~ **OBSOLETE**
 The mount-helper module was removed in PR #24.
 
-### 2.6 S3 errors don't distinguish 401 / 403 / 404
-All wrap into a generic `IOException`. The user can't tell whether
-to fix credentials, fix the bucket name, or check IAM.
+### 2.6 ~~S3 errors don't distinguish 401 / 403 / 404~~ **FIXED**
+`S3ErrorHandler.toIOException` now returns:
+- `AuthException` for 401/403 (credentials dialog re-prompts)
+- `FileNotFoundException` for 404 / `NoSuchKey` / `NoSuchBucket`
+- generic `IOException` for everything else (5xx, throttling, etc.)
+Six unit tests in `S3ErrorHandlerTest` pin each case.
 
 ### 2.7 ~~Tailscale "not installed" surfaces only when invoked~~ **OBSOLETE**
 Tailscale support was removed in PR #24.
@@ -321,9 +324,13 @@ Tailscale support was removed in PR #24.
 `AppearancePanel`, `ShortcutsPanel` apply changes immediately. The
 Cancel button is misleading.
 
-### 2.9 Dialogs without default-button focus
-`InformationDialog`, `QuestionDialog` open with no preselected
-button; pressing Enter does nothing until you tab.
+### 2.9 ~~Dialogs without default-button focus~~ **FIXED**
+`InformationDialog.showDialog` already calls
+`setInitialFocusComponent(okButton)`; `QuestionDialog.init` calls
+`setInitialFocusComponent(buttons.get(0))`. The original report's
+premise ("no preselected button") is no longer accurate — every
+dialog opens with a default. Audit kept for any specific dialog
+subclass that might bypass this; none found in the current tree.
 
 ### 2.10 No file-size prompt before opening huge archives / files
 Both archive opening and the text viewer happily try to load a

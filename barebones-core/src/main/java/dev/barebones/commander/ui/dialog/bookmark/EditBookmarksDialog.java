@@ -333,8 +333,10 @@ public class EditBookmarksDialog extends FocusDialog implements ActionListener, 
         try {BookmarkManager.writeBookmarks(false);}
         catch(Exception e) {
             InformationDialog.showErrorDialog(this,
+                Translator.get("error"),
                 Translator.get("bookmarks_dialog.cannot_write_bookmarks"),
-                e.getMessage());
+                e.getMessage(),
+                e);
         }
     }
 
