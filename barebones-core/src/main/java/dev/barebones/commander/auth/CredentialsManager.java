@@ -185,17 +185,10 @@ public class CredentialsManager {
         if(!(forceWrite || saveNeeded))
             return;
 
-        BackupOutputStream out = null;
-        try {
-            credentialsFile = getCredentialsFile();
-            CredentialsWriter.write(out = new BackupOutputStream(credentialsFile));
+        credentialsFile = getCredentialsFile();
+        try (BackupOutputStream out = new BackupOutputStream(credentialsFile)) {
+            CredentialsWriter.write(out);
             saveNeeded = false;
-        }
-        finally {
-            if(out != null) {
-                try {out.close();}
-                catch(Exception e) {}
-            }
         }
 
         // Under UNIX-based systems, change the credentials file's permissions so that the file can't be read by
@@ -253,7 +246,7 @@ public class CredentialsManager {
      * @param location the location to be compared against known credentials instances, both volatile and persistent
      * @return a Vector of CredentialsMapping matching the given URL's scheme and host, best match at the first position
      */
-    private static List<CredentialsMapping> getMatchingCredentialsV(FileURL location) {
+    private static synchronized List<CredentialsMapping> getMatchingCredentialsV(FileURL location) {
         List<CredentialsMapping> matchesV = new Vector<CredentialsMapping>();
 
         findMatches(location, volatileCredentialMappings, matchesV);
@@ -281,7 +274,7 @@ public class CredentialsManager {
      *
      * @param credentialsMapping credentials to be added to the list of known credentials
      */
-    public static void addCredentials(CredentialsMapping credentialsMapping) {
+    public static synchronized void addCredentials(CredentialsMapping credentialsMapping) {
 
         // Do not add if the credentials are empty
         if(credentialsMapping.getCredentials().isEmpty())
@@ -470,16 +463,6 @@ public class CredentialsManager {
             vector.set(index, o);
     }
 
-    /**
-     * Returns the list of known volatile {@link CredentialsMapping}, stored in a Vector.
-     * <p>
-     * The returned Vector instance is the one actually used by CredentialsManager, so use it with caution.
-     * </p>
-     * @return the list of known volatile {@link CredentialsMapping}.
-     */
-    public static List<CredentialsMapping> getVolatileCredentialMappings() {
-        return volatileCredentialMappings;
-    }
 
 
     /**

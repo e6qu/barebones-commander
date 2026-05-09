@@ -153,28 +153,15 @@ public class LicenseDialog extends FocusDialog implements ActionListener {
      * @return the license text.
      */
     private String getLicenseText() {
-        StringBuilder     text;   // Stores the license text.
-        char[]            buffer; // Buffer for each chunk of data read from the license file.
-        int               count;  // Number of characters read from the last read operation.
-        InputStreamReader in;     // Stream on the license file.
-
-        in   = null;
-        text = new StringBuilder();
-        try {
-            in     = new InputStreamReader(LicenseDialog.class.getResourceAsStream(RuntimeConstants.LICENSE));
-            buffer = new char[2048];
-
-            while((count = in.read(buffer)) != -1)
+        StringBuilder text = new StringBuilder();
+        try (InputStreamReader in = new InputStreamReader(
+                LicenseDialog.class.getResourceAsStream(RuntimeConstants.LICENSE))) {
+            char[] buffer = new char[2048];
+            int count;
+            while ((count = in.read(buffer)) != -1)
                 text.append(buffer, 0, count);
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             LOGGER.warn("Failed to read license file", e);
-        }
-        finally {
-            if(in != null) {
-                try {in.close();}
-                catch(Exception e) {}
-            }
         }
         return text.toString();
     }

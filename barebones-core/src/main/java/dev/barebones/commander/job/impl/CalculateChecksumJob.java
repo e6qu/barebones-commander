@@ -166,7 +166,9 @@ public class CalculateChecksumJob extends TransferFileJob {
                 // Close the InputStream, a new one will be created when retrying
                 if(in!=null) {
                     try { in.close(); }
-                    catch(IOException e2){}
+                    catch(IOException e2){
+                        LOGGER.warn("failed to close checksum input stream during retry", e2);
+                    }
                 }
 
                 // If the job was interrupted by the user at the time the exception occurred, it most likely means that

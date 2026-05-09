@@ -163,7 +163,7 @@ class ColorButton extends JPanel implements ActionListener, ColorChangeListener 
     private ColorChooser createColorChooser() {
         if(previewComponent!=null && previewColorPropertyName!=null && (previewComponent instanceof PreviewLabel)) {
             try {return new ColorChooser(currentColor, (PreviewLabel)((PreviewLabel)previewComponent).clone(), previewColorPropertyName);}
-            catch(CloneNotSupportedException e) {}
+            catch(CloneNotSupportedException e) { throw new AssertionError("PreviewLabel must be Cloneable", e); }
         }
         return new ColorChooser(currentColor, new PreviewLabel(), PreviewLabel.BACKGROUND_COLOR_PROPERTY_NAME);
     }

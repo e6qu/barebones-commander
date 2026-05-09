@@ -27,6 +27,7 @@ import dev.barebones.commander.commons.util.ui.layout.YBoxPanel;
 import dev.barebones.commander.desktop.ActionType;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.action.ActionProperties;
+import dev.barebones.commander.ui.dialog.InformationDialog;
 import dev.barebones.commander.ui.main.MainFrame;
 
 import javax.swing.JButton;
@@ -128,14 +129,15 @@ public class AddBookmarkDialog extends FocusDialog implements ActionListener, Do
         Object source = e.getSource();
 		
         if (source==addButton)  {
-            // Starts by disposing the dialog
-            dispose();
-
-            // Add bookmark and write bookmarks file to disk
             BookmarkManager.addBookmark(new Bookmark(nameField.getText(), locationField.getText()));
-            try {BookmarkManager.writeBookmarks(false);}
-            // We should probably pop an error dialog here.
-            catch(Exception e2) {}
+            try {
+                BookmarkManager.writeBookmarks(false);
+            } catch(Exception e2) {
+                InformationDialog.showErrorDialog(this,
+                    Translator.get("bookmarks_dialog.cannot_write_bookmarks"),
+                    e2.getMessage());
+            }
+            dispose();
         }
         else if (source==cancelButton)  {
             dispose();			

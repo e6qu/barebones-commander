@@ -68,14 +68,9 @@ class ActionKeymapReader extends ActionKeymapIO {
     ActionKeymapReader(AbstractFile file) throws SAXException, IOException, ParserConfigurationException {
     	this.file = file;
     	
-    	InputStream in = null;
-    	try {SecureXml.newSafeSaxParser().parse(in = new BackupInputStream(file), this);}
-    	finally {
-    		if(in!=null) {
-    			try { in.close(); }
-    			catch(IOException e) {}
-    		}
-    	}
+        try (InputStream in = new BackupInputStream(file)) {
+            SecureXml.newSafeSaxParser().parse(in, this);
+        }
     }
 	
     /**

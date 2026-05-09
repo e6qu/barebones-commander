@@ -28,6 +28,10 @@ import dev.barebones.commander.core.desktop.DesktopManager;
 import dev.barebones.commander.desktop.ActionType;
 import dev.barebones.commander.job.impl.TempExecJob;
 import dev.barebones.commander.text.Translator;
+import dev.barebones.commander.ui.dialog.InformationDialog;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import dev.barebones.commander.ui.action.ActionProperties;
 import dev.barebones.commander.ui.action.impl.ShowRecentExecutedFilesQLAction;
 import dev.barebones.commander.ui.dialog.file.ProgressDialog;
@@ -43,6 +47,8 @@ import dev.barebones.commander.ui.quicklist.QuickListWithIcons;
  */
 
 public class RecentExecutedFilesQL extends QuickListWithIcons<AbstractFile> {
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecentExecutedFilesQL.class);
+
 	private static LinkedList<AbstractFile> list = new LinkedList<AbstractFile>();
 	private static final int MAX_NUM_OF_ELEMENTS = 10;
 	private FolderPanel folderPanel;
@@ -59,7 +65,12 @@ public class RecentExecutedFilesQL extends QuickListWithIcons<AbstractFile> {
 
 		if(item.getURL().getScheme().equals(LocalFile.SCHEMA) && (item.hasAncestor(LocalFile.class))) {
             try { DesktopManager.open(item); }
-            catch(IOException e) {}
+            catch(IOException e) {
+                LOGGER.warn("failed to open {} via desktop manager", item.getURL(), e);
+                InformationDialog.showErrorDialog(mainFrame.getJFrame(),
+                    Translator.get("error"),
+                    Translator.get("file_editor.cannot_open_file", item.getName()));
+            }
         }
 
         // Copies non-local file in a temporary local file and opens them using their native association.

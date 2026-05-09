@@ -28,6 +28,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dev.barebones.commander.RuntimeConstants;
 import dev.barebones.commander.commons.util.ui.layout.ProportionalGridPanel;
 import dev.barebones.commander.commons.util.ui.layout.YBoxPanel;
@@ -41,6 +44,8 @@ import dev.barebones.commander.ui.theme.ThemeData;
  * @author Nicolas Rinaudo, Maxence Bernard
  */
 class FileEditorPanel extends ThemeEditorPanel implements PropertyChangeListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileEditorPanel.class);
+
     // - Instance fields -----------------------------------------------------------------
     // -----------------------------------------------------------------------------------
     /** Used to preview the editor's theme. */
@@ -176,7 +181,9 @@ class FileEditorPanel extends ThemeEditorPanel implements PropertyChangeListener
             while ((count = in.read(buffer)) != -1)
                 preview.append(new String(buffer, 0, count));
         }
-        catch(Exception e) {}
+        catch(Exception e) {
+            LOGGER.warn("Failed to read license file for editor preview", e);
+        }
     }
 
 

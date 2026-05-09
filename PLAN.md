@@ -35,7 +35,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **15** | done | Dead-code sweep — 21 whole files deleted, 4 dead top-level dirs gone, ~1.1k stale i18n keys across 28 dictionaries, logback config moved to classpath + sanitised. **Net −6,012 LOC.** | landed in #21 |
 | **16a** | done | **Network reliability — process & timeout core** — `ExternalCommand` extraction (fixes stderr-pipe deadlock for mount; later removed with mount module in #24), SFTP connect / read / serverAlive timeouts, polling-loop → `Timer` for `PropertiesDialog` + `QuickSearch`, shutdown hook drains `MountRegistry` (also removed in #24) + closes S3 `S3Connection` cache | landed in #22 |
 | **16b** | done | **Network reliability — remainders** — NFS Sun-RPC `Socket.connect` timeout (`RpcTimeouts`), libsecret D-Bus `GCancellable` timeout, mount retry/backoff (since-removed), S3 upload `LoggingTransferListener` foundation, `CompletionType` Thread+sleep → `Timer`, `ThemeManager`/`ThemeData`/`ThemeCache` `WeakHashMap` → `CopyOnWriteArraySet` | landed in #23 |
-| **17** | pending | **Concurrency + correctness sweep** — mutable static collections (`Vector`/`Hashtable` in `BookmarkManager` / `ActionProperties` / `CredentialsManager`), 31+ empty catches → `IgnoredErrors` helper, NPE / stream-leak patterns | one PR |
+| **17** | done | **Concurrency + correctness sweep** — `Hashtable` → `ConcurrentHashMap` (`ActionProperties`); `synchronized` on `CredentialsManager` read-modify-write; `WeakHashMap` listener pseudo-set → `CopyOnWriteArraySet` (`BookmarkManager`); all 33 `barebones-core` empty catches surfaced (try-with-resources for stream close, `AssertionError` for `Cloneable` swallows, restore-interrupt for `InterruptedException`, error dialogs for user-visible failures, WARN logs for cleanup-after-error); `EditBookmarksDialog` no-selection NPE replaced with `IllegalStateException`; principle established: no silent fallbacks in logic | this PR |
 | **18** | pending | **Observability + logging** — S3 module logging from zero, `ThemeManager` file paths, AppleScript REPLACE branch, SFTP warn-level on failures, AppleScript output bound + truncation marker, structured-logging conventions doc | one PR |
 | **19** | pending | **UX polish** — progress dialogs for S3 / folder browse, "operation failed" details, S3 401/403/404 distinction, prefs Cancel-reverts, default-button focus, huge-file open prompts, keychain-prompt explainer, drop-target writability | one PR (may split into UX-A / UX-B) |
 | **20** | pending | **SpotBugs baseline drawdown to zero** — fix the remaining ~62 own-code suppressions in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×41, ST_WRITE_TO_STATIC ×15, HE_EQUALS_USE_HASHCODE ×8, etc) and delete the file. | one PR (may split per bug pattern) |
@@ -753,30 +753,64 @@ in the app no longer freezes the UI (covered by the FileJob
 off-EDT pattern, plus the new `LoggingTransferListener`);
 shutdown hook fires cleanly on `kill -TERM` (verified in 16a).
 
-### Phase 17 — Concurrency + correctness sweep (one PR)
+### Phase 17 — Concurrency + correctness sweep (PR landed)
 
-Latent bugs that haven't bitten yet because of single-threaded
-luck. Substantial because there are many sites.
+Latent bugs that hadn't bitten yet because of single-threaded luck.
 
-- **Mutable static collections** → `ConcurrentHashMap` /
-  `CopyOnWriteArrayList` in `BookmarkManager`,
-  `CredentialsManager`, `ActionProperties`. (`BUGS.md` 1.3)
-- **Empty-catch sweep**: 31+ instances. New
-  `dev.barebones.commander.commons.util.IgnoredErrors.ignored(t,
-  why)` (logs at `TRACE`) for the legitimate cases; fix or surface
-  the rest (auth/bookmark parser failures should warn). (`BUGS.md`
-  1.20, 6.5)
-- **NPE / stream-leak fixes** in `EditBookmarksDialog`,
-  `ThemeManager`, `LocalFile.getChannel`. (`BUGS.md` 1.21, 1.22, 1.23)
-- **`AbstractArchiveFile.createEntriesTree()` thread safety**:
-  if Phase 13 didn't ship the lock, add it here.
-- **Equals/hashCode**: any of the 8 SpotBugs entries Phase 14
-  didn't already cover. (`BUGS.md` 1.9)
+- **Mutable static collections**:
+  - `ActionProperties.actionDescriptors`: `Hashtable` →
+    `ConcurrentHashMap`. Single put/get is the only access pattern;
+    no read-then-write sequences to lock around.
+  - `CredentialsManager`: `addCredentials` and `getMatchingCredentialsV`
+    now `synchronized` so the `Vector`-backed indexOf+set sequences
+    are atomic w.r.t. concurrent readers. Dead `getVolatileCredentialMappings`
+    accessor (zero callers) removed.
+  - `BookmarkManager.listeners`: `WeakHashMap` →
+    `CopyOnWriteArraySet<BookmarkListener>` (same fix as Phase 16b
+    for `ThemeManager`). The previous WeakHashMap silently dropped
+    anonymous-class listeners as soon as the caller's local reference
+    left scope. (`BUGS.md` 1.3, 4.5 done)
+  - `AlteredVector`-backed `BookmarkManager.bookmarks` and
+    `CredentialsManager.persistentCredentialMappings` left as-is;
+    replacing requires reworking the `VectorChangeListener` SPI
+    (Phase 21+).
 
-**Exit criteria**: `IgnoredErrors` adopted; SpotBugs baseline
-shrinks by the equals/hashCode + ST_WRITE entries this phase
-fixes; no remaining `catch (Exception e) {}` in `barebones-core`
-without an `IgnoredErrors` call or a comment explaining why.
+- **Empty-catch sweep**: 33 sites in `barebones-core` → 0. The
+  guiding principle (saved as memory): **no silent fallbacks in
+  logic**. Application:
+  - Stream `close()` in finally → `try-with-resources`. Closes the
+    stream-leak window in 1.22 and 1.23 in the same touch.
+  - `CloneNotSupportedException` swallows on `Cloneable` types →
+    `throw new AssertionError(...)`.
+  - `InterruptedException` swallows in worker loops → restore the
+    interrupt flag (`Thread.currentThread().interrupt()`) and exit.
+  - `// pop an error here` TODOs (bookmark / credential write
+    failures) → `InformationDialog.showErrorDialog`.
+  - `DesktopManager.browse / open` failures → error dialog + WARN.
+  - Cleanup-after-error close failures (TransferFileJob,
+    CalculateChecksumJob, ArchiveJob) → WARN with context (the
+    original exception has already propagated; a swallowed close
+    masks the cleanup failure).
+  - Defensive `cancel()` swallows → WARN with context.
+  - `MalformedURLException` on user-typed autocompletion input → DEBUG.
+  - The `IgnoredErrors` helper proposed in the original Phase 17
+    plan was deliberately NOT introduced — its "log at TRACE and
+    swallow" design contradicts the no-silent-fallbacks principle.
+  (`BUGS.md` 1.20 done; 6.5 obsolete by design)
+
+- **NPE / stream-leak fixes**:
+  - `EditBookmarksDialog` no-selection NPE: handler now extracts
+    selection once, throws `IllegalStateException` with a
+    "button-enable state out of sync" message rather than silent
+    drop. The selection-driven button-disable wiring is the
+    primary defense; this is the assertion. (`BUGS.md` 1.21)
+  - `ThemeManager` 8 stream-leak sites: all converted to
+    `try-with-resources` (covered in the empty-catch sweep above). (1.22)
+  - `LocalFile.getChannel` already fixed in Phase 13. (1.23)
+
+**Exit criteria** (met): zero `catch (...) { }` in
+`barebones-core/src/main`; `./gradlew test spotbugsMain` green;
+no new SpotBugs baseline entries.
 
 ### Phase 18 — Observability + logging (one PR)
 

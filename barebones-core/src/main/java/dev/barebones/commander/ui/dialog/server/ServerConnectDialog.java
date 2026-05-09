@@ -212,7 +212,12 @@ public class ServerConnectDialog extends FocusDialog implements ServerPanelListe
     @Override
     public void browse(String url) {
         try {DesktopManager.browse(url);}
-        catch(IOException e) {}
+        catch(IOException e) {
+            LOGGER.warn("failed to open URL in browser: {}", url, e);
+            InformationDialog.showErrorDialog(this,
+                Translator.get("error"),
+                Translator.get("cannot_open_url", url));
+        }
     }
 
     @Override

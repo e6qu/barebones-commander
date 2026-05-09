@@ -21,6 +21,7 @@ import dev.barebones.commander.bookmark.Bookmark;
 import dev.barebones.commander.bookmark.BookmarkManager;
 import dev.barebones.commander.commons.collections.AlteredVector;
 import dev.barebones.commander.commons.util.ui.dialog.FocusDialog;
+import dev.barebones.commander.ui.dialog.InformationDialog;
 import dev.barebones.commander.commons.util.ui.helper.MnemonicHelper;
 import dev.barebones.commander.commons.util.ui.layout.XAlignedComponentPanel;
 import dev.barebones.commander.commons.util.ui.layout.XBoxPanel;
@@ -246,7 +247,7 @@ public class EditBookmarksDialog extends FocusDialog implements ActionListener, 
             // Create a clone of the current bookmark in order to cancel any modifications made to it if the dialog
             // is cancelled.
             try { currentBookmarkSave = (Bookmark)selectedBookmark.clone(); }
-            catch(CloneNotSupportedException ex) {}
+            catch(CloneNotSupportedException ex) { throw new AssertionError("Bookmark must be Cloneable", ex); }
 
             this.currentListIndex = selectedIndex;
         }
@@ -330,8 +331,11 @@ public class EditBookmarksDialog extends FocusDialog implements ActionListener, 
 
         // Write bookmarks file to disk, only if changes were made to bookmarks
         try {BookmarkManager.writeBookmarks(false);}
-        // We should probably pop an error here.
-        catch(Exception e) {}
+        catch(Exception e) {
+            InformationDialog.showErrorDialog(this,
+                Translator.get("bookmarks_dialog.cannot_write_bookmarks"),
+                e.getMessage());
+        }
     }
 
 	
@@ -375,10 +379,17 @@ public class EditBookmarksDialog extends FocusDialog implements ActionListener, 
             nameField.requestFocus();
         }
         else if(source==goToButton) {
-            // Dispose dialog first
+            Bookmark selected = (Bookmark) bookmarkList.getSelectedValue();
+            if (selected == null) {
+                // The button is wired to enable only on selection (see
+                // updateComponents); reaching here means that wiring is
+                // out of sync — surface so the bug is visible instead of
+                // silently dropping the user's click.
+                throw new IllegalStateException(
+                    "goTo invoked with no bookmark selected; button-enable state is out of sync");
+            }
             dispose();
-            // Change active panel's folder
-            mainFrame.getActivePanel().tryChangeCurrentFolder(((Bookmark)bookmarkList.getSelectedValue()).getLocation());
+            mainFrame.getActivePanel().tryChangeCurrentFolder(selected.getLocation());
         }
     }
 

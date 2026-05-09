@@ -222,7 +222,9 @@ public class ArchiveJob extends TransferFileJob {
             // Try to close the archiver which in turns closes the archive OutputStream and underlying file OutputStream
             if(archiver!=null) {
                 try { archiver.close(); }
-                catch(IOException e) {}
+                catch(IOException e) {
+                    LOGGER.warn("failed to close archiver", e);
+                }
             }
         }
     }

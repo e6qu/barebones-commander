@@ -1313,7 +1313,10 @@ public class FileTable extends JTable implements MouseListener, MouseMotionListe
                             @Override
                             public void run() {
                                 try { sleep(800); }
-                                catch (InterruptedException e) {}
+                                catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    return;
+                                }
 
                                 // Do not execute this block (cancel editing) if:
                                 // - a double click was made in the last second

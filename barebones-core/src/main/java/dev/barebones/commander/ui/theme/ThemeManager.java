@@ -152,9 +152,13 @@ public class ThemeManager {
             // If we have, or if it fails, defaults to an empty user theme.
             try {currentTheme = readTheme(type, name);}
             catch(Exception e2) {
+                LOGGER.warn("could not load configured theme (type={}, name={}); trying user theme",
+                    type, name, e2);
                 if(!wasUserThemeLoaded) {
                     try {currentTheme = readTheme(ThemeType.USER_THEME, null);}
-                    catch(Exception e3) {}
+                    catch(Exception e3) {
+                        LOGGER.warn("user-theme load also failed; starting from empty theme", e3);
+                    }
                 }
                 if(currentTheme == null) {
                     currentTheme         = new Theme(listener);
@@ -486,19 +490,8 @@ public class ThemeManager {
      * @see                #writeThemeData(ThemeData,OutputStream).
      */
     public static void writeThemeData(ThemeData data, File file) throws IOException {
-        OutputStream out; // OutputStream on file.
-
-        out = null;
-
-        // Writes the theme data.
-        try {writeThemeData(data, out = new FileOutputStream(file));}
-
-        // Cleanup.
-        finally {
-            if(out != null) {
-                try {out.close();}
-                catch(Exception e) {}
-            }
+        try (OutputStream out = new FileOutputStream(file)) {
+            writeThemeData(data, out);
         }
     }
 
@@ -527,15 +520,8 @@ public class ThemeManager {
      * @see                             #writeTheme(Theme)
      */
     public static void writeTheme(ThemeData data, ThemeType type, String name) throws IOException {
-        OutputStream out;
-
-        out = null;
-        try {writeThemeData(data, out = getOutputStream(type, name));}
-        finally {
-            if(out != null) {
-                try {out.close();}
-                catch(Exception e) {}
-            }
+        try (OutputStream out = getOutputStream(type, name)) {
+            writeThemeData(data, out);
         }
     }
 
@@ -558,15 +544,8 @@ public class ThemeManager {
      * @see                #writeThemeData(ThemeData,OutputStream)
      */
     public static void exportTheme(ThemeType type, String name, OutputStream out) throws IOException {
-        InputStream in; // Where to read the theme from.
-
-        in = null;
-        try {StreamUtils.copyStream(in = getInputStream(type, name), out);}
-        finally {
-            if(in != null) {
-                try {in.close();}
-                catch(Exception e) {}
-            }
+        try (InputStream in = getInputStream(type, name)) {
+            StreamUtils.copyStream(in, out);
         }
     }
 
@@ -588,15 +567,8 @@ public class ThemeManager {
      * @see                #writeThemeData(ThemeData,File).
      */
     public static void exportTheme(ThemeType type, String name, File file) throws IOException {
-        OutputStream out; // Where to write the data to.
-
-        out = null;
-        try {exportTheme(type, name, out = new FileOutputStream(file));}
-        finally {
-            if(out != null) {
-                try {out.close();}
-                catch(Exception e) {}
-            }
+        try (OutputStream out = new FileOutputStream(file)) {
+            exportTheme(type, name, out);
         }
     }
 
@@ -673,32 +645,12 @@ public class ThemeManager {
     }
 
     public static Theme importTheme(File file) throws IOException, Exception {
-        String       name; // Name of the new theme.
-        OutputStream out;  // Where to write the theme data to.
-        InputStream  in;   // Where to read the theme data from.
-        ThemeData    data;
+        ThemeData data = readThemeData(file);
+        String name = getAvailableCustomThemeName(file);
 
-        // Makes sure the file contains a valid theme.
-        data = readThemeData(file);
-
-        // Initialisation.
-        name = getAvailableCustomThemeName(file);
-        out  = null;
-        in   = null;
-
-        // Imports the theme.
-        try {StreamUtils.copyStream(in = new FileInputStream(file), out = getCustomThemeOutputStream(name));}
-
-        // Cleanup.
-        finally {
-            if(in != null) {
-                try {in.close();}
-                catch(Exception e) {}
-            }
-            if(out != null) {
-                try {out.close();}
-                catch(Exception e) {}
-            }
+        try (InputStream in = new FileInputStream(file);
+             OutputStream out = getCustomThemeOutputStream(name)) {
+            StreamUtils.copyStream(in, out);
         }
 
         return new Theme(listener, data, ThemeType.CUSTOM_THEME, name);
@@ -814,19 +766,8 @@ public class ThemeManager {
      * @throws Exception if an I/O or syntax error occurs.
      */
     public static ThemeData readThemeData(File file) throws Exception {
-        InputStream in; // InputStream on file.
-
-        in = null;
-
-        // Loads the theme data.
-        try {return readThemeData(in = new FileInputStream(file));}
-
-        // Cleanup.
-        finally {
-            if(in != null) {
-                try {in.close();}
-                catch(Exception e) {}
-            }
+        try (InputStream in = new FileInputStream(file)) {
+            return readThemeData(in);
         }
     }
 
