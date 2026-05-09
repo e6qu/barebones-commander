@@ -286,17 +286,28 @@ encoded ones (CP932 etc) round-trip wrong.
 
 ## 2. UX gaps
 
-### 2.1 ~~No progress for S3 multipart uploads~~ **PARTIALLY FIXED**
-`SpillingPutOutputStream.uploadSpilledFile()` now publishes a
-status-bar hint via `ProgressNotifier` ("Uploading to s3://… (N
-bytes)") for the duration of the upload, so the user sees the
-operation isn't stuck at 100 % during the upload phase. AWS SDK's
-`LoggingTransferListener` continues to log per-10 % progress at
-INFO. A proper byte-accurate `JProgressBar` consuming the
-`TransferListener` events is still pending — needs a per-job
-sink wired through `FileJob.currentFileByteCounter` so the
-existing transfer progress dialog advances during the upload
-phase.
+### 2.1 ~~No progress for S3 multipart uploads~~ **FIXED**
+`SpillingPutOutputStream.uploadSpilledFile()` attaches a
+`StatusBarProgressListener` (a `software.amazon.awssdk.transfer
+.s3.progress.TransferListener`) that publishes byte-accurate
+progress via `ProgressNotifier` to the active MainFrame status
+bar — e.g. "Uploading to s3://bucket/key: 47.3 MiB / 100.0 MiB
+(47%)". Throttled to one publish per 250 ms so a fast LAN upload
+doesn't flicker the status bar; always publishes the final 100 %.
+AWS SDK's `LoggingTransferListener` continues to emit per-10 %
+INFO logs.
+
+The byte formatter is locale-free (KiB / MiB / GiB / TiB,
+English-style decimal) on purpose — it runs on AWS SDK Netty
+threads with no `Translator` initialised. Pinned by
+`StatusBarProgressFormatTest` (5/5).
+
+A `JProgressBar`-in-the-FileJob-dialog version would require
+per-job sink wiring through `FileJob.currentFileByteCounter`;
+not implemented because the status-bar surface is sufficient
+("the upload isn't stuck") and the dialog progress reflects
+local-write bytes which is a different (and also valid)
+progress signal.
 
 ### 2.2 ~~No progress for folder browses / large directory listings~~ **MOSTLY ALREADY-FIXED**
 `LocationChanger.tryChangeCurrentFolder` already swaps the cursor

@@ -37,7 +37,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **16b** | done | **Network reliability — remainders** — NFS Sun-RPC `Socket.connect` timeout (`RpcTimeouts`), libsecret D-Bus `GCancellable` timeout, mount retry/backoff (since-removed), S3 upload `LoggingTransferListener` foundation, `CompletionType` Thread+sleep → `Timer`, `ThemeManager`/`ThemeData`/`ThemeCache` `WeakHashMap` → `CopyOnWriteArraySet` | landed in #23 |
 | **17** | done | **Concurrency + correctness sweep** — `Hashtable` → `ConcurrentHashMap` (`ActionProperties`); `synchronized` on `CredentialsManager` read-modify-write; `WeakHashMap` listener pseudo-set → `CopyOnWriteArraySet` (`BookmarkManager`); all 33 `barebones-core` empty catches surfaced (try-with-resources for stream close, `AssertionError` for `Cloneable` swallows, restore-interrupt for `InterruptedException`, error dialogs for user-visible failures, WARN logs for cleanup-after-error); `EditBookmarksDialog` no-selection NPE replaced with `IllegalStateException`; principle established: no silent fallbacks in logic | this PR |
 | **18** | done | **Observability + logging** — S3 module gains logger fields + WARN on every AWS error, INFO on connection open/close, DEBUG on each list page, INFO on activator register/shutdown; `ThemeManager` save-failure carries theme type/name/file path; AppleScript decoder logs REPLACE-branch substitutions at DEBUG and caps `outputBuffer` at 1 MiB with a visible truncation marker; SFTP auth failures logged at WARN. `System.err` in CLI bootstrap (`Application.printError`, `Main` headless detection) and `EncodingDetector.main` documented as kept-by-design. | this PR |
-| **19** | done | **UX polish** — `S3ErrorHandler` typed 401/403/404; error-dialog throwable plumbed through Phase-17 + every `FileJob` error site (~25 catches across 10 job classes) so "operation failed" surfaces the underlying exception class+message; `DynamicList.RemoveAction` prompts before deletion; `FileDropTargetListener` rejects drops on non-writable target folders; `ProgressNotifier` SPI wires producer-side hints (S3 `SpillingPutOutputStream` upload phase) into the active MainFrame status bar; `CredentialsWriter` posts a status-bar explainer the first time the OS keychain is about to prompt. Default-button focus already in place; huge-file open already covered by Phase-13 `BoundedExtraction` (archives) and viewer prompt; folder-browse cursor already swaps to WAIT; prefs Cancel-revert is as-designed (panels only mutate state via `commit()`); batch-rename preview is already wired (`BatchRenameDialog.RenameTableModel` + `BatchRenameConfirmationDialog`). Real-`JProgressBar` for S3 upload still pending (needs per-job sink wiring). | this PR |
+| **19** | done | **UX polish** — `S3ErrorHandler` typed 401/403/404; error-dialog throwable plumbed through Phase-17 + every `FileJob` error site (~25 catches across 10 job classes); `DynamicList.RemoveAction` prompts before deletion; `FileDropTargetListener` rejects drops on non-writable target folders; `ProgressNotifier` SPI wires producer-side hints into the MainFrame status bar; `S3Object.StatusBarProgressListener` publishes byte-accurate S3 upload progress ("47.3 MiB / 100.0 MiB (47%)") throttled to 250 ms; `CredentialsWriter` posts a status-bar explainer before the first keychain prompt. Default-button focus, huge-file open, folder-browse cursor, prefs Cancel-revert, and batch-rename preview audit-confirmed as already-fixed / as-designed. | this PR |
 | **20** | pending | **SpotBugs baseline drawdown to zero** — fix the remaining ~62 own-code suppressions in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×41, ST_WRITE_TO_STATIC ×15, HE_EQUALS_USE_HASHCODE ×8, etc) and delete the file. | one PR (may split per bug pattern) |
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
 | **22** | pending | **Modern logging migration** — survey alternatives (`java.lang.System.Logger` JEP 264 + Logback bridge, `tinylog 2`, `JUL` direct, etc.); propose one; migrate ~70 `LoggerFactory.getLogger` call sites; drop the slf4j-api dep. | one PR (audit doc first, then code) |
@@ -930,19 +930,33 @@ SpotBugs regressions; `./gradlew test spotbugsMain` green.
   changed/unchanged counts) opens before the rename job runs.
   No change needed.
 
-#### Still pending (smaller in light of the above audit)
+#### S3 byte-accurate upload progress (this PR)
 
-- **Real `JProgressBar` for S3 multipart uploads**: requires per-job
-  sink wiring through `FileJob.currentFileByteCounter` — a small
-  interface on `OutputStream` that S3 implements + a check in
-  `TransferFileJob`. Phase 19 stops at the status-bar hint.
-  (`BUGS.md` 2.1 remainder)
+`S3Object.StatusBarProgressListener` (a `software.amazon.awssdk
+.transfer.s3.progress.TransferListener`) publishes byte counts
+to `ProgressNotifier` — `Uploading to s3://bucket/key: 47.3 MiB
+/ 100.0 MiB (47%)` — throttled to one publish per 250 ms so
+fast LAN uploads don't flicker the status bar. Always publishes
+the final 100 %. The byte formatter is locale-free (KiB / MiB /
+GiB / TiB, English decimal) on purpose: it runs on AWS SDK Netty
+threads with no `Translator` initialised — the LocalStack
+integration test caught this when an early `SizeFormat`-based
+draft blew up the multipart upload via
+`ExceptionInInitializerError` in the SDK callback. Pinned by
+`StatusBarProgressFormatTest` (5/5).
+
+A `JProgressBar`-in-the-FileJob-dialog version would require
+per-job sink wiring through `FileJob.currentFileByteCounter`;
+deliberately not implemented — the status-bar surface is
+sufficient, and the dialog progress reflects local-write bytes
+which is a different (and also valid) progress signal.
 
 **Exit criteria** (met): every job error path surfaces the
 underlying exception; destructive deletes prompt; drops on
 read-only folders are rejected at drag time; S3 multipart uploads
-post a status hint so the dialog isn't silently stuck at 100 %;
-keychain prompts come with a status-bar explainer.
+post byte-accurate progress to the status bar so the dialog
+isn't silently stuck at 100 %; keychain prompts come with a
+status-bar explainer.
 
 ### Phase 20 — SpotBugs baseline drawdown to zero (one PR; may split per pattern)
 

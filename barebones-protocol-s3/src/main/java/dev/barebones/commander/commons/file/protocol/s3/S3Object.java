@@ -27,6 +27,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.transfer.s3.model.UploadFileRequest;
 import software.amazon.awssdk.transfer.s3.progress.LoggingTransferListener;
+import software.amazon.awssdk.transfer.s3.progress.TransferListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -325,21 +326,22 @@ public class S3Object extends S3File {
 
         private void uploadSpilledFile() throws IOException {
             String key = parsed.key();
-            String hint = "Uploading to s3://" + parsed.bucket() + "/" + key
-                + " (" + bytesWritten + " bytes)";
+            String prefix = "Uploading to s3://" + parsed.bucket() + "/" + key + ": ";
             // LoggingTransferListener emits one log line at each
-            // 10 % milestone. The status-bar hint surfaces "I'm not
-            // stuck" to the user; without it, the FileJob progress
-            // dialog reaches 100 % at end-of-spill and then the
-            // upload runs invisibly during close().
+            // 10 % milestone. ProgressNotifier surfaces byte-accurate
+            // progress to the status bar via a TransferListener that
+            // fires on AWS SDK threads — without it, the FileJob
+            // progress dialog reaches 100 % at end-of-spill and then
+            // the upload runs invisibly during close().
             LOGGER.info("S3 multipart upload starting: {} ({} bytes) → s3://{}/{}",
                 spillFile, bytesWritten, parsed.bucket(), key);
-            ProgressNotifier.post(hint);
+            ProgressNotifier.post(prefix + "starting");
             try {
                 connection.transferManager()
                     .uploadFile(UploadFileRequest.builder()
                         .source(spillFile)
                         .addTransferListener(LoggingTransferListener.create())
+                        .addTransferListener(new StatusBarProgressListener(prefix))
                         .putObjectRequest(PutObjectRequest.builder()
                             .bucket(parsed.bucket())
                             .key(key)
@@ -358,6 +360,64 @@ public class S3Object extends S3File {
             } finally {
                 ProgressNotifier.clear();
             }
+        }
+    }
+
+    /**
+     * Routes AWS SDK byte-transferred events into {@link ProgressNotifier}
+     * with human-readable byte counts. Throttled to one publish per 250 ms
+     * so a fast LAN upload doesn't spam the status bar (the hint flickers
+     * unreadably otherwise). Always publishes the final 100 %.
+     *
+     * Fires on AWS SDK Netty threads; the message is unlocalised on
+     * purpose — {@code SizeFormat} pulls in {@code Translator} which is
+     * not initialised in test contexts (LocalStack tests run without
+     * the UI Activator). Bytes are formatted in-place.
+     */
+    static final class StatusBarProgressListener implements TransferListener {
+
+        private static final long PUBLISH_INTERVAL_NANOS = 250_000_000L;
+
+        private final String prefix;
+        private long lastPublishNanos;
+
+        StatusBarProgressListener(String prefix) {
+            this.prefix = prefix;
+        }
+
+        @Override
+        public void bytesTransferred(Context.BytesTransferred ctx) {
+            ctx.progressSnapshot().totalBytes().ifPresent(total -> {
+                long sent = ctx.progressSnapshot().transferredBytes();
+                long now = System.nanoTime();
+                boolean atEnd = sent >= total;
+                if (!atEnd && now - lastPublishNanos < PUBLISH_INTERVAL_NANOS) {
+                    return;
+                }
+                lastPublishNanos = now;
+                int pct = total > 0 ? (int) (sent * 100L / total) : 0;
+                ProgressNotifier.post(prefix + formatBytes(sent) + " / "
+                    + formatBytes(total) + " (" + pct + "%)");
+            });
+        }
+
+        /** No-locale, no-allocation byte formatter. KiB / MiB / GiB. */
+        static String formatBytes(long bytes) {
+            if (bytes < 1024L) {
+                return bytes + " B";
+            }
+            String[] units = {"KiB", "MiB", "GiB", "TiB"};
+            double v = bytes;
+            int u = -1;
+            do {
+                v /= 1024.0;
+                u++;
+            } while (v >= 1024.0 && u < units.length - 1);
+            // One decimal place; English-style decimal separator. The
+            // status-bar string is operator-facing, not localised.
+            long whole = (long) v;
+            long tenths = (long) ((v - whole) * 10);
+            return whole + "." + tenths + " " + units[u];
         }
     }
 }
