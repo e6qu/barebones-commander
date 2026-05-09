@@ -10,10 +10,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      # Gradle itself runs on JDK 21 (Gradle 8.x doesn't support JDK 25 yet);
+      # the toolchain block in build.gradle auto-provisions JDK 25 for
+      # compileJava and test JVMs.
+      - name: Set up JDK 21 (Gradle runtime)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up JDK 25 (toolchain target)
+        uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: 'temurin'
+
       - uses: gradle/wrapper-validation-action@v2
       - uses: gradle/actions/setup-gradle@v3
       - run: ./gradlew test
