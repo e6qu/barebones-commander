@@ -20,7 +20,6 @@ package dev.barebones.commander.commons.conf;
 import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
 
-import javax.xml.parsers.ParserConfigurationException;
 import dev.barebones.commander.commons.io.security.SecureXml;
 import java.io.IOException;
 import java.io.Reader;
