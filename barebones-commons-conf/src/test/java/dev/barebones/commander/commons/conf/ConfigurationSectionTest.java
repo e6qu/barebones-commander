@@ -50,7 +50,7 @@ public class ConfigurationSectionTest {
      * Tests the {@link ConfigurationSection#removeVariable(String)} method.
      * @param value value to which the variable should be set before being removed.
      */
-    @Test(dataProvider = "setVariable")
+    @Test(dataProvider = "removeVariable")
     public void testRemoveVariable(String value) {
         ConfigurationSection section;
 
