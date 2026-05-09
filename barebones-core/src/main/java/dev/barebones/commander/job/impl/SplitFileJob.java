@@ -139,7 +139,8 @@ public class SplitFileJob extends AbstractCopyJob {
             LOGGER.debug("Caught exception", e);
             showErrorDialog(errorDialogTitle,
                     Translator.get("error_while_transferring", sourceFile.getName()),
-                    Arrays.asList(FileJobAction.CANCEL)
+                    Arrays.asList(FileJobAction.CANCEL),
+                    e
             );
             setState(FileJobState.INTERRUPTED);
             return;
@@ -227,7 +228,8 @@ public class SplitFileJob extends AbstractCopyJob {
 
             showErrorDialog(errorDialogTitle,
                     Translator.get("error_while_transferring", destFile.getName()),
-                    Arrays.asList(FileJobAction.CANCEL)
+                    Arrays.asList(FileJobAction.CANCEL),
+                    e
             );
             return false;
 
@@ -274,7 +276,8 @@ public class SplitFileJob extends AbstractCopyJob {
 
                     showErrorDialog(errorDialogTitle,
                             Translator.get("error_while_transferring", crcFileName),
-                            Arrays.asList(FileJobAction.CANCEL)
+                            Arrays.asList(FileJobAction.CANCEL),
+                            e
                     );
                 }
             }

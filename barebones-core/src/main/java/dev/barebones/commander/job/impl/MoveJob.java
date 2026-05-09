@@ -162,7 +162,8 @@ public class MoveJob extends AbstractCopyJob {
                     try {
                         destFile.mkdir();
                     } catch(IOException e) {
-                        DialogAction ret = showErrorDialog(errorDialogTitle, Translator.get("cannot_create_folder", destFile.getAbsolutePath()));
+                        DialogAction ret = showErrorDialog(errorDialogTitle,
+                            Translator.get("cannot_create_folder", destFile.getAbsolutePath()), e);
                         // Retry loops
                         if(ret==FileJobAction.RETRY)
                             continue;
@@ -206,7 +207,8 @@ public class MoveJob extends AbstractCopyJob {
                         return false;
                 } catch(IOException e) {
                     // file.ls() failed
-                    DialogAction ret = showErrorDialog(errorDialogTitle, Translator.get("cannot_read_folder", file.getName()));
+                    DialogAction ret = showErrorDialog(errorDialogTitle,
+                        Translator.get("cannot_read_folder", file.getName()), e);
                     // Retry loops
                     if(ret==FileJobAction.RETRY)
                         continue;
@@ -226,7 +228,8 @@ public class MoveJob extends AbstractCopyJob {
                     file.delete();
                     return true;
                 } catch(IOException e) {
-                    DialogAction ret = showErrorDialog(errorDialogTitle, Translator.get("cannot_delete_folder", file.getAbsolutePath()));
+                    DialogAction ret = showErrorDialog(errorDialogTitle,
+                        Translator.get("cannot_delete_folder", file.getAbsolutePath()), e);
                     // Retry loops
                     if(ret==FileJobAction.RETRY)
                         continue;
@@ -250,7 +253,8 @@ public class MoveJob extends AbstractCopyJob {
                     } catch(IOException e) {
                         LOGGER.debug("IOException caught", e);
 
-                        DialogAction ret = showErrorDialog(errorDialogTitle, Translator.get("cannot_delete_file", file.getAbsolutePath()));
+                        DialogAction ret = showErrorDialog(errorDialogTitle,
+                            Translator.get("cannot_delete_file", file.getAbsolutePath()), e);
                         // Retry loops
                         if(ret==FileJobAction.RETRY)
                             continue;

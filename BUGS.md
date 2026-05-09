@@ -307,6 +307,24 @@ layer from the user-facing dialog — and is left as-is for now.
 
 Batch rename preview-before-apply is still missing.
 
+### 2.4 ~~"Operation failed" with no root cause~~ **FIXED**
+Two surfaces:
+
+1. `InformationDialog.showErrorDialog(parent, title, message,
+   caption, throwable)` shows the throwable's stack trace in an
+   expandable / collapsible Details panel. The Phase-17 sites
+   (`AddBookmarkDialog`, `EditBookmarksDialog`,
+   `EditCredentialsDialog`, `ServerConnectDialog.browse`,
+   `RecentExecutedFilesQL.acceptListItem`) route through it.
+2. `FileJob.showErrorDialog` gained `(title, message, Throwable)`
+   and `(title, message, actionChoices, Throwable)` overloads
+   that append `<exception class>: <message>` to the displayed
+   text. Every catch in `TransferFileJob` / `CopyJob` / `MoveJob`
+   / `DeleteJob` / `ArchiveJob` / `MkdirJob` / `AbstractCopyJob`
+   / `ChangeFileAttributesJob` / `SplitFileJob` /
+   `CalculateChecksumJob` was walked and the exception threaded
+   through (~25 sites).
+
 ### 2.5 ~~Mount errors don't suggest next step~~ **OBSOLETE**
 The mount-helper module was removed in PR #24.
 
@@ -332,19 +350,34 @@ premise ("no preselected button") is no longer accurate — every
 dialog opens with a default. Audit kept for any specific dialog
 subclass that might bypass this; none found in the current tree.
 
-### 2.10 No file-size prompt before opening huge archives / files
-Both archive opening and the text viewer happily try to load a
-multi-GB blob and freeze.
+### 2.10 ~~No file-size prompt before opening huge archives / files~~ **FIXED**
+- Text viewer: Phase 13 added the `JOptionPane` prompt above
+  100 MiB.
+- Archive open: bounded by Phase-13 `BoundedExtraction` (per-entry
+  1 GiB / cumulative 10× compressed or 100 MiB floor / count
+  100k caps). A user opening a 5 GB zip lists the central directory
+  fast (O(entries)); an extraction attempt on a malicious archive
+  is capped well before exhausting memory.
 
 ### 2.11 Keychain prompts unexpected for first-time users
 Phase 12: a new install on macOS pops the keychain authorisation
 prompt the first time credentials are saved. A status-bar one-liner
 explaining what's happening would help.
 
-### 2.12 Drag-and-drop doesn't validate target writability
+### 2.12 ~~Drag-and-drop doesn't validate target writability~~ **FIXED**
+`FileDropTargetListener.isDragAccepted` now rejects copy / move
+drops when the target folder fails
+`isFileOperationSupported(WRITE_FILE)` or isn't a directory.
+The cursor flips to "no drop" so the user sees the rejection
+before letting go of the mouse. Skipped in change-folder-only
+mode (no write happens). Defensive `try` so a writability-check
+exception rejects the drop rather than blowing up the drag handler.
+
+<!-- Original report:
 **`barebones-core/.../ui/dnd/FileDropTargetListener.java`** accepts
 the drop and only fails after the user releases. Reject the drop
 gesture if target is read-only.
+-->
 
 ---
 

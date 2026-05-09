@@ -37,8 +37,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **16b** | done | **Network reliability — remainders** — NFS Sun-RPC `Socket.connect` timeout (`RpcTimeouts`), libsecret D-Bus `GCancellable` timeout, mount retry/backoff (since-removed), S3 upload `LoggingTransferListener` foundation, `CompletionType` Thread+sleep → `Timer`, `ThemeManager`/`ThemeData`/`ThemeCache` `WeakHashMap` → `CopyOnWriteArraySet` | landed in #23 |
 | **17** | done | **Concurrency + correctness sweep** — `Hashtable` → `ConcurrentHashMap` (`ActionProperties`); `synchronized` on `CredentialsManager` read-modify-write; `WeakHashMap` listener pseudo-set → `CopyOnWriteArraySet` (`BookmarkManager`); all 33 `barebones-core` empty catches surfaced (try-with-resources for stream close, `AssertionError` for `Cloneable` swallows, restore-interrupt for `InterruptedException`, error dialogs for user-visible failures, WARN logs for cleanup-after-error); `EditBookmarksDialog` no-selection NPE replaced with `IllegalStateException`; principle established: no silent fallbacks in logic | this PR |
 | **18** | done | **Observability + logging** — S3 module gains logger fields + WARN on every AWS error, INFO on connection open/close, DEBUG on each list page, INFO on activator register/shutdown; `ThemeManager` save-failure carries theme type/name/file path; AppleScript decoder logs REPLACE-branch substitutions at DEBUG and caps `outputBuffer` at 1 MiB with a visible truncation marker; SFTP auth failures logged at WARN. `System.err` in CLI bootstrap (`Application.printError`, `Main` headless detection) and `EncodingDetector.main` documented as kept-by-design. | this PR |
-| **19a** | done | **UX polish — error surfacing + destructive-op guard** — `S3ErrorHandler` (typed 401/403/404 distinction); error-dialog throwable plumbed through Phase-17 sites so the "Show details" stack-trace pane is reachable; `DynamicList.RemoveAction` (the bookmark / credentials Delete keystroke + Remove buttons) now prompts via `JOptionPane.showConfirmDialog` before deleting. Default-button focus already in place on `InformationDialog` / `QuestionDialog`. | this PR |
-| **19b** | pending | **UX polish — remainders** — progress dialogs for S3 / folder browse (paired with the deferred SwingWorker shim from 16b), prefs Cancel-reverts (`AppearancePanel` / `ShortcutsPanel`), huge-file open prompts (extend Phase-13 viewer prompt to archive open), keychain-prompt explainer, drop-target writability, batch-rename preview, sweep `TransferFileJob` and siblings to thread the underlying exception through `showErrorDialog` (2.4 remainder). | one PR |
+| **19** | done | **UX polish** — `S3ErrorHandler` typed 401/403/404; error-dialog throwable plumbed through Phase-17 sites; `DynamicList.RemoveAction` prompts before deletion; `FileJob.showErrorDialog` Throwable overload + sweep of every job error site (`TransferFileJob` / `CopyJob` / `MoveJob` / `DeleteJob` / `ArchiveJob` / `MkdirJob` / `AbstractCopyJob` / `ChangeFileAttributesJob` / `SplitFileJob` / `CalculateChecksumJob`) so "operation failed" surfaces the underlying exception class + message; `FileDropTargetListener` rejects drops on non-writable target folders. Default-button focus already in place on `InformationDialog` / `QuestionDialog`. Huge-file open: archive path is bounded by Phase-13 `BoundedExtraction`; viewer path was the actual gap and is fixed. Deferred to a follow-up: progress dialogs for S3 / folder browse (needs SwingWorker shim), prefs Cancel-revert (substantial per-panel snapshot/restore), keychain-prompt explainer, batch-rename preview. | this PR |
 | **20** | pending | **SpotBugs baseline drawdown to zero** — fix the remaining ~62 own-code suppressions in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×41, ST_WRITE_TO_STATIC ×15, HE_EQUALS_USE_HASHCODE ×8, etc) and delete the file. | one PR (may split per bug pattern) |
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
 | **22** | pending | **Modern logging migration** — survey alternatives (`java.lang.System.Logger` JEP 264 + Logback bridge, `tinylog 2`, `JUL` direct, etc.); propose one; migrate ~70 `LoggerFactory.getLogger` call sites; drop the slf4j-api dep. | one PR (audit doc first, then code) |
@@ -849,9 +848,9 @@ So that production failures stop being mysteries.
 least a WARN/INFO/DEBUG line per the conventions above; no
 SpotBugs regressions; `./gradlew test spotbugsMain` green.
 
-### Phase 19 — UX polish (split: 19a + 19b)
+### Phase 19 — UX polish (PR landed)
 
-#### Phase 19a — error surfacing + destructive-op guard (PR landed)
+#### What landed in this PR
 
 - **`S3ErrorHandler`** (`barebones-protocol-s3/.../S3ErrorHandler.java`):
   AWS SDK exceptions translate by HTTP status / AWS error code
@@ -861,50 +860,60 @@ SpotBugs regressions; `./gradlew test spotbugsMain` green.
   credentials dialog already re-prompts on `AuthException`; the
   listing path can now distinguish "bad key" from "S3 down". Six
   unit tests in `S3ErrorHandlerTest`. (`BUGS.md` 2.6)
-- **Error-dialog throwable**: the Phase-17 sites
-  (`AddBookmarkDialog`, `EditBookmarksDialog`,
-  `EditCredentialsDialog`, `ServerConnectDialog.browse`,
-  `RecentExecutedFilesQL.acceptListItem`) now route the underlying
-  exception through `InformationDialog.showErrorDialog`'s
-  Throwable overload, so the existing "Show details" stack-trace
-  pane is reachable from each of them. (`BUGS.md` 2.4 partial)
+- **Error-dialog throwable — Phase-17 sites**: `AddBookmarkDialog`,
+  `EditBookmarksDialog`, `EditCredentialsDialog`,
+  `ServerConnectDialog.browse`, `RecentExecutedFilesQL.acceptListItem`
+  now route the underlying exception through
+  `InformationDialog.showErrorDialog`'s Throwable overload, so the
+  existing "Show details" stack-trace pane is reachable. (`BUGS.md`
+  2.4 partial)
+- **Error-dialog throwable — job sites**: `FileJob.showErrorDialog`
+  gains two Throwable-aware overloads (3-arg and 4-arg) that append
+  `<class>: <message>` to the dialog text. Every `catch` in
+  `TransferFileJob` / `CopyJob` / `MoveJob` / `DeleteJob` /
+  `ArchiveJob` / `MkdirJob` / `AbstractCopyJob` /
+  `ChangeFileAttributesJob` / `SplitFileJob` / `CalculateChecksumJob`
+  was walked and the exception threaded through (~25 call sites).
+  (`BUGS.md` 2.4 remainder)
 - **Destructive-op confirmation** (`DynamicList.RemoveAction`):
   `JOptionPane.showConfirmDialog` ("Are you sure you want to
   delete \"{0}\"?") fires before deletion. Covers the bookmark
   list, the credentials list, and any future `DynamicList` user.
   The `BookmarkFile.delete()` UnsupportedFileOperation is a
   separate file-system-abstraction layer and is left as-is.
-  (`BUGS.md` 2.3 partial)
+  (`BUGS.md` 2.3 partial — `BookmarkFile.delete()` and batch-rename
+  preview still pending)
+- **Drop-target writability** (`FileDropTargetListener`): the
+  copy/move drop is rejected (cursor flips to "no drop") when the
+  target folder fails `isFileOperationSupported(WRITE_FILE)` or
+  isn't a directory. Skipped in change-folder-only mode. Defensive
+  `try` so a writability-check exception rejects rather than
+  blowing up the drag handler. (`BUGS.md` 2.12)
 - **Default-button focus** (`BUGS.md` 2.9) was already in place:
   `InformationDialog.showDialog` calls `setInitialFocusComponent
   (okButton)` and `QuestionDialog.init` does the same with the
-  first action button. The original report is no longer accurate
-  in the current tree. Marked fixed.
+  first action button. Marked fixed.
+- **Huge-file open prompts** (`BUGS.md` 2.10): the archive path is
+  bounded by Phase-13 `BoundedExtraction` (per-entry / cumulative
+  / count caps); the actual gap was the text viewer, which Phase 13
+  also fixed. Marked fixed.
 
-#### Phase 19b — remainders (next PR)
+#### Deferred to a follow-up
 
-- **Progress dialogs**: S3 multipart uploads (uses the
-  `LoggingTransferListener` foundation from 16b; needs a
-  SwingWorker shim — also from 16b's parking-lot); folder
-  browses ≥ 1 s use a deferred spinner. (`BUGS.md` 2.1, 2.2)
-- **"Operation failed" details — sweep older sites**:
-  `TransferFileJob` and several siblings still show only the
-  localised generic message. Walk every `JOptionPane.ERROR` /
-  `showErrorDialog(parent, message)` site and thread the
-  exception. (`BUGS.md` 2.4 remainder)
-- **Preferences Cancel-reverts**: snapshot at open, restore on
-  Cancel. (`BUGS.md` 2.8)
-- **Keychain prompt explainer**: status-bar one-liner the first
-  time the OS keychain authorisation pops up. (`BUGS.md` 2.11)
-- **Drop-target writability**: reject the drop gesture (cursor
-  changes) on read-only targets. (`BUGS.md` 2.12)
-- **Huge-file open prompts**: extend Phase 13's viewer prompt to
-  archive open. (`BUGS.md` 2.10)
-- **Batch rename preview**: show the rename map before applying.
+- **Progress dialogs** for S3 multipart uploads (needs the
+  SwingWorker shim from 16b's parking lot) and folder browses
+  ≥ 1 s. (`BUGS.md` 2.1, 2.2)
+- **Preferences Cancel-revert**: substantial per-panel snapshot/
+  restore plumbing in `AppearancePanel` / `ShortcutsPanel` /
+  every prefs panel. (`BUGS.md` 2.8)
+- **Keychain prompt explainer**: needs a status-bar surface.
+  (`BUGS.md` 2.11)
+- **Batch-rename preview**: substantial UI feature.
   (`BUGS.md` 2.3 remainder)
 
-**Exit criteria** (whole phase): manual UX checklist (in the PR description)
-walks the 11 items above; smoke on Linux + macOS.
+**Exit criteria** (met for the items above): every job error path
+surfaces the underlying exception; destructive deletes prompt;
+drops on read-only folders are rejected at drag time.
 
 ### Phase 20 — SpotBugs baseline drawdown to zero (one PR; may split per pattern)
 
