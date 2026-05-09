@@ -29,4 +29,4 @@ jobs:
 
       - uses: gradle/wrapper-validation-action@v2
       - uses: gradle/actions/setup-gradle@v3
-      - run: ./gradlew test
+      - run: ./gradlew test --stacktrace
