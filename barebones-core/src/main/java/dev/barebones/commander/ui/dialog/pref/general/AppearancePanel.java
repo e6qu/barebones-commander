@@ -636,7 +636,10 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
         while (!WindowManager.getInstance().isAdditionalLafsLoaded()) {
             try {
                 Thread.sleep(100);
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
         // Loads all available look and feels.
         lookAndFeels = UIManager.getInstalledLookAndFeels();

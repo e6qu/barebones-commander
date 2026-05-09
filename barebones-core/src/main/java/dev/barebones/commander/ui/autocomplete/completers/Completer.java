@@ -24,6 +24,9 @@ import java.util.Vector;
 
 import javax.swing.JList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.ui.autocomplete.AutocompleterTextComponent;
 import dev.barebones.commander.ui.autocomplete.completers.services.CompletionService;
@@ -40,6 +43,8 @@ import dev.barebones.commander.ui.autocomplete.completers.services.CompletionSer
  */
 
 public abstract class Completer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Completer.class);
+
     private Set<CompletionService> services;
 
     public Completer() {
@@ -73,7 +78,10 @@ public abstract class Completer {
                 // match the typed path - do not show an auto-completion popup.
                 if (typedFilename==null || typedFilename.equalsIgnoreCase((String) list.getModel().getElementAt(0)))
                     return false;
-            } catch (MalformedURLException e) { }
+            } catch (MalformedURLException e) {
+                LOGGER.debug("autocompletion: cannot parse '{}' as a URL; showing all suggestions",
+                    comp.getText(), e);
+            }
         }
 
         return list.getModel().getSize() > 0;

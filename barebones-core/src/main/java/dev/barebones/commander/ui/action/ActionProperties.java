@@ -18,10 +18,10 @@
 package dev.barebones.commander.ui.action;
 
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.KeyStroke;
@@ -38,8 +38,11 @@ import dev.barebones.commander.desktop.ActionType;
  */
 public class ActionProperties {
 
-    /* Maps action id -> action descriptor */
-    private static Map<ActionId, ActionDescriptor> actionDescriptors = new Hashtable<>();
+    /* Maps action id -> action descriptor. ConcurrentHashMap not
+     * Hashtable: same thread-safety guarantee, much lower contention
+     * (Hashtable serialises every read against every write). Action
+     * lookups happen on every keystroke and menu open. */
+    private static final Map<ActionId, ActionDescriptor> actionDescriptors = new ConcurrentHashMap<>();
 
     private static ActionDescriptor nullActionDescriptor = new NullActionDescriptor();
 

@@ -66,15 +66,18 @@ delegates to `HostKeyPrompter` (default Swing JOptionPane; tests
 inject a non-Swing prompter). System-property override:
 `-Dbarebones.sftp.hostKey=yes|ask|no`.
 
-### 1.3 HIGH — Static mutable collections without synchronisation
-**`barebones-core/.../auth/CredentialsManager.java`** (vector),
-**`barebones-core/.../bookmark/BookmarkManager.java:52`** (`Vector`),
-**`barebones-core/.../ui/action/ActionProperties.java:42`** (`Hashtable`).
+### 1.3 ~~HIGH — Static mutable collections without synchronisation~~ **MOSTLY FIXED**
+- `ActionProperties.actionDescriptors` — `Hashtable` → `ConcurrentHashMap`.
+- `CredentialsManager.addCredentials` and `getMatchingCredentialsV` —
+  now `synchronized`, making the `Vector`-backed read-then-write sequences
+  atomic. `getVolatileCredentialMappings` (zero callers) deleted.
+- `BookmarkManager.listeners` — `WeakHashMap` → `CopyOnWriteArraySet`
+  (also fixes the listener-GC bug from 4.5).
 
-Pre-Java-5 `Vector`/`Hashtable` provide method-level synchronisation
-but iteration / read-then-write sequences race. Bookmark or
-credential corruption possible under concurrent access (file watcher
-+ user save).
+`AlteredVector`-backed `BookmarkManager.bookmarks` and
+`CredentialsManager.persistentCredentialMappings` still use `Vector`-
+inheritance for change-notification — replacing requires reworking
+the `VectorChangeListener` SPI, which is parking-lot Phase 21+.
 
 ### 1.4 ~~HIGH — NFS / Sun-vendored RPC has no timeouts~~ **PARTIALLY FIXED (connect)**
 **`barebones-protocol-nfs/src/main/java/com/sun/nfs/`** (multiple files)
@@ -208,31 +211,45 @@ closes every cached `S3Client` / `S3AsyncClient` /
 addressed yet — for the pathological many-credentials use case a
 size-bounded cache with LRU eviction is still wanted.
 
-### 1.20 MED — 31+ empty catch blocks in `barebones-core`
-Sample sites: `ThemeManager.java:495,532,685,817`,
-`EditBookmarksDialog.java:248,334`, `ClipboardSupport.java:55`,
-`AddBookmarkDialog`, `LicenseDialog`, `PropertiesDialog`,
-`AppearancePanel`, `BookmarkManager.java:184`,
-`ActionKeymapReader.java:76`. Auth / bookmark / keymap silently
-fall back to defaults on parse failure.
+### 1.20 ~~MED — 31+ empty catch blocks in `barebones-core`~~ **FIXED**
+All 33 empty catches in `barebones-core/src/main` are gone. The
+fixes follow a no-silent-fallbacks principle:
 
-### 1.21 MED — `EditBookmarksDialog.java:381` NPE on empty selection
-`bookmarkList.getSelectedValue()` is dereferenced without a null
-check; clicking the action with no selection NPEs.
+- Stream `close()` in finally → `try-with-resources` (also closes
+  the leaks in 1.22).
+- `CloneNotSupportedException` swallows on `Cloneable` types →
+  `throw new AssertionError(...)`.
+- `InterruptedException` swallows in worker loops → restore the
+  interrupt flag and exit the loop.
+- Bookmark/credential-write failures (TODO `// pop an error here`) →
+  `InformationDialog.showErrorDialog` with the underlying message.
+- `DesktopManager.browse / open` failures → error dialog + WARN log.
+- Cleanup-after-error closes (`TransferFileJob`, `CalculateChecksumJob`,
+  `ArchiveJob`) → log at WARN with context (the original IO error
+  has already propagated; a swallowed close masks the cleanup
+  failure entirely).
+- Defensive `cancel()` swallows → log at WARN with context.
 
-### 1.22 MED — `ThemeManager` stream-leak pattern
-**`barebones-core/.../ui/theme/ThemeManager.java:489,528,685,817`**
+### 1.21 ~~MED — `EditBookmarksDialog.java:381` NPE on empty selection~~ **FIXED**
+The button is wired to disable on empty selection
+(`updateComponents`), so the NPE only fires if that wiring is out
+of sync. The handler now extracts the selection once, checks for
+null, and throws `IllegalStateException` with a "button-enable
+state out of sync" message rather than silently dropping the
+click.
 
-`try { writeThemeData(data, out = new FileOutputStream(file)); }` —
-if the constructor throws after assignment but before the body,
-the stream leaks. Use try-with-resources.
+### 1.22 ~~MED — `ThemeManager` stream-leak pattern~~ **FIXED**
+All eight `assignment-in-try, close-in-finally` sites in
+`ThemeManager`, plus the equivalents in `BookmarkManager`,
+`CredentialsManager`, `ActionKeymapReader`, `ToolBarReader`,
+`CommandBarReader`, and `LicenseDialog`, converted to
+`try-with-resources`. The legacy "stream leaks if `getChannel()`
+throws after assignment" window is closed in all of them.
 
-### 1.23 MED — `LocalFile` channel-extraction leak
-**`barebones-commons-file/.../LocalFile.java:683,693,703`**
-
-`new LocalInputStream(new FileInputStream(file).getChannel())` —
-if `getChannel()` throws, the `FileInputStream` is unreachable and
-unclosed.
+### 1.23 ~~MED — `LocalFile` channel-extraction leak~~ **FIXED (Phase 13)**
+`getInputStream` / `getOutputStream` / `getAppendOutputStream` now
+hold the `FileInputStream` / `FileOutputStream` in a local and
+close it (with `addSuppressed`) if `getChannel()` throws.
 
 ### 1.24 ~~MED — Mount username with `=` or `,` injects mount options~~ **OBSOLETE**
 The mount-helper module was removed in PR #24.

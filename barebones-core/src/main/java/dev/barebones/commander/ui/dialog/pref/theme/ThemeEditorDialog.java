@@ -22,6 +22,9 @@ import java.awt.Dimension;
 import java.awt.Frame;
 import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.dialog.DialogAction;
 import dev.barebones.commander.ui.dialog.InformationDialog;
@@ -37,6 +40,8 @@ import dev.barebones.commander.ui.theme.ThemeManager;
  * @author Nicolas Rinaudo
  */
 public class ThemeEditorDialog extends PreferencesDialog {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ThemeEditorDialog.class);
+
     // - Action listening -------------------------------------------------------
     // --------------------------------------------------------------------------
     private final static Dimension MINIMUM_DIALOG_DIMENSION = new Dimension(580,0);
@@ -158,10 +163,13 @@ public class ThemeEditorDialog extends PreferencesDialog {
                 }
             }
             catch(Exception exception) {
+                LOGGER.warn("failed to write theme", exception);
                 try {
                     InformationDialog.showErrorDialog(this, Translator.get("write_error"), Translator.get("cannot_write_file", ThemeManager.getUserThemeFile().getAbsolutePath()));
                 }
-                catch(Exception e) {}
+                catch(Exception e) {
+                    LOGGER.warn("also failed to display the write-theme error dialog", e);
+                }
             }
         }
     }

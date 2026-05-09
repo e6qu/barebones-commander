@@ -44,6 +44,7 @@ import dev.barebones.commander.commons.util.ui.layout.XBoxPanel;
 import dev.barebones.commander.commons.util.ui.layout.YBoxPanel;
 import dev.barebones.commander.desktop.ActionType;
 import dev.barebones.commander.text.Translator;
+import dev.barebones.commander.ui.dialog.InformationDialog;
 import dev.barebones.commander.ui.action.ActionProperties;
 import dev.barebones.commander.ui.action.impl.EditCredentialsAction;
 import dev.barebones.commander.ui.list.DynamicList;
@@ -213,12 +214,16 @@ public class EditCredentialsDialog extends FocusDialog implements ActionListener
      */
     @Override
     public void dispose() {
+        // Write credentials file to disk before tearing down the dialog so
+        // a write failure can be surfaced as a child of this window.
+        try {
+            CredentialsManager.writeCredentials(false);
+        } catch(Exception e) {
+            InformationDialog.showErrorDialog(this,
+                Translator.get("credentials_dialog.cannot_write_credentials"),
+                e.getMessage());
+        }
         super.dispose();
-
-        // Write credentials file to disk, only if changes were made
-        try {CredentialsManager.writeCredentials(false);}
-        // We should probably pop an error dialog here...
-        catch(Exception e) {}
     }
 
 

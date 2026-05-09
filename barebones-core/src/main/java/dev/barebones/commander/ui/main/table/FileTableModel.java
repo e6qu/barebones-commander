@@ -37,6 +37,9 @@ import dev.barebones.commander.commons.file.filter.FileFilter;
 import dev.barebones.commander.commons.file.protocol.search.SearchFile;
 import dev.barebones.commander.commons.file.util.FileComparator;
 import dev.barebones.commander.commons.file.util.FileSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dev.barebones.commander.conf.MuConfigurations;
 import dev.barebones.commander.conf.MuPreference;
 import dev.barebones.commander.conf.MuPreferences;
@@ -50,6 +53,8 @@ import dev.barebones.commander.text.SizeFormat;
  * @author Maxence Bernard
  */
 public class FileTableModel extends AbstractTableModel {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileTableModel.class);
 
     private static final Cursor WAIT_CURSOR = new Cursor(Cursor.WAIT_CURSOR);
 
@@ -926,7 +931,9 @@ public class FileTableModel extends AbstractTableModel {
         if (calculateDirectorySizeWorker != null) {
             try {
                 calculateDirectorySizeWorker.cancel(true);
-            } catch (Exception e) { }
+            } catch (Exception e) {
+                LOGGER.warn("failed to cancel directory-size worker", e);
+            }
             calculateDirectorySizeWorker = null;
         }
         synchronized (this) {

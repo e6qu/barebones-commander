@@ -21,6 +21,9 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.Transferable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dev.barebones.commander.commons.file.util.FileSet;
 
 /**
@@ -29,6 +32,8 @@ import dev.barebones.commander.commons.file.util.FileSet;
  * @author Maxence Bernard
  */
 public class ClipboardSupport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClipboardSupport.class);
+
 
     /**
      * Returns the system clipboard's contents as a <code>Transferable</code>, <code>null</code>
@@ -39,6 +44,7 @@ public class ClipboardSupport {
             return getClipboard().getContents(null);
         }
         catch(IllegalStateException e) {
+            LOGGER.warn("clipboard unavailable on read", e);
             return null;
         }
     }
@@ -52,7 +58,9 @@ public class ClipboardSupport {
         try {
             getClipboard().setContents(transferable, null);
         }
-        catch(IllegalStateException e) {}
+        catch(IllegalStateException e) {
+            LOGGER.warn("clipboard unavailable; copy was not written", e);
+        }
     }
 
 
