@@ -66,13 +66,6 @@ public final class Bootstrap {
         invoke("dev.barebones.commander.commons.file.protocol.nfs.Activator", "register");
         invoke("dev.barebones.commander.commons.file.protocol.s3.Activator", "register");
 
-        // Phase-10 connectivity helpers. Both register no-op when the
-        // backing OS feature isn't available (mount on Windows, tailscale
-        // when the binary isn't installed) — the UI hides the related
-        // menu items rather than failing.
-        invoke("dev.barebones.commander.mount.Activator", "register");
-        invoke("dev.barebones.commander.tailscale.Activator", "register");
-
         // Archive formats
         invoke("dev.barebones.commander.commons.file.archive.zip.Activator", "register");
         invoke("dev.barebones.commander.commons.file.archive.tar.Activator", "register");
@@ -100,33 +93,12 @@ public final class Bootstrap {
      * failure can't skip the others.
      */
     private static void shutdown() {
-        // Best-effort unmount of any mounts we created so the user
-        // doesn't find stale mountpoints after a clean exit.
-        drainMounts();
         // Close cached S3 connections (releases AWS SDK Netty pools).
         invokeStatic("dev.barebones.commander.commons.file.protocol.s3.Activator", "shutdown");
         // Close the secret store (frees libsecret GObjects, zeroes
         // AES-GCM key material). Last because credentials may be
         // referenced by the modules above.
         closeSecretStore();
-    }
-
-    private static void drainMounts() {
-        try {
-            Class<?> serviceCls = Class.forName("dev.barebones.commander.mount.MountService");
-            Object executor = serviceCls.getMethod("executor").invoke(null);
-            if (executor == null) {
-                return; // platform without mount support
-            }
-            Class<?> registryCls = Class.forName("dev.barebones.commander.mount.MountRegistry");
-            Object registry = registryCls.getMethod("instance").invoke(null);
-            Class<?> executorCls = Class.forName("dev.barebones.commander.mount.MountExecutor");
-            registryCls.getMethod("drainAtShutdown", executorCls).invoke(registry, executor);
-        } catch (ClassNotFoundException notFound) {
-            // mount-helper module not present.
-        } catch (ReflectiveOperationException ignored) {
-            // best-effort
-        }
     }
 
     private static void closeSecretStore() {

@@ -112,8 +112,6 @@ dependencies {
     runtimeOnly(project(":barebones-protocol-sftp"))
     runtimeOnly(project(":barebones-protocol-nfs"))
     runtimeOnly(project(":barebones-protocol-s3"))
-    runtimeOnly(project(":barebones-mount-helper"))
-    runtimeOnly(project(":barebones-tailscale"))
     runtimeOnly(project(":barebones-secret-store"))
     runtimeOnly(project(":barebones-format-zip"))
     runtimeOnly(project(":barebones-format-tar"))

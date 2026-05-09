@@ -24,25 +24,25 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **7** | done | Build polish (Kotlin DSL + version catalog) | landed in #10 |
 | **8** | done | Release pipeline (DMG/DEB/RPM via `jpackage`) + SBOM + provenance attestation. AppImage / x86_64 macOS / notarization / commit-signing deferred. | landed in #11 |
 | **9** | done | SAST in CI (SpotBugs + FindSecBugs PR-triggered + OWASP Dependency-Check weekly) | landed in #12 |
-| **10a** | done | Connectivity backends: `barebones-mount-helper` + `barebones-tailscale` modules | landed in #13 |
-| **10b** | done | Connectivity UI tabs in the existing Connect-to-server dialog: `MountPanel` + `TailscalePeerPanel` | landed in #14 |
-| **10c** | done | Connectivity polish: SwingWorker mount, active-mounts dialog, Taildrop send + AppleScript chunk-boundary fix | landed in #15 |
+| ~~**10a**~~ | removed | Connectivity backends — `barebones-mount-helper` + `barebones-tailscale` modules. Both removed in PR #24: tailscale shell-out → maintenance burden too high; mount-helper → users use the existing remote-↔-local copy/move actions in the dual-pane UI instead of OS mount. | (landed #13, removed #24) |
+| ~~**10b**~~ | removed | Connectivity UI tabs (`MountPanel` + `TailscalePeerPanel`) — both removed in PR #24. | (landed #14, removed #24) |
+| ~~**10c**~~ | removed | Connectivity polish (SwingWorker mount, active-mounts dialog, Taildrop send) — code removed in PR #24; the AppleScript chunk-boundary fix that landed in the same PR is preserved. | (landed #15, removed #24) |
 | **11a** | done | S3 backend on AWS SDK v2 — headless | landed in #16 |
 | **11**  | done | Finish S3: `S3Panel`, `S3TransferManager` multipart upload, LocalStack integration tests, AppleScript race-fix follow-up | landed in #17 |
 | **12** | done | `XORCipher` → OS keychain (macOS Keychain via JNA, Linux libsecret via JNA, AES-GCM file fallback) + one-shot migration of legacy `credentials.xml` | landed in #18 |
 | **13** | done | Archive safety hardening — `SafePath` validator + `BoundedExtraction` caps + viewer file-size prompt + archive-tree thread safety + `ZipInputStream` / `LocalFile` stream-leak fixes | landed in #19 |
 | **14** | done | Credentials & SecretStore hardening — SFTP host-key verification, JNA pointer hygiene (Keychain item-ref + libsecret schema unref + AES-GCM key zeroing), 4 `equals`/`hashCode` contracts, S3 cache-key SHA-256, `CredentialsMapping.toString` masking, `SecretStore` AutoCloseable + Bootstrap shutdown hook | landed in #20 |
 | **15** | done | Dead-code sweep — 21 whole files deleted, 4 dead top-level dirs gone, ~1.1k stale i18n keys across 28 dictionaries, logback config moved to classpath + sanitised. **Net −6,012 LOC.** | landed in #21 |
-| **16a** | done | **Network reliability — process & timeout core** — `ExternalCommand` extraction (fixes stderr-pipe deadlock for mount + tailscale), SFTP connect / read / serverAlive timeouts, polling-loop → `Timer` for `PropertiesDialog` + `QuickSearch`, shutdown hook drains `MountRegistry` + closes S3 `S3Connection` cache | landed in #22 |
-| **16b** | done | **Network reliability — remainders** — NFS Sun-RPC `Socket.connect` timeout (`RpcTimeouts`), libsecret D-Bus `GCancellable` timeout, mount retry/backoff (`mountWithRetry`), S3 upload `LoggingTransferListener` foundation, `CompletionType` Thread+sleep → `Timer`, `ThemeManager`/`ThemeData`/`ThemeCache` `WeakHashMap` → `CopyOnWriteArraySet` | this PR |
-| **17** | pending | **Concurrency + correctness sweep** — mutable static collections (`Vector`/`Hashtable` in `BookmarkManager` / `ActionProperties` / `CredentialsManager`), 31+ empty catches → `IgnoredErrors` helper, NPE / stream-leak patterns, mount username injection | one PR |
-| **18** | pending | **Observability + logging** — S3 module logging from zero, mount stderr on failure, tailscale timeout context, `ThemeManager` file paths, AppleScript REPLACE branch, SFTP warn-level on failures, AppleScript output bound + truncation marker, structured-logging conventions doc | one PR |
-| **19** | pending | **UX polish** — progress dialogs for S3 / folder browse, "operation failed" details, mount-error next-step hints, S3 401/403/404 distinction, tailscale-not-installed banner, prefs Cancel-reverts, default-button focus, huge-file open prompts, keychain-prompt explainer, drop-target writability | one PR (may split into UX-A / UX-B) |
+| **16a** | done | **Network reliability — process & timeout core** — `ExternalCommand` extraction (fixes stderr-pipe deadlock for mount; later removed with mount module in #24), SFTP connect / read / serverAlive timeouts, polling-loop → `Timer` for `PropertiesDialog` + `QuickSearch`, shutdown hook drains `MountRegistry` (also removed in #24) + closes S3 `S3Connection` cache | landed in #22 |
+| **16b** | done | **Network reliability — remainders** — NFS Sun-RPC `Socket.connect` timeout (`RpcTimeouts`), libsecret D-Bus `GCancellable` timeout, mount retry/backoff (since-removed), S3 upload `LoggingTransferListener` foundation, `CompletionType` Thread+sleep → `Timer`, `ThemeManager`/`ThemeData`/`ThemeCache` `WeakHashMap` → `CopyOnWriteArraySet` | landed in #23 |
+| **17** | pending | **Concurrency + correctness sweep** — mutable static collections (`Vector`/`Hashtable` in `BookmarkManager` / `ActionProperties` / `CredentialsManager`), 31+ empty catches → `IgnoredErrors` helper, NPE / stream-leak patterns | one PR |
+| **18** | pending | **Observability + logging** — S3 module logging from zero, `ThemeManager` file paths, AppleScript REPLACE branch, SFTP warn-level on failures, AppleScript output bound + truncation marker, structured-logging conventions doc | one PR |
+| **19** | pending | **UX polish** — progress dialogs for S3 / folder browse, "operation failed" details, S3 401/403/404 distinction, prefs Cancel-reverts, default-button focus, huge-file open prompts, keychain-prompt explainer, drop-target writability | one PR (may split into UX-A / UX-B) |
 | **20** | pending | **SpotBugs baseline drawdown to zero** — fix the remaining ~62 own-code suppressions in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×41, ST_WRITE_TO_STATIC ×15, HE_EQUALS_USE_HASHCODE ×8, etc) and delete the file. | one PR (may split per bug pattern) |
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
 | **22** | pending | **Modern logging migration** — survey alternatives (`java.lang.System.Logger` JEP 264 + Logback bridge, `tinylog 2`, `JUL` direct, etc.); propose one; migrate ~70 `LoggerFactory.getLogger` call sites; drop the slf4j-api dep. | one PR (audit doc first, then code) |
 | **23** | pending | **Systematic dependency upgrade pass** — audit every entry in `gradle/libs.versions.toml` against latest, drive Dependabot bumps to the latest minor/patch, evaluate major-version upgrades case-by-case (jsch alternative, jna 5.18 → 6.x, aws-sdk minor, junit/testng versions). | one PR (or one per risky upgrade) |
-| **24** | pending | **Native-deps audit** — catalogue every JNI binding, JNA call, and shell-out (mount, tailscale, osascript, applescript, libsecret, macOS Security.framework, NFS Sun-RPC vendored code). For each, evaluate: Java-native replacement available? worth the swap? maintenance burden? Output: an audit doc + a list of candidate replacements (e.g. ssh-shell-out → Apache MINA SSHD client; vendored Sun NFS → embedded Java NFS client). | research PR (audit doc), then per-candidate PRs |
+| **24** | pending | **Native-deps audit** — catalogue every JNI binding, JNA call, and shell-out (osascript, applescript, libsecret, macOS Security.framework, NFS Sun-RPC vendored code). For each, evaluate: Java-native replacement available? worth the swap? maintenance burden? Output: an audit doc + a list of candidate replacements (e.g. ssh-shell-out → Apache MINA SSHD client; vendored Sun NFS → embedded Java NFS client). | research PR (audit doc), then per-candidate PRs |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -51,7 +51,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 ## 1. Goals
 
 1. Ship a **small** dual-pane file manager built on the well-tested muCommander UI core.
-2. **Remote-data backends**: SSH/SFTP, in-process NFSv2/v3 (via the existing Yanfs-based module), and — via Phase 10's mount helper — anything the OS can mount (NFSv4, SMB/CIFS, SSHFS). Local FS is always available. **S3-compatible object storage** is on the roadmap via Phase 11 but is not present in the current build (the legacy jets3t-based module was deleted in Phase 4).
+2. **Remote-data backends**: SSH/SFTP, in-process NFSv2/v3 (via the existing Yanfs-based module), and S3-compatible object storage (Phase 11). Local FS is always available. Remote↔local file movement uses the standard dual-pane copy/move actions; OS-level mount support is intentionally not included (was tried in Phase 10, removed in PR #24 — the dual-pane UX subsumes the mount-helper use case).
 3. **Two** OS targets: Linux (x86_64, aarch64) and macOS (Apple Silicon + Intel).
 4. **No** unpatched Critical/High vulnerabilities at v1.0 release.
 5. **Latest LTS Java** (Java 25 LTS) as the runtime target.
@@ -59,9 +59,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 7. Modern, **non-OSGi** packaging — single fat JAR / native installers, no Felix container.
 8. Clean **rename and rebrand** to remove muCommander trademark concerns. *(Done in #2.)*
 9. **PR-only** workflow on `e6qu/barebones-commander` — every change lands via a reviewed PR. **One PR in flight at a time.** The user decides scope and pacing of the next PR.
-10. **Preserve the VFS extensibility** — the upstream `barebones-commons-file` abstraction (`AbstractFile`) and the `barebones-protocol-api` SPI stay, so future backends (rsync, WebDAV, etc.) can be added without core changes.
-11. **Be Tailscale-aware** — discover tailnet peers, surface them as quick-connect targets for SFTP / NFS / mount-helper, and (optional) integrate Taildrop send/receive. See Phase 10.
-12. **Mount-as-local UX on Linux & macOS** — pick a remote share (NFSv4, SMB, SSHFS), the app shells out to the OS mount command, and the share opens in a panel as if it were local. See Phase 10.
+10. **Preserve the VFS extensibility** — the upstream `barebones-commons-file` abstraction (`AbstractFile`) and the `barebones-protocol-api` SPI stay, so future backends (rsync, etc.) can be added without core changes.
 
 ## 2. Non-goals (explicitly removed scope)
 
@@ -179,10 +177,10 @@ For the pruned dependency set (SFTP-only barebones build):
 | `barebones-encoding` | Keep. |
 | `barebones-process` | Keep. |
 | `barebones-command` | Custom-command feature. **Apply XXE hardening.** |
-| `barebones-protocol-api` | SPI. Keep — this is the VFS plug-in contract; future backends (rsync, WebDAV) can hook in here. |
+| `barebones-protocol-api` | SPI. Keep — this is the VFS plug-in contract; future backends (e.g. rsync) can hook in here. |
 | `barebones-protocol-sftp` | SFTP backend. Bump `jsch` to fix Terrapin (Phase 4). |
 | `barebones-protocol-s3` | **Deleted in Phase 4.** Will be reintroduced in Phase 11 on top of AWS SDK v2 (`software.amazon.awssdk:s3`). |
-| `barebones-protocol-nfs` | In-process NFSv2/v3 backend (Yanfs-based via the vendored `sun-net-www`). NFSv4 is delivered via Phase 10's OS mount helper rather than this module — Yanfs has no v4 support and a Java NFSv4 client is not worth carrying. |
+| `barebones-protocol-nfs` | In-process NFSv2/v3 backend (Yanfs-based via the vendored `sun-net-www`). Yanfs has no NFSv4 support and a Java NFSv4 client is not worth carrying — NFSv4 users should mount at the OS level outside the app, then point the app at the local mountpoint. |
 | `sun-net-www` (vendored) | Keep — required by `barebones-protocol-nfs` (Yanfs / NFS RPC support). |
 | `barebones-os-api` | Keep. |
 | `barebones-os-linux` | Keep. **Refactor `KdeConfig` to `ProcessBuilder(List)` in Phase 5.** |
@@ -515,122 +513,40 @@ unwieldy.
   tokens; rename copy-then-delete; 40 MiB upload exercising the
   TransferManager spill path; 1 KB upload staying in-memory.
 
-### Phase 10 — Connectivity: Tailscale + mount helper (split: 10a + 10b)
+### Phase 10 — Connectivity: mount helper + tailscale *(REMOVED in PR #24)*
 
-The first feature-add phase after the cleanup wave. Originally
-scoped as one PR; split into two because the backend services and
-the Swing UI integration are mechanically independent and reviewing
-them together would be unwieldy.
+The first feature-add phase after the cleanup wave shipped two
+new modules — `barebones-mount-helper` (OS-level NFS / SMB /
+SSHFS mount via `ProcessBuilder` shell-out, with a Connect-tab
+UI and a `MountRegistry` shutdown drainer) and `barebones-tailscale`
+(`tailscale status --json` peer enumeration plus a Taildrop send
+button) — together with the connect-dialog tabs and a SwingWorker-
+backed mount progress dialog.
 
-**Phase 10a** ships the headless backends as new modules with full
-unit-test coverage and Activator registration:
+**Both modules were deleted in PR #24.** Two reasons:
 
-- `barebones-mount-helper` — `MountSpec`, `MountKind`, `MountCommand`
-  SPI with `LinuxMountCommand` + `MacOSMountCommand`, `MountExecutor`
-  (ProcessBuilder shell-out with timeout + stdout/stderr capture),
-  `MountRegistry` (active-mount tracking), Activator that picks the
-  OS-appropriate command on startup. NFSv3/v4, SMB, SSHFS supported.
-- `barebones-tailscale` — `TailscalePeer` record, `TailscaleStatusParser`
-  for `tailscale status --json` output, `TailscaleClient` (locate
-  binary on $PATH or macOS GUI install path; `peers()`; `sendFile()`
-  for Taildrop), Activator that no-ops when tailscale isn't installed.
+- **Mount helper.** The dual-pane file manager already lets the
+  user copy or move files between local and remote panels using
+  the existing `Copy` / `Move` actions on every supported protocol
+  (SFTP, NFS, S3). OS-level mount duplicated this with a worse
+  failure mode: Linux NFS needs root, macOS macFUSE is third-party,
+  Windows wasn't supported, and stale mountpoints persisted across
+  crashes. Removing the module shrinks the security surface
+  (no more privileged shell-outs) and the maintenance load.
+- **Tailscale.** Required a third-party CLI binary on `$PATH`,
+  exposed `tailscale file cp` semantics that overlapped with
+  Taildrop's own UI, and the peer-list UX could be approximated
+  by typing `<peer>.ts.net` into the SFTP / NFS panels (MagicDNS
+  resolves them).
 
-Tests in 10a verify argv composition for every `(OS, MountKind)` pair
-plus an injection-defence regression case (shell metacharacters in
-user-supplied fields stay contained in their argv slot), `MountSpec`
-validation, `MountRegistry` mutual-exclusion, and `tailscale status
---json` parsing against a real fixture.
+NFSv4 users who really want the mount-as-folder UX should mount at
+the OS level outside the app and point the app at the local
+mountpoint via the regular Local panel.
 
-**Phase 10b** wires the backends into the existing UI as new tabs in
-the Connect-to-server dialog (Cmd-K / Ctrl-K), so the user discovers
-them through the existing remote-connect flow with no new menu
-plumbing:
-
-- `MountPanel` (new in `barebones-mount-helper`) — kind dropdown
-  (NFSv3/NFSv4/SMB/SSHFS), host / remote-path / mountpoint /
-  username / port fields. On Connect, calls
-  `MountService.executor().mount(spec)` synchronously and returns
-  `file:///<mountpoint>` so the active panel navigates into the
-  freshly-mounted directory. Records the mount in `MountRegistry`.
-- `TailscalePeerPanel` (new in `barebones-tailscale`) — lists peers
-  from `TailscaleService.client().peers()` plus a protocol selector
-  (SFTP / NFS / SMB). On Connect, returns
-  `<scheme>://<peer.dnsName>/` so the existing protocol stacks open
-  the chosen peer. Falls back to a clear "Tailscale not installed"
-  status when the binary isn't present.
-
-Both panels register via `ProtocolPanelRegistry.register(...)` from
-their module Activators. No changes to `ActionType`, `ActionManager`,
-or menu wiring needed.
-
-**Phase 10c** delivers connectivity polish entirely inside the
-mount-helper / tailscale modules — no `barebones-core` compile-time
-dep, no new `ActionType` entries, no menu wiring:
-
-- `MountTask` (`barebones-mount-helper`): SwingWorker that runs
-  `MountExecutor.mount(spec)` off the EDT and shows a small modal
-  "Mounting…" progress dialog while it works. The EDT keeps pumping
-  events (the indeterminate progress bar animates, the dialog
-  responds to window-close attempts).
-- `ActiveMountsDialog` (`barebones-mount-helper`): modal dialog
-  listing every entry in `MountRegistry.instance().active()` with
-  per-row Unmount; surfaces `umount` exit code + stderr on failure.
-  Opened from a "Manage active mounts…" button on the Mount tab.
-- Taildrop send button on the Tailscale tab: when a peer is
-  selected, opens a `JFileChooser`; on selection, calls
-  `TailscaleClient.sendFile(local, peer.dnsName())`. Failure
-  surfaced via `JOptionPane.showMessageDialog`.
-
-The deliberate non-choice: no top-level menu actions / keybindings.
-Adding actions would force a `compileOnly` dep on `barebones-core`
-(for `MuAction` / `ActionManager`) and an `ActionType` enum entry —
-real plumbing for marginal value when the buttons live exactly where
-the user already is.
-
-**Phase 10c** (deferred polish):
-
-**OS-level mount helper** — a small Swing dialog that:
-- Asks for a remote share URL / host / share-path / credentials.
-- Resolves a target mountpoint under `${user.home}/.barebones-commander/mounts/<host>-<share>` (Linux) or `/Volumes/<host>-<share>` (macOS).
-- Invokes the OS mount command via `ProcessBuilder(List.of(...))` (never string-concatenated):
-  - **Linux**: `mount.nfs4` for NFSv4; `mount.nfs` for v2/v3; `mount -t cifs` for SMB; `sshfs` for SSHFS (FUSE).
-  - **macOS**: `mount_nfs` (NFSv2/v3/v4); `mount -t smbfs` for SMB; `sshfs` for SSHFS (macFUSE if installed).
-- On success, opens the mountpoint as a regular folder in the active panel.
-- Tracks active mounts and offers an "Unmount" action. Best-effort cleanup on app exit.
-- Privileged mounts (Linux NFS) require `sudo` or a setuid `mount.*` helper — surface this in the dialog rather than silently failing.
-
-**NFSv4** — delivered by the mount helper above. The in-process `barebones-protocol-nfs` module is unchanged and continues to handle direct NFSv2/v3 sessions for environments where mounting is not desired.
-
-**Tailscale integration**:
-- Detect Tailscale by probing for the `tailscale` binary on `$PATH` and the local API socket (`/var/run/tailscale/tailscaled.sock` on Linux, `~/Library/Containers/io.tailscale.ipn.macsys/Data/IPN/tailscaled.sock` on macOS GUI install).
-- List tailnet peers via `tailscale status --json`. Surface them in a "Tailscale peers" quick-list (similar in spirit to upstream's deleted Bonjour list).
-- Selecting a peer pre-fills the SFTP / NFS / mount dialog with the peer's MagicDNS hostname (`*.ts.net`).
-- (Optional) Taildrop send: a "Send to peer (Taildrop)" action shells out to `tailscale file cp <path> <peer>:`.
-- (Optional) Taildrop receive: a "Tailscale inbox" panel shows files received via Taildrop (`tailscale file get`).
-- All Tailscale invocations go through the OS-mount-style `ProcessBuilder(List<String>)` path — no shell-injection risk.
-
-**Implementation discipline** (enforced in 10a; UI inherits from these
-SPIs in 10b):
-- All shell-outs use `ProcessBuilder(List<String>)`. No `Runtime.exec(String)`. No string concatenation of user input into command lines. (Same SAST gate from Phase 5.)
-- Failure modes (binary missing, daemon not running, mount denied) bubble up as user-visible dialogs in 10b, never silent.
-- No bundled Tailscale client. The user installs Tailscale via their OS; we just detect and integrate.
-- No bundled `sshfs` / `mount.nfs4` / `mount.cifs`. Same posture.
-
-**10a exit criteria**: `./gradlew test` green for both new modules,
-SpotBugs clean (no new entries in the Phase-9 baseline), Activator
-registration smoke-tested on Linux and macOS at app startup.
-
-**10b exit criteria**: Connect-to-server dialog grows two tabs
-("Mount" + "Tailscale") on Linux and macOS startup. SpotBugs clean
-across both new panels (no entries in the Phase-9 baseline). Manual
-smoke test: mount an NFSv4 share and browse the local mountpoint;
-list tailnet peers and pick one to open via SFTP.
-
-**10c exit criteria**: mount runs off the EDT via SwingWorker with
-a modal progress dialog; the Mount tab gains a "Manage active
-mounts…" button that opens an unmount-per-row dialog; the
-Tailscale tab gains a "Send file via Taildrop…" button. SpotBugs
-clean across all three additions (no entries in the Phase-9 baseline).
+The detailed narrative of what shipped and what's gone is
+deliberately not preserved here — `git log` is authoritative for
+the original implementation; PR #24 is authoritative for the
+removal rationale.
 
 ---
 
@@ -753,12 +669,13 @@ Nothing in the app should hang the EDT or the JVM forever.
 #### Phase 16a — process & timeout core (PR landed)
 
 - **`ExternalCommand` extraction** (`barebones-commons-util/.../cli/ExternalCommand.java`):
-  shared by `MountExecutor` and `TailscaleClient`. Drains stdout
+  used by `MountExecutor` and `TailscaleClient` to drain stdout
   and stderr on dedicated daemon threads concurrently with the
   wait — fixes the stderr-pipe-buffer deadlock that previously
   hung any external invocation that emitted >64 KiB on stderr.
   Closes child stdin so CLI tools that read it don't block.
   Regression test pushes 256 KiB stderr through the helper.
+  *Removed in PR #24 along with its only callers (mount + tailscale).*
   (`BUGS.md` 1.25, 6.1)
 - **SFTP timeouts** (`barebones-protocol-sftp/.../SftpTimeouts.java`):
   three `-D` knobs — `barebones.sftp.connectTimeoutMs` (default
@@ -774,11 +691,11 @@ Nothing in the app should hang the EDT or the JVM forever.
   the dedicated polling thread). `FolderChangeMonitor` and
   `CompletionType` deferred to 16b. (`BUGS.md` 1.17 partial)
 - **Shutdown hook extension** in `Bootstrap.shutdown()`:
-  reflectively drains `MountRegistry` (best-effort unmount with
-  exception swallowing) and invokes `S3 Activator.shutdown()`
-  which closes every cached `S3Connection` (releases AWS SDK
-  Netty pools). Augments the Phase-14 `SecretStoreService` close.
-  (`BUGS.md` 4.3, 4.6, 1.19 partial)
+  invokes `S3 Activator.shutdown()` which closes every cached
+  `S3Connection` (releases AWS SDK Netty pools). Augments the
+  Phase-14 `SecretStoreService` close. (Originally also drained
+  `MountRegistry`; the drain was removed in PR #24 along with
+  the mount-helper module.) (`BUGS.md` 4.3, 4.6, 1.19 partial)
 
 #### Phase 16b — remainders (PR landed)
 
@@ -800,7 +717,8 @@ Nothing in the app should hang the EDT or the JVM forever.
   exponential backoff (500 → 1 000 → 2 000 ms…), capped at 30 s,
   default 3 attempts. Retries on non-zero exit OR IOException
   (covers `ExternalCommand` timeouts). NFS portmap / rpcbind
-  flakes are the prime motivation.
+  flakes were the prime motivation.
+  *Removed in PR #24 along with the mount-helper module.*
 - **S3 upload progress foundation**: `uploadSpilledFile()` now
   attaches `LoggingTransferListener.create()` to the
   `UploadFileRequest` and emits start / complete log lines with
@@ -850,9 +768,6 @@ luck. Substantial because there are many sites.
   1.20, 6.5)
 - **NPE / stream-leak fixes** in `EditBookmarksDialog`,
   `ThemeManager`, `LocalFile.getChannel`. (`BUGS.md` 1.21, 1.22, 1.23)
-- **Mount username injection**: tighten `MountSpec` validation —
-  reject `=`, `,`, `:` in usernames; add a regression test.
-  (`BUGS.md` 1.24)
 - **`AbstractArchiveFile.createEntriesTree()` thread safety**:
   if Phase 13 didn't ship the lock, add it here.
 - **Equals/hashCode**: any of the 8 SpotBugs entries Phase 14
@@ -871,10 +786,6 @@ So that production failures stop being mysteries.
   request entry, `LOGGER.warn` on AWS error responses with the
   service-name + key + AWS error code (no credentials, no payload).
   (`BUGS.md` 3.1)
-- **`MountExecutor`**: log stderr at `WARN` when exit ≠ 0.
-  (`BUGS.md` 3.2)
-- **Tailscale**: include sanitised argv in timeout-message context.
-  (`BUGS.md` 3.3)
 - **`ThemeManager`**: file path + reason in every catch site.
   (`BUGS.md` 3.5)
 - **AppleScript**: DEBUG line on REPLACE-branch decoder events.
@@ -907,13 +818,8 @@ Depends on the primitives delivered by 13–18.
 - **"Operation failed" details**: every `JOptionPane.ERROR` gets
   an expandable "Show details" pane carrying the underlying
   exception's message + class. (`BUGS.md` 2.4)
-- **Mount-error next-step hints**: parse common `mount.nfs` /
-  `mount.cifs` / `sshfs` error patterns, show suggestions.
-  (`BUGS.md` 2.5)
 - **S3 401/403/404 distinction**: powered by the Phase-14 / Phase-16
   `S3ErrorHandler`. (`BUGS.md` 2.6)
-- **Tailscale "not installed" banner**: top-of-window status row
-  on first launch when the binary is missing. (`BUGS.md` 2.7)
 - **Preferences Cancel-reverts**: snapshot at open, restore on
   Cancel. (`BUGS.md` 2.8)
 - **Default-button focus** on every dialog (`InformationDialog`,
@@ -970,7 +876,7 @@ graduate to a Phase 21+ PR are up to the user. Candidates:
 - 21c — Vendored `apache-bzip2` → direct dep on
   `org.apache.commons:commons-compress` (already pulled in by
   `barebones-archiver`).
-- 21d — Connectivity panels (Mount, Tailscale, S3) into a new
+- 21d — Connectivity panels (S3, SFTP, NFS) into a new
   `barebones-ui-connect` module, leaving `barebones-protocol-api`
   honestly protocol-only.
 - 21e — Per-format `Activator` pattern → single `ServiceLoader`
@@ -1053,16 +959,8 @@ Known entries to populate:
   `jdbus` or a Java D-Bus client; weigh against the simplicity
   of the current binding.
 - macOS `Security.framework` `CFRelease` → JNA; same as above.
-- `osascript` shell-out (Phase 10c chunked AppleScript) →
+- `osascript` shell-out (chunked AppleScript) →
   no Java alternative, AppleScript is Apple-proprietary.
-- `mount` / `mount.cifs` / `mount.nfs` shell-out → could be
-  replaced by an in-JVM SMB / NFS client (e.g. **smbj** for SMB,
-  **embedded NFS** like the upstream Sun-RPC code already does
-  for v2/v3). NFSv4 has no maintained pure-Java client.
-- `tailscale` shell-out → `tailscale local-api` HTTP endpoint
-  could be hit directly without the CLI; worth measuring.
-- `sshfs` (referenced in mount fallback) → MINA SSHD has an
-  experimental SFTP-as-FUSE bridge; not portable.
 - Vendored **Sun NFS / RPC** (`com.sun.nfs`, `com.sun.rpc`,
   `com.sun.gssapi`) → already pure Java; the question is whether
   to keep or replace with a maintained library.
@@ -1101,10 +999,8 @@ We may want to **pull bug fixes from upstream muCommander** for at least 1 year.
 6. **macOS L&F: keep VAqua or rely on FlatLaf macOS variant** — drop VAqua in Phase 1 (§5.2 vendored helpers — also covers the upstream `fix #1458` "filter out vaqua for macOS 13+" workaround).
 7. **JRE submodule** (`.gitmodules` still points at `mucommander/JRE`) — replace with a build-time-downloaded JDK or unbundled assumption in Phase 8.
 8. **rsync support** — not present in upstream and not in scope for v1.0. The kept VFS SPI (`barebones-protocol-api`, see §1.10) means a future `barebones-protocol-rsync` plug-in can be added as an additive PR without core changes when there is a use case.
-9. **WebDAV** — same path as rsync: out of scope for v1.0; pluggable later. (SMB is reachable via Phase 10's mount helper; NFS — both v2/v3 in-process and v4 via the mount helper — is in scope per §5.1 / §1.2.)
+9. **WebDAV** — out of scope; not currently implemented. SMB is reachable by mounting at the OS level outside the app and pointing the Local panel at the mountpoint. NFS v2/v3 is supported in-process; v4 follows the same OS-mount path as SMB.
 10. **S3 endpoint configuration UI** — AWS SDK v2 makes `--endpoint-override` for MinIO / Ceph / R2 trivial in code, but a UX surface for non-AWS S3 endpoints needs design. Treat as a follow-up after Phase 4 lands the SDK swap.
-11. **Tailscale auth fallback** — `tailscale status --json` requires the local user to be the same user running tailscaled (or `sudo`). Decide what we do on macOS sandboxed installs of Tailscale where the socket isn't reachable: degrade to "Tailscale not detected" and let the user type peer hostnames manually (MagicDNS still resolves them).
-12. **Mount-helper privilege escalation** — Linux NFS mounts typically need root. Either prompt for `pkexec` / `sudo` and re-invoke, or document that the user must pre-add their account to `/etc/fstab` with `users` mount option. Phase 10 picks `pkexec` first if available, falls back to documenting fstab.
 
 ## 10. Quick reference — workflow conventions
 
