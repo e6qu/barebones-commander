@@ -84,7 +84,6 @@ public class AssociationReader extends DefaultHandler implements AssociationsXml
     public static void read(InputStream in, AssociationBuilder b) throws IOException, CommandException {
         b.startBuilding();
         try {SecureXml.newSafeSaxParser().parse(in, new AssociationReader(b));}
-        catch(ParserConfigurationException e) {throw new CommandException(e);}
         catch(SAXException e) {throw new CommandException(e);}
         finally {b.endBuilding();}
     }
