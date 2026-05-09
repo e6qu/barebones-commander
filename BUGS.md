@@ -75,13 +75,15 @@ but iteration / read-then-write sequences race. Bookmark or
 credential corruption possible under concurrent access (file watcher
 + user save).
 
-### 1.4 HIGH — NFS / Sun-vendored RPC has no timeouts
+### 1.4 ~~HIGH — NFS / Sun-vendored RPC has no timeouts~~ **PARTIALLY FIXED (connect)**
 **`barebones-protocol-nfs/src/main/java/com/sun/nfs/`** (multiple files)
 
-The vendored Sun NFS code uses raw socket ops with no timeouts.
-A hung NFS server blocks the calling thread forever; if that thread
-is the EDT, the whole UI freezes. Not easily fixable without
-patching vendored code.
+`com.sun.rpc.ConnectSocket.doConnect()` now uses two-step
+construct + `Socket.connect(addr, RpcTimeouts.connectMs())` with
+a 30 000 ms default tunable via `-Dbarebones.rpc.connectTimeoutMs`.
+Per-receive `setSoTimeout` was already wired upstream. Still
+missing: a global "fail RPC after N seconds" budget that bounds
+the retry loop in `Rpc.rpc_call`.
 
 ### 1.5 HIGH — TransferFileJob has no network timeouts
 **`barebones-core/.../job/impl/TransferFileJob.java`**, plus the
@@ -173,16 +175,23 @@ serialises calls, but parallel directory listings hit it.
 A misbehaving / hostile AppleScript that emits forever exhausts
 heap. Add a hard ceiling (e.g. 1 MiB) and truncate with a marker.
 
-### 1.17 MED — Polling loops with `Thread.sleep` on the EDT (partial)
+### 1.17 ~~MED — Polling loops with `Thread.sleep` on the EDT~~ **MOSTLY FIXED**
 - ~~`PropertiesDialog`~~ **FIXED**: now a `javax.swing.Timer` that fires
   on the EDT — also fixes the prior off-EDT `JLabel.setText` calls
   from a worker thread.
 - ~~`QuickSearch`~~ **FIXED**: replaced the dedicated polling thread
   with a single-shot `Timer` that restarts on each search-string change.
+- ~~`CompletionType` / `EditableComboboxCompletion` / `TextFieldCompletion` /
+  `OtherTextComponentCompletion`~~ **FIXED**: the
+  `ShowingThread extends Thread` + `Thread.sleep(delay)` pattern is
+  gone. Subclasses override `showAutocompletionPopup()` directly and
+  the base scheduler is a single-shot `javax.swing.Timer`. (Also
+  incidentally fixed an off-EDT JList/JPopupMenu mutation in the
+  worker thread's run() body.)
 - **`barebones-core/.../core/FolderChangeMonitor.java:179-219`**
-  remains: 300 ms tick is structural to the daemon; conversion to
-  `wait/notify` would touch every call site.
-- **`barebones-core/.../ui/text/CompletionType.java:110`** remains.
+  remains: 300 ms tick is the deliberate granularity of a single
+  shared daemon thread, not an EDT freeze. Conversion to
+  `wait/notify` would touch every call site for negligible benefit.
 
 ### 1.18 MED — S3 `isDirectory()` / `exists()` swallow IOException → false-negative
 **`barebones-protocol-s3/.../S3Object.java:96-116`**
@@ -353,26 +362,34 @@ appropriate for triage.
 
 ## 4. Reliability gaps
 
-### 4.1 No timeouts on libsecret D-Bus calls
-**`barebones-secret-store/.../linux/LibsecretSecretStore.java:66-121`**
-— `secret_password_*_sync` calls block indefinitely if the Secret
-Service daemon hangs. Use the existing `cancellable` parameter
-with a `GCancellable` we time out via a watchdog timer.
+### 4.1 ~~No timeouts on libsecret D-Bus calls~~ **FIXED**
+Every `secret_password_*_sync` call now passes a {@code GCancellable}
+fuse via `LibsecretTimeout.withCancellable`. A daemon timer fires
+{@code g_cancellable_cancel} after 5 000 ms (default; tune with
+`-Dbarebones.secretStore.libsecretTimeoutMs`). A wedged keyring
+daemon makes the call return `G_IO_ERROR_CANCELLED` instead of
+hanging forever.
 
-### 4.2 No retry / backoff on transient mount failures
-A flaky NFS portmap rejects the first `mount.nfs` and the user has
-to click Mount again. Most mount workflows include an internal
-retry. Wrap with bounded retry + exponential backoff.
+### 4.2 ~~No retry / backoff on transient mount failures~~ **FIXED**
+`MountExecutor.mountWithRetry(spec, attempts, baseBackoffMs)` now
+wraps the bare `mount` invocation. Default 3 attempts with
+exponential backoff (500 → 1 000 → 2 000 ms…), capped at 30 s.
+Retries on non-zero exit OR IOException (covers
+`ExternalCommand` timeouts).
 
 ### 4.3 S3 connection cache never closes connections (see 1.19)
 
 ### 4.4 AES-GCM key never zeroed on close (see 1.8)
 
-### 4.5 `WeakHashMap`-keyed listeners GC'd silently
-**`barebones-core/.../ui/theme/ThemeManager.java:73`** and similar.
-A listener registered from an anonymous inner class loses its
-strong reference and stops firing. Use `EventListenerList` /
-`ListenerSupport`.
+### 4.5 ~~`WeakHashMap`-keyed listeners GC'd silently~~ **FIXED**
+`ThemeManager`, `ThemeData`, and `ThemeCache` now hold listeners
+in a `CopyOnWriteArraySet<ThemeListener>`. Anonymous-class
+listeners no longer disappear when the caller's local reference
+leaves scope. `ThemeManager` gained a matching
+`removeCurrentThemeListener` method (it had none under the old
+model — listeners just GC'd themselves out of existence). Other
+WeakHashMap usages in the codebase are real key→value caches,
+not listener pseudo-sets, and are unaffected.
 
 ### 4.6 PARTIALLY FIXED — Shutdown hook registered for `SecretStore`
 Phase 14 wires `Bootstrap.shutdown()` as a JVM shutdown hook

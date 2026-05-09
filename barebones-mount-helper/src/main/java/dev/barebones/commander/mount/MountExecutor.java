@@ -50,6 +50,55 @@ public final class MountExecutor {
         return run(command.mountArgv(spec));
     }
 
+    /**
+     * Mount with bounded retry. NFS in particular is prone to
+     * transient portmap / rpcbind failures right after a server
+     * restart; a fresh attempt 500 ms later usually succeeds. This
+     * method retries iff the previous attempt:
+     * <ul>
+     *   <li>returned a non-zero exit code, or</li>
+     *   <li>threw an {@link IOException} (which {@link
+     *       ExternalCommand} raises on timeout).</li>
+     * </ul>
+     * Backoff doubles between attempts (500 → 1 000 → 2 000 …).
+     * On final failure, returns the last {@link MountResult} (or
+     * rethrows the last IOException) so the caller can surface
+     * the underlying stderr to the user.
+     */
+    public MountResult mountWithRetry(MountSpec spec, int attempts, long baseBackoffMs)
+            throws IOException, InterruptedException {
+        if (attempts <= 0) {
+            throw new IllegalArgumentException("attempts must be positive");
+        }
+        if (baseBackoffMs < 0) {
+            throw new IllegalArgumentException("baseBackoffMs must be non-negative");
+        }
+        ensureMountpointExists(spec);
+        MountResult last = null;
+        IOException lastIo = null;
+        long backoff = baseBackoffMs;
+        for (int i = 0; i < attempts; i++) {
+            try {
+                last = run(command.mountArgv(spec));
+                lastIo = null;
+                if (last.ok()) {
+                    return last;
+                }
+            } catch (IOException io) {
+                lastIo = io;
+                last = null;
+            }
+            if (i < attempts - 1) {
+                Thread.sleep(backoff);
+                backoff = Math.min(backoff * 2, TimeUnit.SECONDS.toMillis(30));
+            }
+        }
+        if (lastIo != null) {
+            throw lastIo;
+        }
+        return last;
+    }
+
     public MountResult unmount(MountSpec spec) throws IOException, InterruptedException {
         return run(command.unmountArgv(spec));
     }

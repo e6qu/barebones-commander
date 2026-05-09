@@ -118,4 +118,21 @@ public interface Libsecret extends Library {
 
     /** Decrement refcount on the schema returned by secret_schema_new. */
     void secret_schema_unref(Pointer schema);
+
+    // ---- GCancellable (gio) — surfaced through libsecret-1's
+    //      transitive load of libgio-2.0; the symbols live in
+    //      libgio but every libsecret-using binary already pulls
+    //      it in. JNA finds them via the libsecret library handle. ----
+
+    /** {@code GCancellable *g_cancellable_new (void);} */
+    Pointer g_cancellable_new();
+
+    /** {@code void g_cancellable_cancel (GCancellable *);} — thread-safe. */
+    void g_cancellable_cancel(Pointer cancellable);
+
+    /** {@code void g_object_unref (gpointer);} */
+    void g_object_unref(Pointer obj);
+
+    /** Returned in {@code GError.code} when a sync call is cancelled. */
+    int G_IO_ERROR_CANCELLED = 19;
 }

@@ -19,7 +19,8 @@ package dev.barebones.commander.ui.theme;
 
 import java.awt.Color;
 import java.awt.Font;
-import java.util.WeakHashMap;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 
 /**
@@ -123,27 +124,33 @@ public class ThemeCache implements ThemeListener {
     }
 
    
-    /** Listeners. */
-    private static WeakHashMap<ThemeListener, ?> listeners = new WeakHashMap<ThemeListener, Object>();
-    
+    /**
+     * Strong-ref listener set. The previous WeakHashMap-as-set
+     * silently dropped anonymous-class listeners as soon as the
+     * caller's local reference went out of scope, so theme changes
+     * stopped firing. Callers are now responsible for matching
+     * remove calls.
+     */
+    private static final Set<ThemeListener> listeners = new CopyOnWriteArraySet<>();
+
 
     private ThemeCache() {
 	}
-    
+
     public static void addThemeListener(ThemeListener listener) {
-        listeners.put(listener, null);
+        listeners.add(listener);
     }
 
     public static void removeThemeListener(ThemeListener listener) {
         listeners.remove(listener);
     }
-    
+
     private static void fireColorChanged(ColorChangedEvent event) {
-        listeners.keySet().forEach(listener -> listener.colorChanged(event));
+        listeners.forEach(listener -> listener.colorChanged(event));
     }
-    
+
     private static void fireFontChanged(FontChangedEvent event) {
-        listeners.keySet().forEach(listener -> listener.fontChanged(event));
+        listeners.forEach(listener -> listener.fontChanged(event));
     }
     
 

@@ -71,14 +71,15 @@ public final class LibsecretSecretStore implements SecretStore {
         // wiping it from our heap doesn't help much.
         String password = new String(secret);
         PointerByReference err = new PointerByReference();
-        int ok = Libsecret.INSTANCE.secret_password_store_sync(
-            schema, null,
-            "barebones-commander: " + ref.account(),
-            password,
-            null, err,
-            ATTR_SERVICE, ref.service(),
-            ATTR_ACCOUNT, ref.account(),
-            null);
+        int ok = LibsecretTimeout.withCancellable(cancellable ->
+            Libsecret.INSTANCE.secret_password_store_sync(
+                schema, null,
+                "barebones-commander: " + ref.account(),
+                password,
+                cancellable, err,
+                ATTR_SERVICE, ref.service(),
+                ATTR_ACCOUNT, ref.account(),
+                null));
         if (ok == 0) {
             throw fromError("secret_password_store_sync", err);
         }
@@ -87,11 +88,12 @@ public final class LibsecretSecretStore implements SecretStore {
     @Override
     public Optional<char[]> lookup(SecretRef ref) throws IOException {
         PointerByReference err = new PointerByReference();
-        Pointer p = Libsecret.INSTANCE.secret_password_lookup_sync(
-            schema, null, err,
-            ATTR_SERVICE, ref.service(),
-            ATTR_ACCOUNT, ref.account(),
-            null);
+        Pointer p = LibsecretTimeout.withCancellable(cancellable ->
+            Libsecret.INSTANCE.secret_password_lookup_sync(
+                schema, cancellable, err,
+                ATTR_SERVICE, ref.service(),
+                ATTR_ACCOUNT, ref.account(),
+                null));
         if (p == null || Pointer.nativeValue(p) == 0L) {
             // Not found OR error — distinguish by checking GError.
             if (err.getValue() != null) {
@@ -110,11 +112,12 @@ public final class LibsecretSecretStore implements SecretStore {
     @Override
     public void delete(SecretRef ref) throws IOException {
         PointerByReference err = new PointerByReference();
-        int ok = Libsecret.INSTANCE.secret_password_clear_sync(
-            schema, null, err,
-            ATTR_SERVICE, ref.service(),
-            ATTR_ACCOUNT, ref.account(),
-            null);
+        int ok = LibsecretTimeout.withCancellable(cancellable ->
+            Libsecret.INSTANCE.secret_password_clear_sync(
+                schema, cancellable, err,
+                ATTR_SERVICE, ref.service(),
+                ATTR_ACCOUNT, ref.account(),
+                null));
         if (ok == 0) {
             throw fromError("secret_password_clear_sync", err);
         }

@@ -36,41 +36,6 @@ import dev.barebones.commander.ui.autocomplete.completers.Completer;
 public class EditableComboboxCompletion extends CompletionType {
     private static final Logger LOGGER = LoggerFactory.getLogger(EditableComboboxCompletion.class);
 
-    private class ShowingThreadImp extends ShowingThread {
-        public ShowingThreadImp(int delay) {
-            super(delay);
-        }
-
-        @Override
-        void showAutocompletionPopup() {
-            if (autocompletedtextComp.isShowing() && autocompletedtextComp.isEnabled() && updateListData(list)){
-
-                list.setVisibleRowCount(Math.min(list.getModel().getSize() ,VISIBLE_ROW_COUNT));
-
-                int x;
-                try{	                
-                    x = autocompletedtextComp.modelToView().x;
-                } catch(BadLocationException e){ 
-                    // this should never happen!!! 
-                    LOGGER.debug("Caught exception", e);
-                    return;
-                }
-                if (autocompletedtextComp.hasFocus()) {	            	
-                    if (!isStopped) {
-                        list.ensureIndexIsVisible(0);
-                        synchronized(popup) {
-                            popup.show(autocompletedtextComp.getTextComponent(), x, autocompletedtextComp.getHeight());
-
-                            // probably because of swing's bug, sometimes the popup window looks
-                            // as a gray rectangle - repainting solves it.
-                            popup.repaint();
-                        }
-                    }
-                }	            
-            }
-        }
-    }
-
     public EditableComboboxCompletion(AutocompleterTextComponent comp, Completer completer){
         super(comp, completer);        
 
@@ -87,10 +52,10 @@ public class EditableComboboxCompletion extends CompletionType {
                         keyEvent.consume();
                     }
                     else {
-                        // Stop the active showing-thread to prevent suggestions-popup 
-                        // opening after the operation was initiated.
-                        if(showingThread!=null)
-                            showingThread.done();
+                        // Cancel any pending popup-show so suggestions don't
+                        // appear after the user has already initiated the action.
+                        if (showingTimer != null)
+                            showingTimer.stop();
 
                         autocompletedtextComp.OnEnterPressed(keyEvent);
                     }
@@ -170,7 +135,30 @@ public class EditableComboboxCompletion extends CompletionType {
     }
 
     @Override
-    protected void startNewShowingThread(int delay) {
-        (showingThread = new ShowingThreadImp(delay)).start();
+    protected void showAutocompletionPopup() {
+        if (!(autocompletedtextComp.isShowing() && autocompletedtextComp.isEnabled()
+                && updateListData(list))) {
+            return;
+        }
+        list.setVisibleRowCount(Math.min(list.getModel().getSize(), VISIBLE_ROW_COUNT));
+
+        int x;
+        try {
+            x = autocompletedtextComp.modelToView().x;
+        } catch (BadLocationException e) {
+            LOGGER.debug("Caught exception", e);
+            return;
+        }
+        if (!autocompletedtextComp.hasFocus()) {
+            return;
+        }
+        list.ensureIndexIsVisible(0);
+        synchronized (popup) {
+            popup.show(autocompletedtextComp.getTextComponent(), x,
+                autocompletedtextComp.getHeight());
+            // Swing quirk: popup occasionally renders as a grey rectangle —
+            // repainting fixes it.
+            popup.repaint();
+        }
     }
 }
