@@ -45,6 +45,10 @@ subprojects {
         }
     }
     tasks.withType(Test).configureEach {
+        // Default subproject test framework to TestNG. Modules that use
+        // JUnit 5 (e.g. barebones-protocol-nfs) override with
+        // useJUnitPlatform() in their own build.gradle.
+        useTestNG()
         testLogging {
             events 'failed', 'standardError'
             exceptionFormat 'full'
