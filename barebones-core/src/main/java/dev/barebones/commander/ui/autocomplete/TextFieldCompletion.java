@@ -36,41 +36,6 @@ import dev.barebones.commander.ui.autocomplete.completers.Completer;
 public class TextFieldCompletion extends CompletionType {
     private static final Logger LOGGER = LoggerFactory.getLogger(TextFieldCompletion.class);
 
-    private class ShowingThreadImp extends ShowingThread {
-        public ShowingThreadImp(int delay) {
-            super(delay);
-        }
-
-        @Override
-        void showAutocompletionPopup() {
-            if (autocompletedtextComp.isShowing() && autocompletedtextComp.isEnabled() && updateListData(list)){
-
-                list.setVisibleRowCount(Math.min(list.getModel().getSize() ,VISIBLE_ROW_COUNT));
-
-                int x;
-                try{	                
-                    x = autocompletedtextComp.modelToView().x;
-                } catch(BadLocationException e){ 
-                    // this should never happen!!! 
-                    LOGGER.debug("Caught exception", e);
-                    return;
-                }
-                if (autocompletedtextComp.hasFocus()) {	            	
-                    if (!isStopped) {
-                        list.ensureIndexIsVisible(0);
-                        synchronized(popup) {
-                            popup.show(autocompletedtextComp.getTextComponent(), x, autocompletedtextComp.getHeight());
-
-                            // probably because of swing's bug, sometimes the popup window looks
-                            // as a gray rectangle - repainting solves it.
-                            popup.repaint();
-                        }
-                    }
-                }	            
-            }
-        }
-    }
-
     public TextFieldCompletion(AutocompleterTextComponent comp, Completer completer){
         super(comp, completer);
 
@@ -160,8 +125,31 @@ public class TextFieldCompletion extends CompletionType {
     }
 
     @Override
-    protected void startNewShowingThread(int delay) {
-        (showingThread = new ShowingThreadImp(delay)).start();
+    protected void showAutocompletionPopup() {
+        if (!(autocompletedtextComp.isShowing() && autocompletedtextComp.isEnabled()
+                && updateListData(list))) {
+            return;
+        }
+        list.setVisibleRowCount(Math.min(list.getModel().getSize(), VISIBLE_ROW_COUNT));
+
+        int x;
+        try {
+            x = autocompletedtextComp.modelToView().x;
+        } catch (BadLocationException e) {
+            LOGGER.debug("Caught exception", e);
+            return;
+        }
+        if (!autocompletedtextComp.hasFocus()) {
+            return;
+        }
+        list.ensureIndexIsVisible(0);
+        synchronized (popup) {
+            popup.show(autocompletedtextComp.getTextComponent(), x,
+                autocompletedtextComp.getHeight());
+            // Swing quirk: popup occasionally renders as a grey rectangle —
+            // repainting fixes it.
+            popup.repaint();
+        }
     }
 
     @Override

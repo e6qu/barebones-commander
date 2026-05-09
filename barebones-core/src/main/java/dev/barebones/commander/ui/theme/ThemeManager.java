@@ -32,7 +32,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Vector;
-import java.util.WeakHashMap;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,8 +70,12 @@ public class ThemeManager {
 
     /** Path to the custom themes repository. */
     private static final String       CUSTOM_THEME_FOLDER              = "themes";
-    /** List of all registered theme change listeners. */
-    private static final WeakHashMap<ThemeListener, Object>  listeners = new WeakHashMap<ThemeListener, Object>();
+    /** Strong-ref listener set. The previous WeakHashMap silently
+     *  dropped anonymous-class listeners as soon as the caller's
+     *  local reference went out of scope, so theme changes stopped
+     *  firing. Callers are now responsible for matching
+     *  {@link #removeCurrentThemeListener(ThemeListener)} calls. */
+    private static final Set<ThemeListener> listeners = new CopyOnWriteArraySet<>();
     /** List of all predefined theme names. */
     private static final String[]     PREDEFINED_THEME_NAMES = {
         "ClassicCommander",
@@ -1036,13 +1041,23 @@ public class ThemeManager {
      * events will be passed to registered listeners.
      * </p>
      * <p>
-     * Listeners are stored as weak references, to make sure that the API doesn't keep ghost copies of objects
-     * whose usefulness is long since past. This forces callers to make sure they keep a copy of the listener's instance: if
-     * they do not, the instance will be weakly linked and garbage collected out of existence.
+     * Listeners are held by strong reference: callers should call
+     * {@link #removeCurrentThemeListener(ThemeListener)} when the
+     * listener is no longer interested in events.
      * </p>
      * @param listener new current theme listener.
      */
-    public static void addCurrentThemeListener(ThemeListener listener) {synchronized (listeners) {listeners.put(listener, null);}}
+    public static void addCurrentThemeListener(ThemeListener listener) {
+        listeners.add(listener);
+    }
+
+    /**
+     * Removes the specified object from the list of registered current theme listeners.
+     * @param listener listener to remove.
+     */
+    public static void removeCurrentThemeListener(ThemeListener listener) {
+        listeners.remove(listener);
+    }
 
     /**
      * Notifies all theme listeners of the specified font event.
@@ -1050,10 +1065,7 @@ public class ThemeManager {
      * @see         #triggerThemeChange(Theme,Theme)
      */
     private static void triggerFontEvent(FontChangedEvent event) {
-        synchronized (listeners) {
-            for(ThemeListener listener : listeners.keySet())
-                listener.fontChanged(event);
-        }
+        listeners.forEach(listener -> listener.fontChanged(event));
     }
 
     /**
@@ -1062,10 +1074,7 @@ public class ThemeManager {
      * @see         #triggerThemeChange(Theme,Theme)
      */
     private static void triggerColorEvent(ColorChangedEvent event) {
-        synchronized (listeners) {
-            for(ThemeListener listener : listeners.keySet())
-                listener.colorChanged(event);
-        }
+        listeners.forEach(listener -> listener.colorChanged(event));
     }
 
     // - Helper methods ------------------------------------------------------------------

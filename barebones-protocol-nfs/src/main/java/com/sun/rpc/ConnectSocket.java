@@ -84,7 +84,13 @@ public class ConnectSocket extends Connection {
         if (server == null)
             throw new java.net.UnknownHostException("null host");
 
-        sock = new Socket(server, port);
+        // Bare new Socket(host, port) blocks indefinitely on an
+        // unreachable server (no TCP RST, no ICMP — just SYN void).
+        // Two-step construct + bounded connect gives the SYN a
+        // deadline so RPC calls fail fast instead of hanging.
+        sock = new Socket();
+        sock.connect(new java.net.InetSocketAddress(server, port),
+            RpcTimeouts.connectMs());
         sock.setTcpNoDelay(true);
     	ins = sock.getInputStream();
     	outs = sock.getOutputStream();

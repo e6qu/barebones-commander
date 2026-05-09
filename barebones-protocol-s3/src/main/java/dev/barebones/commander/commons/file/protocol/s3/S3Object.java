@@ -25,6 +25,10 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.transfer.s3.model.UploadFileRequest;
+import software.amazon.awssdk.transfer.s3.progress.LoggingTransferListener;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,6 +51,8 @@ import java.util.concurrent.CompletionException;
  * pay an extra HEAD round-trip per child.
  */
 public class S3Object extends S3File {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3Object.class);
 
     private boolean metadataKnown;
     private boolean directory;
@@ -317,10 +323,16 @@ public class S3Object extends S3File {
         }
 
         private void uploadSpilledFile() throws IOException {
+            // LoggingTransferListener emits one log line at each
+            // 10 % milestone. Reusable foundation for a future
+            // JProgressBar that subscribes to the same TransferListener.
+            LOGGER.info("S3 multipart upload starting: {} ({} bytes) → s3://{}/{}",
+                spillFile, bytesWritten, parsed.bucket(), parsed.key());
             try {
                 connection.transferManager()
                     .uploadFile(UploadFileRequest.builder()
                         .source(spillFile)
+                        .addTransferListener(LoggingTransferListener.create())
                         .putObjectRequest(PutObjectRequest.builder()
                             .bucket(parsed.bucket())
                             .key(parsed.key())
@@ -328,6 +340,8 @@ public class S3Object extends S3File {
                         .build())
                     .completionFuture()
                     .join();
+                LOGGER.info("S3 multipart upload complete: s3://{}/{} ({} bytes)",
+                    parsed.bucket(), parsed.key(), bytesWritten);
             } catch (CompletionException e) {
                 Throwable cause = e.getCause() != null ? e.getCause() : e;
                 if (cause instanceof S3Exception se) {

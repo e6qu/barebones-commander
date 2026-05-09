@@ -33,13 +33,16 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **13** | done | Archive safety hardening — `SafePath` validator + `BoundedExtraction` caps + viewer file-size prompt + archive-tree thread safety + `ZipInputStream` / `LocalFile` stream-leak fixes | landed in #19 |
 | **14** | done | Credentials & SecretStore hardening — SFTP host-key verification, JNA pointer hygiene (Keychain item-ref + libsecret schema unref + AES-GCM key zeroing), 4 `equals`/`hashCode` contracts, S3 cache-key SHA-256, `CredentialsMapping.toString` masking, `SecretStore` AutoCloseable + Bootstrap shutdown hook | landed in #20 |
 | **15** | done | Dead-code sweep — 21 whole files deleted, 4 dead top-level dirs gone, ~1.1k stale i18n keys across 28 dictionaries, logback config moved to classpath + sanitised. **Net −6,012 LOC.** | landed in #21 |
-| **16a** | done | **Network reliability — process & timeout core** — `ExternalCommand` extraction (fixes stderr-pipe deadlock for mount + tailscale), SFTP connect / read / serverAlive timeouts, polling-loop → `Timer` for `PropertiesDialog` + `QuickSearch`, shutdown hook drains `MountRegistry` + closes S3 `S3Connection` cache | this PR |
-| **16b** | pending | **Network reliability — remainders** — NFS / Sun-RPC `setSoTimeout`, libsecret D-Bus `GCancellable` timeouts, mount retry/backoff, `SwingWorker` shim for S3 uploads (paired with Phase 19 progress UI), `WeakHashMap` listener fix, remaining polling loops (`FolderChangeMonitor` daemon tick, `CompletionType`) | one PR |
+| **16a** | done | **Network reliability — process & timeout core** — `ExternalCommand` extraction (fixes stderr-pipe deadlock for mount + tailscale), SFTP connect / read / serverAlive timeouts, polling-loop → `Timer` for `PropertiesDialog` + `QuickSearch`, shutdown hook drains `MountRegistry` + closes S3 `S3Connection` cache | landed in #22 |
+| **16b** | done | **Network reliability — remainders** — NFS Sun-RPC `Socket.connect` timeout (`RpcTimeouts`), libsecret D-Bus `GCancellable` timeout, mount retry/backoff (`mountWithRetry`), S3 upload `LoggingTransferListener` foundation, `CompletionType` Thread+sleep → `Timer`, `ThemeManager`/`ThemeData`/`ThemeCache` `WeakHashMap` → `CopyOnWriteArraySet` | this PR |
 | **17** | pending | **Concurrency + correctness sweep** — mutable static collections (`Vector`/`Hashtable` in `BookmarkManager` / `ActionProperties` / `CredentialsManager`), 31+ empty catches → `IgnoredErrors` helper, NPE / stream-leak patterns, mount username injection | one PR |
 | **18** | pending | **Observability + logging** — S3 module logging from zero, mount stderr on failure, tailscale timeout context, `ThemeManager` file paths, AppleScript REPLACE branch, SFTP warn-level on failures, AppleScript output bound + truncation marker, structured-logging conventions doc | one PR |
 | **19** | pending | **UX polish** — progress dialogs for S3 / folder browse, "operation failed" details, mount-error next-step hints, S3 401/403/404 distinction, tailscale-not-installed banner, prefs Cancel-reverts, default-button focus, huge-file open prompts, keychain-prompt explainer, drop-target writability | one PR (may split into UX-A / UX-B) |
 | **20** | pending | **SpotBugs baseline drawdown to zero** — fix the remaining ~62 own-code suppressions in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×41, ST_WRITE_TO_STATIC ×15, HE_EQUALS_USE_HASHCODE ×8, etc) and delete the file. | one PR (may split per bug pattern) |
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
+| **22** | pending | **Modern logging migration** — survey alternatives (`java.lang.System.Logger` JEP 264 + Logback bridge, `tinylog 2`, `JUL` direct, etc.); propose one; migrate ~70 `LoggerFactory.getLogger` call sites; drop the slf4j-api dep. | one PR (audit doc first, then code) |
+| **23** | pending | **Systematic dependency upgrade pass** — audit every entry in `gradle/libs.versions.toml` against latest, drive Dependabot bumps to the latest minor/patch, evaluate major-version upgrades case-by-case (jsch alternative, jna 5.18 → 6.x, aws-sdk minor, junit/testng versions). | one PR (or one per risky upgrade) |
+| **24** | pending | **Native-deps audit** — catalogue every JNI binding, JNA call, and shell-out (mount, tailscale, osascript, applescript, libsecret, macOS Security.framework, NFS Sun-RPC vendored code). For each, evaluate: Java-native replacement available? worth the swap? maintenance burden? Output: an audit doc + a list of candidate replacements (e.g. ssh-shell-out → Apache MINA SSHD client; vendored Sun NFS → embedded Java NFS client). | research PR (audit doc), then per-candidate PRs |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -777,30 +780,60 @@ Nothing in the app should hang the EDT or the JVM forever.
   Netty pools). Augments the Phase-14 `SecretStoreService` close.
   (`BUGS.md` 4.3, 4.6, 1.19 partial)
 
-#### Phase 16b — remainders (next PR)
+#### Phase 16b — remainders (PR landed)
 
-- **NFS / Sun-RPC timeouts**: patch the vendored `com.sun.rpc`
-  socket call sites in `barebones-protocol-nfs` to set a
-  `Socket.setSoTimeout` (default 30 s, configurable via
-  `Tunables`). (`BUGS.md` 1.4)
-- **libsecret D-Bus timeouts**: thread `GCancellable` into every
-  `secret_password_*_sync` call; cancel after 5 s default.
-  (`BUGS.md` 4.1)
-- **Mount retry/backoff**: `MountExecutor.withRetry(spec, n,
-  backoff)` — default 3 attempts with exponential backoff for
-  mount NFS portmap flakes. (`BUGS.md` 4.2)
-- **`SwingWorker` shim for S3 uploads** + `TransferListener`
-  wiring (foundation for Phase 19's progress dialog).
-  (`BUGS.md` 1.12, 2.1)
-- **Polling-loop conversion** for `FolderChangeMonitor` daemon
-  tick and `CompletionType`. (`BUGS.md` 1.17 remainder)
-- **WeakHashMap listener fix**: replace with `EventListenerList` /
-  `ListenerSupport` in `ThemeManager`, others. (`BUGS.md` 4.5)
+- **NFS / Sun-RPC connect timeout** (`com.sun.rpc.RpcTimeouts`):
+  bare `new Socket(host, port)` blocks indefinitely on an
+  unreachable RPC server (no SYN-ACK, no RST, just a void).
+  `ConnectSocket.doConnect()` now uses two-step
+  construct + `Socket.connect(addr, RpcTimeouts.connectMs())`
+  with a 30 000 ms default tunable via
+  `-Dbarebones.rpc.connectTimeoutMs`. UDP path needs no change.
+  Per-receive `setSoTimeout` was already wired upstream.
+- **libsecret D-Bus timeouts** (`LibsecretTimeout.withCancellable`):
+  every `secret_password_*_sync` call now passes a
+  {@code GCancellable} fuse; a single-thread daemon timer fires
+  {@code g_cancellable_cancel} after 5 000 ms (default; tune via
+  `-Dbarebones.secretStore.libsecretTimeoutMs`). Wedged keyring
+  daemons no longer hang credential lookups forever.
+- **Mount retry/backoff** (`MountExecutor.mountWithRetry`):
+  exponential backoff (500 → 1 000 → 2 000 ms…), capped at 30 s,
+  default 3 attempts. Retries on non-zero exit OR IOException
+  (covers `ExternalCommand` timeouts). NFS portmap / rpcbind
+  flakes are the prime motivation.
+- **S3 upload progress foundation**: `uploadSpilledFile()` now
+  attaches `LoggingTransferListener.create()` to the
+  `UploadFileRequest` and emits start / complete log lines with
+  byte counts. The same `TransferListener` is what Phase 19's
+  `JProgressBar` will subscribe to. (`SwingWorker` shim deferred
+  — `FileJob` already runs uploads off-EDT, so the shim only
+  matters when the progress UI lands.)
+- **CompletionType polling**: the `ShowingThread extends Thread`
+  + `Thread.sleep(delay)` pattern (also incidentally a Swing-
+  off-EDT bug — touched JLabels from a worker thread) is gone.
+  All three subclasses (`EditableComboboxCompletion`,
+  `TextFieldCompletion`, `OtherTextComponentCompletion`) now
+  override `showAutocompletionPopup()` directly and the base
+  scheduler is a single-shot `javax.swing.Timer`.
+- **WeakHashMap listener fix**: `ThemeManager`, `ThemeData`, and
+  `ThemeCache` all replaced their `WeakHashMap<Listener, ?>`
+  pseudo-sets with `CopyOnWriteArraySet<ThemeListener>`. The old
+  pattern silently dropped anonymous-class listeners as soon as
+  the caller's local reference left scope, so theme changes
+  silently stopped firing for them. `ThemeManager` gained a
+  matching `removeCurrentThemeListener` (it had none).
 
-**Exit criteria** (whole phase): integration test of a hung NFS
-server returns a `SocketTimeoutException` within
-`Tunables.nfsReadTimeoutMs`; S3 upload in the app no longer
-freezes the UI; shutdown hook fires cleanly on `kill -TERM`.
+`FolderChangeMonitor`'s 300 ms tick remains as-is — it's the
+deliberate granularity of a single shared daemon thread, not a
+polling-on-the-EDT bug.
+
+**Exit criteria**: integration test of a hung NFS server returns
+a `SocketTimeoutException` within `Tunables.nfsReadTimeoutMs`
+(deferred — needs an NFS test fixture; the `setSoTimeout` was
+already wired upstream so the gap was connect-only); S3 upload
+in the app no longer freezes the UI (covered by the FileJob
+off-EDT pattern, plus the new `LoggingTransferListener`);
+shutdown hook fires cleanly on `kill -TERM` (verified in 16a).
 
 ### Phase 17 — Concurrency + correctness sweep (one PR)
 
@@ -948,6 +981,96 @@ graduate to a Phase 21+ PR are up to the user. Candidates:
   constants.
 
 None of the above runs without explicit "do 21x" from the user.
+
+### Phase 22 — Modern logging migration (one PR; audit-doc first, then code)
+
+slf4j-api 2.x is fine but it's a 3rd-party shim layered atop one of
+{logback, log4j, jul}. Java 9 shipped {@link java.lang.System.Logger}
+(JEP 264) which is a built-in zero-dep facade; over a decade later
+the ecosystem has matured around it. Worth swapping.
+
+Survey first (audit doc inside the PR description, not committed
+prose):
+
+- **`System.Logger`** — JDK builtin, no dep. Verbose API
+  (`log(Level.INFO, () -> "msg")`); slow uptake in libraries.
+- **`tinylog 2`** — single ~150 KB jar, structured logging,
+  great perf. Less ecosystem.
+- **JUL direct** — zero dep, fine for tools, ugly for apps.
+- **slf4j 2 + log4j 2 backend** — keeps the API but swaps logback
+  out (Logback's `JNDILookup` history was the reason slf4j users
+  reconsider); tooling-friendly.
+
+Pick one. Then migrate the ~70 `LoggerFactory.getLogger(X.class)`
+call sites mechanically (a sed; verify each); drop slf4j-api from
+`gradle/libs.versions.toml`; drop logback if applicable.
+
+**Exit criteria**: zero `org.slf4j` imports outside vendored
+packages; CI green; manual smoke that startup logs still appear at
+INFO and a `--debug` flag bumps to DEBUG.
+
+### Phase 23 — Systematic dependency upgrade pass (one PR; or one PR per risky upgrade)
+
+Dependabot opens individual bump PRs for patch/minor releases —
+that's its job. This phase is the **manual** complement: every six
+months, walk `gradle/libs.versions.toml` end to end, check each
+artifact against its upstream's latest published version, and
+either bump or document why we're pinned.
+
+Major-version upgrades that warrant their own PR:
+
+- **JSch** — `com.jcraft:jsch:0.1.55` is end-of-life (2018). Pick
+  an actively maintained fork (`com.github.mwiede:jsch`) or move
+  to **Apache MINA SSHD** (overlaps with Phase 24 candidates).
+- **JNA 5.x → 6.x** — when 6.0 stabilises; Phase-12 / Phase-14
+  bindings need a smoke pass.
+- **AWS SDK v2 minor bumps** — usually mechanical; smoke against
+  LocalStack to catch SPI changes.
+- **Logback** — once Phase 22's choice is settled (may delete
+  Logback entirely).
+- **JUnit / TestNG** — both are split across modules; consolidate
+  to one if Phase 22 doesn't already.
+
+**Exit criteria**: every entry in `libs.versions.toml` is either
+the latest version or has a `# pinned because <reason>` comment;
+CI green on the bumped versions.
+
+### Phase 24 — Native-deps audit (research PR; per-candidate PRs follow)
+
+Every native binding and shell-out is a portability tax (one more
+build target, one more failure mode at runtime). Worth knowing
+exactly where they are and what they'd cost to replace.
+
+**Audit deliverable** (in the PR description, not committed):
+table of every native dependency with columns:
+
+| where | mechanism | what it does | java-native alternative | swap cost |
+
+Known entries to populate:
+
+- macOS Keychain via JNA → no Java alternative; keep.
+- Linux libsecret via JNA → could call D-Bus directly via
+  `jdbus` or a Java D-Bus client; weigh against the simplicity
+  of the current binding.
+- macOS `Security.framework` `CFRelease` → JNA; same as above.
+- `osascript` shell-out (Phase 10c chunked AppleScript) →
+  no Java alternative, AppleScript is Apple-proprietary.
+- `mount` / `mount.cifs` / `mount.nfs` shell-out → could be
+  replaced by an in-JVM SMB / NFS client (e.g. **smbj** for SMB,
+  **embedded NFS** like the upstream Sun-RPC code already does
+  for v2/v3). NFSv4 has no maintained pure-Java client.
+- `tailscale` shell-out → `tailscale local-api` HTTP endpoint
+  could be hit directly without the CLI; worth measuring.
+- `sshfs` (referenced in mount fallback) → MINA SSHD has an
+  experimental SFTP-as-FUSE bridge; not portable.
+- Vendored **Sun NFS / RPC** (`com.sun.nfs`, `com.sun.rpc`,
+  `com.sun.gssapi`) → already pure Java; the question is whether
+  to keep or replace with a maintained library.
+- JSch SSH client → MINA SSHD is the maintained successor.
+
+**Exit criteria**: an audit doc exists (in PR description /
+review comments). Each candidate replacement gets its own
+follow-up PR if it survives review; nothing is mass-swapped.
 
 ## 7. Compatibility with upstream
 

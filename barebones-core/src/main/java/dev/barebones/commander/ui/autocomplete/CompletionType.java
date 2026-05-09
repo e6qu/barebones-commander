@@ -27,6 +27,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JList;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -47,73 +48,20 @@ public abstract class CompletionType {
     private Completer completer;
     protected AutocompleterTextComponent autocompletedtextComp;
     protected DocumentListener documentListener;
-    protected JList list = new JList(); 
+    protected JList list = new JList();
     protected JPopupMenu popup = new JPopupMenu();
-    protected ShowingThread showingThread;
+    /** Single-shot Swing Timer that fires {@link #showAutocompletionPopup()}
+     *  on the EDT after a configurable delay. Replaces the prior
+     *  {@code Thread + Thread.sleep} pattern, which both spawned a
+     *  thread per keystroke and (worse) touched Swing components
+     *  off-EDT inside its run() body. */
+    protected Timer showingTimer;
 
     // Constants:
     protected final int VISIBLE_ROW_COUNT = 10;
     protected final int POPUP_DELAY_AT_TEXT_INSERTION = 1500;
     protected final int POPUP_DELAY_AT_TEXT_DELETION  = 500;
     protected final int POPUP_DELAY_AFTER_ACCEPTING_LIST_ITEM = 1500;
-
-    /**
-     * ShowingThread is an abstract class for threads that show auto-completion popup
-     * window after a given delay.
-     * Each implementation of ShowingThread should implements an abstract function
-     * "showPopup" that contains the popup opening.
-     * 
-     * @author Arik Hadas
-     */
-    protected abstract class ShowingThread extends Thread {
-
-        protected boolean isStopped;
-        protected int delayTime;
-
-        public ShowingThread(int delayTime) {
-            isStopped = false;
-            this.delayTime = delayTime;
-        }
-
-        @Override
-        public void run() {
-            // Hide the auto-completion popup window.
-            hideAutocompletionPopup();
-
-            if (!autocompletedtextComp.isShowing() || !autocompletedtextComp.isEnabled())
-                return;
-
-            // Sleep for delayTime milieconds.
-            delay(delayTime);
-
-            // If this thread should stop, finish its execution.
-            if (isStopped)
-                return;
-
-            // Show auto-completion popup window.
-            showAutocompletionPopup();						
-        }
-
-        /**
-         * Stop this thread execution.
-         */
-        public void done() {
-            isStopped = true;
-        }
-
-        /**
-         * Cause this thread sleep for the given time (in miliseconds).
-         */
-        protected void delay(int miliseconds) {
-            if (miliseconds > 0) {
-                try {
-                    Thread.sleep(miliseconds);
-                } catch (InterruptedException e1) { }
-            }
-        }
-
-        abstract void showAutocompletionPopup();
-    }    
 
     public CompletionType(AutocompleterTextComponent comp, Completer completer) {
         autocompletedtextComp = comp;
@@ -152,9 +100,9 @@ public abstract class CompletionType {
 
     // abstract methods:
     /**
-     * Start a new thread that implement ShowingThread with the given delay.
+     * Display the auto-completion popup. Always invoked on the EDT.
      */
-    protected abstract void startNewShowingThread(int delay);
+    protected abstract void showAutocompletionPopup();
 
     /**
      * Hide the auto-completion popup window.
@@ -183,17 +131,22 @@ public abstract class CompletionType {
     }
 
     /**
-     * createNewShowingThread shows the auto-completion popup window after 
-     * a non-blocking delay.
-     * 
-     * @param delay - The requested delay (in miliseconds) until the popup appear.
+     * Schedules a showing of the auto-completion popup after the
+     * given delay. Cancels any in-flight schedule first.
+     *
+     * @param delay milliseconds before the popup appears; 0 means
+     *              "show on next EDT cycle".
      */
     protected void createNewShowingThread(int delay) {
-        // stop current showing thread (if exist)
-        if (showingThread != null)
-            showingThread.done();
-        // start new showing thread
-        startNewShowingThread(delay);
+        if (showingTimer != null) {
+            showingTimer.stop();
+        }
+        hideAutocompletionPopup();
+        if (!autocompletedtextComp.isShowing() || !autocompletedtextComp.isEnabled())
+            return;
+        showingTimer = new Timer(Math.max(delay, 1), e -> showAutocompletionPopup());
+        showingTimer.setRepeats(false);
+        showingTimer.start();
     }
 
     /**

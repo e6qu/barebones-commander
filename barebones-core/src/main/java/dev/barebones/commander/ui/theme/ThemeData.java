@@ -24,7 +24,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.swing.JComponent;
 import javax.swing.JInternalFrame;
@@ -723,8 +724,12 @@ public class ThemeData {
 
     // - Listeners -----------------------------------------------------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
-    /** Listeners on the default font and colors. */
-    private static WeakHashMap<ThemeListener, ?> listeners = new WeakHashMap<ThemeListener, Object>();
+    /** Strong-ref listener set. The previous WeakHashMap silently
+     *  dropped anonymous-class listeners as soon as the caller's
+     *  local reference went out of scope. Callers are now
+     *  responsible for matching {@link #removeDefaultValuesListener}
+     *  calls. */
+    private static final Set<ThemeListener> listeners = new CopyOnWriteArraySet<>();
 
 
 
@@ -1408,26 +1413,25 @@ public class ThemeData {
      * through {@link Theme} and {@link ThemeManager}.
      * </p>
      * <p>
-     * Note that listeners are stored as weak references, to make sure that the API doesn't keep ghost copies of objects
-     * whose usefulness is long since past. This forces callers to make sure they keep a copy of the listener's instance: if
-     * they do not, the instance will be weakly linked and garbage collected out of existence.
+     * Listeners are held by strong reference: callers should call
+     * {@link #removeDefaultValuesListener(ThemeListener)} when no
+     * longer interested in events.
      * </p>
      * @param listener theme listener to register.
      * @see            #removeDefaultValuesListener(ThemeListener)
      */
-    public static void addDefaultValuesListener(ThemeListener listener) {listeners.put(listener, null);}
+    public static void addDefaultValuesListener(ThemeListener listener) {
+        listeners.add(listener);
+    }
 
     /**
      * Removes the specified instance from the list of registered theme listeners.
-     * <p>
-     * Note that since listeners are stored as weak references, calling this method is not strictly necessary. As soon
-     * as a listener instance is not referenced anymore, it will automatically be caught and destroyed by the garbage
-     * collector.
-     * </p>
      * @param listener instance to remove from the list of registered theme listeners.
      * @see            #addDefaultValuesListener(ThemeListener)
      */
-    public static void removeDefaultValuesListener(ThemeListener listener) {listeners.remove(listener);}
+    public static void removeDefaultValuesListener(ThemeListener listener) {
+        listeners.remove(listener);
+    }
 
     /**
      * Dispatches a {@link FontChangedEvent} to all registered listeners.
@@ -1435,11 +1439,8 @@ public class ThemeData {
      * @param font new value for the font that changed.
      */
     static void triggerFontEvent(int id, Font font) {
-        // Creates the event.
         FontChangedEvent event = new FontChangedEvent(null, id, font);
-
-        // Dispatches it.
-        listeners.keySet().forEach(listener -> listener.fontChanged(event));
+        listeners.forEach(listener -> listener.fontChanged(event));
     }
 
     /**
@@ -1448,11 +1449,8 @@ public class ThemeData {
      * @param color new value for the color that changed.
      */
     static void triggerColorEvent(int id, Color color) {
-        // Creates the event.
         ColorChangedEvent event = new ColorChangedEvent(null, id, color);
-
-        // Dispatches it.
-        listeners.keySet().forEach(listener -> listener.colorChanged(event));
+        listeners.forEach(listener -> listener.colorChanged(event));
     }
 
 
