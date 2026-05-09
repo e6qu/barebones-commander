@@ -21,7 +21,7 @@ dependencies {
     compileOnly project(':barebones-core-preload')
 
 
-    compileOnly 'com.formdev:flatlaf:2.2'
+    compileOnly 'com.formdev:flatlaf:3.5.4'
     compileOnly 'org.jetbrains:annotations:26.0.2-1'
 
     implementation 'ch.qos.logback:logback-core:1.2.13'
