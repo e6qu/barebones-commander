@@ -173,11 +173,14 @@ Multiple threads calling `ls()` simultaneously can race on the
 shared tree-build state. Latent because the file table mostly
 serialises calls, but parallel directory listings hit it.
 
-### 1.16 MED — `AppleScript.outputBuffer` is unbounded
-**`barebones-os-macos/.../AppleScript.java:181-236`**
-
-A misbehaving / hostile AppleScript that emits forever exhausts
-heap. Add a hard ceiling (e.g. 1 MiB) and truncate with a marker.
+### 1.16 ~~MED — `AppleScript.outputBuffer` is unbounded~~ **FIXED**
+`ScriptOutputListener` now caps at 1 MiB
+(`MAX_OUTPUT_CHARS = 1 << 20`). Once exceeded, a visible
+`(... output truncated at <N> characters ...)` marker is appended
+and subsequent writes are dropped; a WARN line records the
+truncation. Regression tests in
+`AppleScriptOutputDecodingTest.truncatesAtMaxOutputCharsWithMarker`
+and `writesAfterTruncationAreDropped`.
 
 ### 1.17 ~~MED — Polling loops with `Thread.sleep` on the EDT~~ **MOSTLY FIXED**
 - ~~`PropertiesDialog`~~ **FIXED**: now a `javax.swing.Timer` that fires
@@ -262,12 +265,18 @@ concurrently with the wait. PR #24 removed both modules and the
 helper itself (no remaining callers); the codebase now has zero
 external-process invocations outside vendored Sun-RPC code.
 
-### 1.26 LOW — `System.err.println` in `Application.java:142,144`
-CLI code, but inconsistent with logger usage everywhere else.
+### 1.26 ~~LOW — `System.err.println` in `Application.java:142,144`~~ **KEPT BY DESIGN**
+`Application.printError` is the CLI bootstrap error reporter — it
+runs before SLF4J/Logback are fully wired and its output needs to
+land on the user's terminal directly. Same for `Main.java:58`
+("no graphical environment detected"). Replacing these with
+LOGGER calls would silently lose the message during
+pre-init failures.
 
-### 1.27 LOW — `EncodingDetector.main()` writes to `System.out`
-**`barebones-commons-io/.../EncodingDetector.java:187`**. Looks
-like leftover debug code in production sources.
+### 1.27 ~~LOW — `EncodingDetector.main()` writes to `System.out`~~ **KEPT BY DESIGN**
+The `main` is a CLI utility (`java EncodingDetector <file>` →
+prints the detected encoding). The println is the CLI's only
+output, not stray debug. Kept.
 
 ### 1.28 LOW — `ZipArchiveFile.java:154` hard-codes UTF-8 for symlink targets
 Zip spec allows non-UTF-8; an EFS-flagged entry is fine but legacy
@@ -334,10 +343,17 @@ gesture if target is read-only.
 
 ## 3. Logging gaps
 
-### 3.1 S3 module has zero log lines
-None of `S3File`, `S3Bucket`, `S3Object`, `S3Listing`,
-`S3ProtocolProvider` calls `LOGGER.*`. Diagnosing user reports
-("my upload hangs") is blind. Match the SFTP module's pattern.
+### 3.1 ~~S3 module has zero log lines~~ **FIXED**
+- `S3File.toIOException` now logs every AWS error at WARN with
+  status, AWS errorCode, URL, and message (no credentials).
+- `S3Connection.open` logs at INFO with endpoint, region, path-style
+  flag, and auth mode (`static` vs `default-chain`); `close` logs
+  underlying close failures at WARN.
+- `S3Listing.listChildrenAsFiles` logs each pagination page at DEBUG
+  with bucket / prefix / common-prefix count / contents count /
+  truncated flag.
+- `Activator.register` / `Activator.shutdown` log at INFO so
+  startup and shutdown are traceable.
 
 ### 3.2 ~~`MountExecutor` doesn't log stderr on failure~~ **OBSOLETE**
 The mount-helper module was removed in PR #24.
@@ -351,20 +367,25 @@ Fixed in Phase 14: `toString()` now returns
 credential-stripped FileURL; the password is never included.
 Regression test in `CredentialsMappingTest.toStringDoesNotIncludePassword`.
 
-### 3.5 `ThemeManager` exception sites lack file paths
-**`ThemeManager.java:495,532,563,593,823`** catch and log
-generically; the actual theme-file path is not in the message.
+### 3.5 ~~`ThemeManager` exception sites lack file paths~~ **FIXED**
+The `setCurrentTheme` save-failure log now includes the theme
+type, name, and full file path. The line numbers cited in the
+original report (`495,532,563,593,823`) are obsolete after
+Phase 17's try-with-resources conversions — the close-failure
+paths that lacked context are gone, and any IOException that
+propagates out carries the FileOutputStream's standard
+"file: ..." message.
 
-### 3.6 `AppleScript` decoder doesn't log invalid sequences
-**`barebones-os-macos/.../AppleScript.java:196-227`** — the
-`carryover` buffer falls into the `REPLACE` branch silently; a
-DEBUG line would help diagnose macOS encoding regressions like
-the chunk-boundary bug.
+### 3.6 ~~`AppleScript` decoder doesn't log invalid sequences~~ **FIXED**
+`ScriptOutputListener.processOutput` now logs at DEBUG when the
+`CharsetDecoder.REPLACE` branch fires, with the byte length and
+position. Recurrence of the chunk-boundary bug or any future macOS
+encoding regression will leave a trail.
 
-### 3.7 SFTP authentication failures logged at `info` instead of `warn`
-**`barebones-protocol-sftp/.../SFTPConnectionHandler.java:98,110`**
-— failed auth is the user-visible failure mode; `warn` is more
-appropriate for triage.
+### 3.7 ~~SFTP authentication failures logged at `info` instead of `warn`~~ **FIXED**
+`SFTPConnectionHandler.startConnection` now logs both the IOException
+and JSchException paths at WARN with the realm and exception message;
+the previous `info` lines are gone.
 
 ---
 

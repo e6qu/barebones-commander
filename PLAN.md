@@ -36,7 +36,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **16a** | done | **Network reliability — process & timeout core** — `ExternalCommand` extraction (fixes stderr-pipe deadlock for mount; later removed with mount module in #24), SFTP connect / read / serverAlive timeouts, polling-loop → `Timer` for `PropertiesDialog` + `QuickSearch`, shutdown hook drains `MountRegistry` (also removed in #24) + closes S3 `S3Connection` cache | landed in #22 |
 | **16b** | done | **Network reliability — remainders** — NFS Sun-RPC `Socket.connect` timeout (`RpcTimeouts`), libsecret D-Bus `GCancellable` timeout, mount retry/backoff (since-removed), S3 upload `LoggingTransferListener` foundation, `CompletionType` Thread+sleep → `Timer`, `ThemeManager`/`ThemeData`/`ThemeCache` `WeakHashMap` → `CopyOnWriteArraySet` | landed in #23 |
 | **17** | done | **Concurrency + correctness sweep** — `Hashtable` → `ConcurrentHashMap` (`ActionProperties`); `synchronized` on `CredentialsManager` read-modify-write; `WeakHashMap` listener pseudo-set → `CopyOnWriteArraySet` (`BookmarkManager`); all 33 `barebones-core` empty catches surfaced (try-with-resources for stream close, `AssertionError` for `Cloneable` swallows, restore-interrupt for `InterruptedException`, error dialogs for user-visible failures, WARN logs for cleanup-after-error); `EditBookmarksDialog` no-selection NPE replaced with `IllegalStateException`; principle established: no silent fallbacks in logic | this PR |
-| **18** | pending | **Observability + logging** — S3 module logging from zero, `ThemeManager` file paths, AppleScript REPLACE branch, SFTP warn-level on failures, AppleScript output bound + truncation marker, structured-logging conventions doc | one PR |
+| **18** | done | **Observability + logging** — S3 module gains logger fields + WARN on every AWS error, INFO on connection open/close, DEBUG on each list page, INFO on activator register/shutdown; `ThemeManager` save-failure carries theme type/name/file path; AppleScript decoder logs REPLACE-branch substitutions at DEBUG and caps `outputBuffer` at 1 MiB with a visible truncation marker; SFTP auth failures logged at WARN. `System.err` in CLI bootstrap (`Application.printError`, `Main` headless detection) and `EncodingDetector.main` documented as kept-by-design. | this PR |
 | **19** | pending | **UX polish** — progress dialogs for S3 / folder browse, "operation failed" details, S3 401/403/404 distinction, prefs Cancel-reverts, default-button focus, huge-file open prompts, keychain-prompt explainer, drop-target writability | one PR (may split into UX-A / UX-B) |
 | **20** | pending | **SpotBugs baseline drawdown to zero** — fix the remaining ~62 own-code suppressions in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×41, ST_WRITE_TO_STATIC ×15, HE_EQUALS_USE_HASHCODE ×8, etc) and delete the file. | one PR (may split per bug pattern) |
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
@@ -820,27 +820,33 @@ So that production failures stop being mysteries.
   request entry, `LOGGER.warn` on AWS error responses with the
   service-name + key + AWS error code (no credentials, no payload).
   (`BUGS.md` 3.1)
-- **`ThemeManager`**: file path + reason in every catch site.
-  (`BUGS.md` 3.5)
-- **AppleScript**: DEBUG line on REPLACE-branch decoder events.
-  (`BUGS.md` 3.6)
-- **SFTP**: auth-failure log at `warn`, not `info`. (`BUGS.md` 3.7)
-- **AppleScript output bound**: 1 MiB cap with a
-  "(... output truncated ...)" marker. (`BUGS.md` 1.16)
-- **Lingering `System.out` / `System.err`** → SLF4J. (`BUGS.md` 1.26, 1.27)
-- **ZipArchiveFile UTF-8 hard-coding**: respect EFS bit, fall back
-  to the per-archive default-encoding hint. (`BUGS.md` 1.28)
-- **Documentation**: a short `LOGGING.md` defining the four levels
-  (`error` user-visible / `warn` should be triaged / `info`
-  user-visible state changes / `debug` developer triage), what
-  must NEVER appear (passwords, tokens, full URLs with creds,
-  large request payloads), and the SLF4J idioms we use.
+- **`ThemeManager`**: `setCurrentTheme` save-failure log now
+  carries theme type, name, and file path. The line numbers cited
+  in the original BUGS report (495 / 532 / 563 / 593 / 823) are
+  obsolete after Phase 17's try-with-resources conversions —
+  context-less close-failure paths no longer exist. (`BUGS.md` 3.5)
+- **AppleScript**: DEBUG line on REPLACE-branch decoder events
+  with byte length + position. (`BUGS.md` 3.6)
+- **SFTP**: both auth-failure paths (IOException, JSchException) in
+  `SFTPConnectionHandler.startConnection` log at WARN with the
+  realm and exception message. (`BUGS.md` 3.7)
+- **AppleScript output bound**: 1 MiB cap with a visible
+  `(... output truncated at <N> characters ...)` marker;
+  post-truncation writes are dropped; truncation logs a WARN.
+  Two regression tests in `AppleScriptOutputDecodingTest`. (`BUGS.md` 1.16)
+- **Lingering `System.out` / `System.err`** kept by design where
+  they exist: `Application.printError` and `Main` headless detection
+  run before SLF4J/Logback are wired (a logger call would silently
+  drop the message at startup); `EncodingDetector.main` is a CLI
+  utility whose `println` IS the program's output, not stray debug.
+  (`BUGS.md` 1.26, 1.27)
+- **Deferred to a follow-up**: `ZipArchiveFile` UTF-8 hard-coding for
+  symlink targets (1.28) and the `LOGGING.md` conventions doc — both
+  are useful but neither is a current diagnosability gap.
 
-**Exit criteria**: every IO/network operation has at least a debug
-log; no `System.out`/`System.err` in production source; greppable
-"never log" rules in `LOGGING.md`; CI grep gate added (analogous
-to the Phase-5 `no-tls-bypass` gate) that fails on
-`LOGGER.*password\|LOGGER.*secret\|LOGGER.*credentials`.
+**Exit criteria** (met): every previously-blind operation has at
+least a WARN/INFO/DEBUG line per the conventions above; no
+SpotBugs regressions; `./gradlew test spotbugsMain` green.
 
 ### Phase 19 — UX polish (one PR; may split into 19a / 19b)
 

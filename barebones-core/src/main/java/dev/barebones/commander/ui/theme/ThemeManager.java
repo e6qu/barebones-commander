@@ -845,7 +845,13 @@ public class ThemeManager {
         // Saves the current theme if necessary.
         try {saveCurrentTheme();}
         catch(IOException e) {
-            LOGGER.warn("Couldn't save current theme", e);
+            String themeFilePath;
+            try { themeFilePath = getUserThemeFile().getAbsolutePath(); }
+            catch (IOException pathLookupFailed) { themeFilePath = "(unknown: " + pathLookupFailed.getMessage() + ")"; }
+            LOGGER.warn("Couldn't save current theme (type={}, name={}, file={})",
+                currentTheme != null ? currentTheme.getType() : "?",
+                currentTheme != null ? currentTheme.getName() : "?",
+                themeFilePath, e);
         }
 
         // Updates muCommander's configuration.

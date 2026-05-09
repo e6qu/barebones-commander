@@ -19,6 +19,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.URI;
 import java.util.Objects;
 
@@ -42,6 +45,8 @@ import java.util.Objects;
  * without baking provider-specific code into the protocol.
  */
 public final class S3Connection implements AutoCloseable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3Connection.class);
 
     private final S3Client client;
     private final S3AsyncClient asyncClient;
@@ -71,9 +76,18 @@ public final class S3Connection implements AutoCloseable {
     @Override
     public void close() {
         // Order: close higher-level managers before the underlying clients.
-        try { transferManager.close(); } catch (RuntimeException ignored) { }
-        try { asyncClient.close(); } catch (RuntimeException ignored) { }
+        try {
+            transferManager.close();
+        } catch (RuntimeException e) {
+            LOGGER.warn("S3 transferManager.close() failed", e);
+        }
+        try {
+            asyncClient.close();
+        } catch (RuntimeException e) {
+            LOGGER.warn("S3 asyncClient.close() failed", e);
+        }
         client.close();
+        LOGGER.debug("S3 connection closed");
     }
 
     /**
@@ -130,6 +144,9 @@ public final class S3Connection implements AutoCloseable {
             .s3Client(asyncClient)
             .build();
 
+        LOGGER.info("S3 connection opened: endpoint={} region={} pathStyle={} authMode={}",
+            endpoint, regionName, pathStyleAccess,
+            (accessKey != null && !accessKey.isBlank()) ? "static" : "default-chain");
         return new S3Connection(client, asyncClient, transferManager, regionName);
     }
 
