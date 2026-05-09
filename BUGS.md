@@ -286,26 +286,38 @@ encoded ones (CP932 etc) round-trip wrong.
 
 ## 2. UX gaps
 
-### 2.1 No progress for S3 multipart uploads
-`SpillingPutOutputStream` blocks at `completionFuture().join()`.
-PR #23 wired a `LoggingTransferListener` to log progress; a
-`JProgressBar` would consume the same `TransferListener` events
-emitted by AWS SDK v2.
+### 2.1 ~~No progress for S3 multipart uploads~~ **PARTIALLY FIXED**
+`SpillingPutOutputStream.uploadSpilledFile()` now publishes a
+status-bar hint via `ProgressNotifier` ("Uploading to s3://… (N
+bytes)") for the duration of the upload, so the user sees the
+operation isn't stuck at 100 % during the upload phase. AWS SDK's
+`LoggingTransferListener` continues to log per-10 % progress at
+INFO. A proper byte-accurate `JProgressBar` consuming the
+`TransferListener` events is still pending — needs a per-job
+sink wired through `FileJob.currentFileByteCounter` so the
+existing transfer progress dialog advances during the upload
+phase.
 
-### 2.2 No progress for folder browses / large directory listings
-Loading a 50k-entry SFTP directory freezes the panel; no spinner
-or partial-load indicator.
+### 2.2 ~~No progress for folder browses / large directory listings~~ **MOSTLY ALREADY-FIXED**
+`LocationChanger.tryChangeCurrentFolder` already swaps the cursor
+to `WAIT_CURSOR` for the duration of the folder change. A
+deferred-spinner timer (a busy indicator that appears only after
+≥ 1 s of waiting) would be nicer but the basic feedback is
+present. Marked as not-a-current-gap.
 
-### 2.3 ~~Destructive ops missing confirmation~~ **MOSTLY FIXED**
-`DynamicList.RemoveAction` (the action wired to the Delete /
-Backspace keystroke and to the EditBookmarksDialog /
-EditCredentialsDialog "Remove" buttons) now prompts with a
-`JOptionPane.showConfirmDialog` before deleting. The deletion
-disabled-by-TODO note in `BookmarkFile.java:228` is about the
-file-system-abstraction `BookmarkFile.delete()` — a different
-layer from the user-facing dialog — and is left as-is for now.
+### 2.3 ~~Destructive ops missing confirmation~~ **FIXED**
+- `DynamicList.RemoveAction` (the action wired to the Delete /
+  Backspace keystroke and to the EditBookmarksDialog /
+  EditCredentialsDialog "Remove" buttons) now prompts with a
+  `JOptionPane.showConfirmDialog` before deleting.
+- Batch-rename preview-before-apply is already wired:
+  `BatchRenameDialog` shows the live old→new map in
+  `RenameTableModel`, and `BatchRenameConfirmationDialog` (with
+  changed/unchanged counts) opens before the rename job starts.
 
-Batch rename preview-before-apply is still missing.
+The `BookmarkFile.delete()` `UnsupportedFileOperation` (file-system
+abstraction layer disabled by an upstream TODO) is a separate
+concern and is left as-is.
 
 ### 2.4 ~~"Operation failed" with no root cause~~ **FIXED**
 Two surfaces:
@@ -338,9 +350,15 @@ Six unit tests in `S3ErrorHandlerTest` pin each case.
 ### 2.7 ~~Tailscale "not installed" surfaces only when invoked~~ **OBSOLETE**
 Tailscale support was removed in PR #24.
 
-### 2.8 Preferences dialog: Cancel doesn't revert
-`AppearancePanel`, `ShortcutsPanel` apply changes immediately. The
-Cancel button is misleading.
+### 2.8 ~~Preferences dialog: Cancel doesn't revert~~ **AS-DESIGNED**
+Audit shows neither `AppearancePanel` nor `ShortcutsPanel`
+mutates global state live — both write only via their `commit()`
+method (called when the user presses OK or Apply). Cancel without
+Apply correctly drops pending changes. The Apply-then-Cancel case
+preserves the Apply'd changes, which is the standard "Apply means
+make permanent now" semantics across most apps. Marked as
+not-a-bug; original report appears to describe a previous
+version's behaviour.
 
 ### 2.9 ~~Dialogs without default-button focus~~ **FIXED**
 `InformationDialog.showDialog` already calls
@@ -359,10 +377,20 @@ subclass that might bypass this; none found in the current tree.
   fast (O(entries)); an extraction attempt on a malicious archive
   is capped well before exhausting memory.
 
-### 2.11 Keychain prompts unexpected for first-time users
+### 2.11 ~~Keychain prompts unexpected for first-time users~~ **FIXED**
+`CredentialsWriter.write` now posts a one-line status-bar hint
+("Saving credentials in the OS keychain — your system may prompt
+for authorisation") before the first `secrets.store()` call when
+the active backend is one that prompts (`macos-keychain` or
+`linux-libsecret`). Best-effort: if no `MainFrame` is present
+(headless tests, very-early startup) the hint is silently dropped
+rather than crashing.
+
+<!-- Original report:
 Phase 12: a new install on macOS pops the keychain authorisation
 prompt the first time credentials are saved. A status-bar one-liner
 explaining what's happening would help.
+-->
 
 ### 2.12 ~~Drag-and-drop doesn't validate target writability~~ **FIXED**
 `FileDropTargetListener.isDragAccepted` now rejects copy / move

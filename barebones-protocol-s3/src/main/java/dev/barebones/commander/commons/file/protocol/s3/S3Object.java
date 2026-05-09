@@ -12,6 +12,7 @@ package dev.barebones.commander.commons.file.protocol.s3;
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.UnsupportedFileOperationException;
+import dev.barebones.commander.commons.file.progress.ProgressNotifier;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -323,11 +324,17 @@ public class S3Object extends S3File {
         }
 
         private void uploadSpilledFile() throws IOException {
+            String key = parsed.key();
+            String hint = "Uploading to s3://" + parsed.bucket() + "/" + key
+                + " (" + bytesWritten + " bytes)";
             // LoggingTransferListener emits one log line at each
-            // 10 % milestone. Reusable foundation for a future
-            // JProgressBar that subscribes to the same TransferListener.
+            // 10 % milestone. The status-bar hint surfaces "I'm not
+            // stuck" to the user; without it, the FileJob progress
+            // dialog reaches 100 % at end-of-spill and then the
+            // upload runs invisibly during close().
             LOGGER.info("S3 multipart upload starting: {} ({} bytes) → s3://{}/{}",
-                spillFile, bytesWritten, parsed.bucket(), parsed.key());
+                spillFile, bytesWritten, parsed.bucket(), key);
+            ProgressNotifier.post(hint);
             try {
                 connection.transferManager()
                     .uploadFile(UploadFileRequest.builder()
@@ -335,19 +342,21 @@ public class S3Object extends S3File {
                         .addTransferListener(LoggingTransferListener.create())
                         .putObjectRequest(PutObjectRequest.builder()
                             .bucket(parsed.bucket())
-                            .key(parsed.key())
+                            .key(key)
                             .build())
                         .build())
                     .completionFuture()
                     .join();
                 LOGGER.info("S3 multipart upload complete: s3://{}/{} ({} bytes)",
-                    parsed.bucket(), parsed.key(), bytesWritten);
+                    parsed.bucket(), key, bytesWritten);
             } catch (CompletionException e) {
                 Throwable cause = e.getCause() != null ? e.getCause() : e;
                 if (cause instanceof S3Exception se) {
                     throw toIOException(se, fileURL);
                 }
                 throw new IOException("S3 multipart upload failed: " + cause.getMessage(), cause);
+            } finally {
+                ProgressNotifier.clear();
             }
         }
     }

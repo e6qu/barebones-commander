@@ -37,7 +37,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **16b** | done | **Network reliability — remainders** — NFS Sun-RPC `Socket.connect` timeout (`RpcTimeouts`), libsecret D-Bus `GCancellable` timeout, mount retry/backoff (since-removed), S3 upload `LoggingTransferListener` foundation, `CompletionType` Thread+sleep → `Timer`, `ThemeManager`/`ThemeData`/`ThemeCache` `WeakHashMap` → `CopyOnWriteArraySet` | landed in #23 |
 | **17** | done | **Concurrency + correctness sweep** — `Hashtable` → `ConcurrentHashMap` (`ActionProperties`); `synchronized` on `CredentialsManager` read-modify-write; `WeakHashMap` listener pseudo-set → `CopyOnWriteArraySet` (`BookmarkManager`); all 33 `barebones-core` empty catches surfaced (try-with-resources for stream close, `AssertionError` for `Cloneable` swallows, restore-interrupt for `InterruptedException`, error dialogs for user-visible failures, WARN logs for cleanup-after-error); `EditBookmarksDialog` no-selection NPE replaced with `IllegalStateException`; principle established: no silent fallbacks in logic | this PR |
 | **18** | done | **Observability + logging** — S3 module gains logger fields + WARN on every AWS error, INFO on connection open/close, DEBUG on each list page, INFO on activator register/shutdown; `ThemeManager` save-failure carries theme type/name/file path; AppleScript decoder logs REPLACE-branch substitutions at DEBUG and caps `outputBuffer` at 1 MiB with a visible truncation marker; SFTP auth failures logged at WARN. `System.err` in CLI bootstrap (`Application.printError`, `Main` headless detection) and `EncodingDetector.main` documented as kept-by-design. | this PR |
-| **19** | done | **UX polish** — `S3ErrorHandler` typed 401/403/404; error-dialog throwable plumbed through Phase-17 sites; `DynamicList.RemoveAction` prompts before deletion; `FileJob.showErrorDialog` Throwable overload + sweep of every job error site (`TransferFileJob` / `CopyJob` / `MoveJob` / `DeleteJob` / `ArchiveJob` / `MkdirJob` / `AbstractCopyJob` / `ChangeFileAttributesJob` / `SplitFileJob` / `CalculateChecksumJob`) so "operation failed" surfaces the underlying exception class + message; `FileDropTargetListener` rejects drops on non-writable target folders. Default-button focus already in place on `InformationDialog` / `QuestionDialog`. Huge-file open: archive path is bounded by Phase-13 `BoundedExtraction`; viewer path was the actual gap and is fixed. Deferred to a follow-up: progress dialogs for S3 / folder browse (needs SwingWorker shim), prefs Cancel-revert (substantial per-panel snapshot/restore), keychain-prompt explainer, batch-rename preview. | this PR |
+| **19** | done | **UX polish** — `S3ErrorHandler` typed 401/403/404; error-dialog throwable plumbed through Phase-17 + every `FileJob` error site (~25 catches across 10 job classes) so "operation failed" surfaces the underlying exception class+message; `DynamicList.RemoveAction` prompts before deletion; `FileDropTargetListener` rejects drops on non-writable target folders; `ProgressNotifier` SPI wires producer-side hints (S3 `SpillingPutOutputStream` upload phase) into the active MainFrame status bar; `CredentialsWriter` posts a status-bar explainer the first time the OS keychain is about to prompt. Default-button focus already in place; huge-file open already covered by Phase-13 `BoundedExtraction` (archives) and viewer prompt; folder-browse cursor already swaps to WAIT; prefs Cancel-revert is as-designed (panels only mutate state via `commit()`); batch-rename preview is already wired (`BatchRenameDialog.RenameTableModel` + `BatchRenameConfirmationDialog`). Real-`JProgressBar` for S3 upload still pending (needs per-job sink wiring). | this PR |
 | **20** | pending | **SpotBugs baseline drawdown to zero** — fix the remaining ~62 own-code suppressions in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×41, ST_WRITE_TO_STATIC ×15, HE_EQUALS_USE_HASHCODE ×8, etc) and delete the file. | one PR (may split per bug pattern) |
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
 | **22** | pending | **Modern logging migration** — survey alternatives (`java.lang.System.Logger` JEP 264 + Logback bridge, `tinylog 2`, `JUL` direct, etc.); propose one; migrate ~70 `LoggerFactory.getLogger` call sites; drop the slf4j-api dep. | one PR (audit doc first, then code) |
@@ -898,22 +898,51 @@ SpotBugs regressions; `./gradlew test spotbugsMain` green.
   / count caps); the actual gap was the text viewer, which Phase 13
   also fixed. Marked fixed.
 
-#### Deferred to a follow-up
+#### Items previously thought deferred — what actually shipped
 
-- **Progress dialogs** for S3 multipart uploads (needs the
-  SwingWorker shim from 16b's parking lot) and folder browses
-  ≥ 1 s. (`BUGS.md` 2.1, 2.2)
-- **Preferences Cancel-revert**: substantial per-panel snapshot/
-  restore plumbing in `AppearancePanel` / `ShortcutsPanel` /
-  every prefs panel. (`BUGS.md` 2.8)
-- **Keychain prompt explainer**: needs a status-bar surface.
-  (`BUGS.md` 2.11)
-- **Batch-rename preview**: substantial UI feature.
-  (`BUGS.md` 2.3 remainder)
+- **S3 progress** (`BUGS.md` 2.1): added a small `ProgressNotifier`
+  SPI in `barebones-commons-file/.../progress/` — single-slot
+  global hint with no-op default. `S3Object.SpillingPutOutputStream.
+  uploadSpilledFile()` posts "Uploading to s3://… (N bytes)" for
+  the duration of the upload (in addition to AWS SDK's
+  `LoggingTransferListener` per-10 % INFO logs). `barebones-core`'s
+  Activator installs a sink that routes to the active MainFrame
+  status bar via `SwingUtilities.invokeLater`. The remaining gap
+  (byte-accurate `JProgressBar` advancing through the upload phase)
+  needs per-job sink wiring through `FileJob.currentFileByteCounter`
+  and is the right shape of follow-up.
+- **Folder-browse spinner** (`BUGS.md` 2.2): not a current gap —
+  `LocationChanger.tryChangeCurrentFolder` already swaps cursor to
+  `WAIT_CURSOR`. Deferred-spinner timer (busy indicator after ≥ 1 s)
+  is a nice-to-have; not a current bug.
+- **Prefs Cancel-revert** (`BUGS.md` 2.8): not a bug — audit shows
+  `AppearancePanel` and `ShortcutsPanel` only mutate state via
+  `commit()`. Cancel-without-Apply correctly drops pending edits.
+  Apply-then-Cancel preserves Apply'd changes by standard semantics.
+- **Keychain prompt explainer** (`BUGS.md` 2.11): `CredentialsWriter`
+  posts a one-line status-bar hint before the first
+  `secrets.store()` call when the active backend is a prompting one
+  (`macos-keychain` / `linux-libsecret`). Best-effort: silently
+  dropped if no MainFrame yet.
+- **Batch-rename preview** (`BUGS.md` 2.3): already wired —
+  `BatchRenameDialog` shows the live old→new map in
+  `RenameTableModel`, and `BatchRenameConfirmationDialog` (with
+  changed/unchanged counts) opens before the rename job runs.
+  No change needed.
 
-**Exit criteria** (met for the items above): every job error path
-surfaces the underlying exception; destructive deletes prompt;
-drops on read-only folders are rejected at drag time.
+#### Still pending (smaller in light of the above audit)
+
+- **Real `JProgressBar` for S3 multipart uploads**: requires per-job
+  sink wiring through `FileJob.currentFileByteCounter` — a small
+  interface on `OutputStream` that S3 implements + a check in
+  `TransferFileJob`. Phase 19 stops at the status-bar hint.
+  (`BUGS.md` 2.1 remainder)
+
+**Exit criteria** (met): every job error path surfaces the
+underlying exception; destructive deletes prompt; drops on
+read-only folders are rejected at drag time; S3 multipart uploads
+post a status hint so the dialog isn't silently stuck at 100 %;
+keychain prompts come with a status-bar explainer.
 
 ### Phase 20 — SpotBugs baseline drawdown to zero (one PR; may split per pattern)
 
