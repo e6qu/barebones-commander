@@ -40,23 +40,46 @@ jobs:
       - name: SpotBugs + FindSecBugs
         run: ./gradlew spotbugsMain --stacktrace
 
-      - name: Stage SARIF reports for upload
+      - name: Merge per-module SARIF into a single run
         if: always()
         run: |
           set -euo pipefail
-          # Stage outside the project tree to avoid the find→cp loop
-          # that would recurse into the destination directory.
-          STAGE="$RUNNER_TEMP/spotbugs-sarif"
-          mkdir -p "$STAGE"
-          while IFS= read -r -d '' f; do
-            mod=$(echo "$f" | sed -E 's|^\./([^/]+)/.*|\1|')
-            cp "$f" "$STAGE/${mod}.sarif"
-          done < <(find . -path '*/build/reports/spotbugs/main.sarif' -size +0 -print0)
-          ls -la "$STAGE"
+          # codeql/upload-sarif rejects multiple runs sharing one
+          # category; merge every per-module run's results into a
+          # single run so the upload is a single SARIF document.
+          python3 - <<'PY'
+          import json, glob, os
+          out = {
+              "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+              "version": "2.1.0",
+              "runs": [{
+                  "tool": {"driver": {"name": "SpotBugs", "rules": []}},
+                  "results": [],
+              }],
+          }
+          rules_seen = {}
+          for f in sorted(glob.glob("**/build/reports/spotbugs/main.sarif", recursive=True)):
+              if os.path.getsize(f) == 0:
+                  continue
+              with open(f) as fh:
+                  d = json.load(fh)
+              for run in d.get("runs", []):
+                  for rule in run.get("tool", {}).get("driver", {}).get("rules", []):
+                      rid = rule.get("id")
+                      if rid and rid not in rules_seen:
+                          rules_seen[rid] = rule
+                  out["runs"][0]["results"].extend(run.get("results", []))
+          out["runs"][0]["tool"]["driver"]["rules"] = list(rules_seen.values())
+          os.makedirs(os.environ["RUNNER_TEMP"], exist_ok=True)
+          dest = os.path.join(os.environ["RUNNER_TEMP"], "spotbugs-merged.sarif")
+          with open(dest, "w") as fh:
+              json.dump(out, fh)
+          print(f"merged: {len(out['runs'][0]['results'])} results, {len(rules_seen)} rules → {dest}")
+          PY
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: ${{ runner.temp }}/spotbugs-sarif
+          sarif_file: ${{ runner.temp }}/spotbugs-merged.sarif
           category: spotbugs
