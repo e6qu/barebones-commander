@@ -18,6 +18,9 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +32,8 @@ import java.util.List;
  * loop has one home.
  */
 final class S3Listing {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3Listing.class);
 
     private S3Listing() {
     }
@@ -45,6 +50,7 @@ final class S3Listing {
 
         List<AbstractFile> out = new ArrayList<>();
         String continuationToken = null;
+        int pageCount = 0;
         try {
             do {
                 ListObjectsV2Request.Builder req = ListObjectsV2Request.builder()
@@ -55,6 +61,10 @@ final class S3Listing {
                     req.continuationToken(continuationToken);
                 }
                 ListObjectsV2Response resp = connection.client().listObjectsV2(req.build());
+                pageCount++;
+                LOGGER.debug("S3 list page {}: bucket={} prefix={} commonPrefixes={} contents={} truncated={}",
+                    pageCount, bucket, prefix, resp.commonPrefixes().size(),
+                    resp.contents().size(), resp.isTruncated());
 
                 // Common prefixes → pseudo-directories
                 for (CommonPrefix cp : resp.commonPrefixes()) {

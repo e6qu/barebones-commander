@@ -19,12 +19,17 @@ import dev.barebones.commander.commons.file.protocol.ProtocolProvider;
 import dev.barebones.commander.commons.file.protocol.s3.ui.S3PanelProvider;
 import dev.barebones.commander.protocol.ui.ProtocolPanelRegistry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Phase-2-style register entry point. Registers the s3 scheme with
  * the file factory and the {@link S3PanelProvider} with the
  * Connect-to-server dialog so the user gets an "S3" tab.
  */
 public final class Activator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Activator.class);
 
     /** Set by {@link #register()}; consumed by {@link #shutdown()}. */
     private static volatile S3ProtocolProvider installedProvider;
@@ -61,6 +66,7 @@ public final class Activator {
         });
 
         ProtocolPanelRegistry.register(new S3PanelProvider());
+        LOGGER.info("S3 protocol registered");
     }
 
     /**
@@ -71,6 +77,7 @@ public final class Activator {
     public static void shutdown() {
         S3ProtocolProvider provider = installedProvider;
         if (provider != null) {
+            LOGGER.info("closing S3 connections at shutdown");
             provider.close();
         }
     }

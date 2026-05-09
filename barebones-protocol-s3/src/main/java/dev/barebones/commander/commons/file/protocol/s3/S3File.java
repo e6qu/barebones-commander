@@ -24,6 +24,9 @@ import dev.barebones.commander.commons.io.RandomAccessOutputStream;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Objects;
@@ -40,6 +43,8 @@ import java.util.Objects;
  * honest than fabricating values.
  */
 public abstract class S3File extends ProtocolFile {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3File.class);
 
     /** Read-only permissions: anyone can read, no one can write. */
     static final FilePermissions READ_ONLY_PERMISSIONS =
@@ -165,9 +170,15 @@ public abstract class S3File extends ProtocolFile {
         return connection.client();
     }
 
-    /** Translates S3 SDK exceptions into AuthException (403/401) or generic IOException. */
+    /** Translates S3 SDK exceptions into AuthException (403/401) or generic IOException.
+     *  Logs the AWS error at WARN with status + AWS errorCode + url
+     *  (no credentials, no payload). */
     static IOException toIOException(AwsServiceException e, FileURL url) {
         int status = e.statusCode();
+        String awsCode = e.awsErrorDetails() != null
+            ? e.awsErrorDetails().errorCode() : "(none)";
+        LOGGER.warn("S3 error: status={} awsCode={} url={} msg={}",
+            status, awsCode, url, e.getMessage());
         if (status == 401 || status == 403) {
             return new AuthException(url, e.getMessage());
         }

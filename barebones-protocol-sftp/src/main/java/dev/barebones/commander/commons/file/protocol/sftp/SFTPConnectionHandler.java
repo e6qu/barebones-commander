@@ -129,7 +129,7 @@ class SFTPConnectionHandler extends ConnectionHandler implements AutoCloseable {
             LOGGER.info("authentication complete");
         }
         catch(IOException e) {
-            LOGGER.info("IOException thrown while starting connection", e);
+            LOGGER.warn("SFTP connection to {} failed: {}", realm, e.getMessage(), e);
 
             // Disconnect if something went wrong
             if(session!=null && session.isConnected())
@@ -141,8 +141,7 @@ class SFTPConnectionHandler extends ConnectionHandler implements AutoCloseable {
             // Re-throw exception
             throw e;
 		} catch (JSchException e) {
-			LOGGER.info("Caught exception while authenticating: {}", e.getMessage());
-			LOGGER.debug("Exception:", e);
+			LOGGER.warn("SFTP authentication to {} failed: {}", realm, e.getMessage(), e);
             throwAuthException(e.getMessage());
 		}
     }

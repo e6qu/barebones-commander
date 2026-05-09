@@ -129,6 +129,62 @@ public class AppleScriptOutputDecodingTest {
     }
 
     /**
+     * A runaway / hostile AppleScript could otherwise stream to stdout
+     * indefinitely. The listener now caps at MAX_OUTPUT_CHARS and
+     * appends a visible truncation marker so the cap is observable
+     * at the call site.
+     */
+    @Test
+    public void truncatesAtMaxOutputCharsWithMarker() throws Exception {
+        StringBuilder out = new StringBuilder();
+        AppleScript.ScriptOutputListener listener = newListener(out);
+
+        // Push one byte per call to exercise the streaming path through
+        // the boundary; ASCII so each byte is one char.
+        int over = AppleScript.ScriptOutputListener.MAX_OUTPUT_CHARS + 5_000;
+        byte[] one = new byte[]{ 'x' };
+        for (int i = 0; i < over; i++) {
+            listener.processOutput(one, 0, 1);
+        }
+        listener.processDied(0);
+
+        String result = out.toString();
+        org.testng.Assert.assertTrue(
+            result.length() >= AppleScript.ScriptOutputListener.MAX_OUTPUT_CHARS,
+            "expected at least the cap, got " + result.length());
+        org.testng.Assert.assertTrue(
+            result.endsWith(AppleScript.ScriptOutputListener.TRUNCATION_MARKER),
+            "expected truncation marker at end; tail was: "
+                + result.substring(Math.max(0, result.length() - 100)));
+    }
+
+    /**
+     * Once truncation has fired, no further writes accumulate — the
+     * marker stays at the tail.
+     */
+    @Test
+    public void writesAfterTruncationAreDropped() throws Exception {
+        StringBuilder out = new StringBuilder();
+        AppleScript.ScriptOutputListener listener = newListener(out);
+
+        // Trigger truncation in one shot.
+        byte[] big = new byte[AppleScript.ScriptOutputListener.MAX_OUTPUT_CHARS + 100];
+        java.util.Arrays.fill(big, (byte) 'x');
+        listener.processOutput(big, 0, big.length);
+        int afterFirstWrite = out.length();
+
+        // Subsequent writes should be no-ops on the buffer.
+        listener.processOutput(big, 0, 50);
+        listener.processOutput(big, 0, 50);
+        listener.processDied(0);
+
+        assertEquals(out.length(), afterFirstWrite,
+            "post-truncation writes should not extend the buffer");
+        org.testng.Assert.assertTrue(
+            out.toString().endsWith(AppleScript.ScriptOutputListener.TRUNCATION_MARKER));
+    }
+
+    /**
      * Regression test for the SECOND bug uncovered by Phase-11
      * macOS-15 CI runs of {@code AppleScriptTest.testScriptOutput}.
      *

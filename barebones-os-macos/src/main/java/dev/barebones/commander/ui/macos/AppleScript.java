@@ -180,11 +180,21 @@ public class AppleScript {
     // processOutput / processDied directly.
     static class ScriptOutputListener implements ProcessListener {
 
+        /** Hard cap on accumulated script output. A runaway / hostile
+         *  AppleScript could otherwise exhaust the heap by streaming
+         *  to stdout indefinitely. Once exceeded, the output is
+         *  capped and the truncation marker is appended so the cap
+         *  is visible at the call site. */
+        static final int MAX_OUTPUT_CHARS = 1 << 20; // 1 MiB
+        static final String TRUNCATION_MARKER = "\n(... output truncated at "
+            + MAX_OUTPUT_CHARS + " characters ...)";
+
         private final StringBuilder outputBuffer;
         private final CharsetDecoder decoder;
         // Buffer for partial multi-byte sequences that span chunk boundaries.
         // UTF-8 codepoints are at most 4 bytes; 8 leaves headroom.
         private final ByteBuffer carryover = ByteBuffer.allocate(8);
+        private boolean truncated;
 
         private ScriptOutputListener(StringBuilder outputBuffer, String outputEncoding) {
             this.outputBuffer = outputBuffer;
@@ -194,6 +204,9 @@ public class AppleScript {
         }
 
         public synchronized void processOutput(byte[] buffer, int offset, int length) {
+            if (truncated) {
+                return;
+            }
             ByteBuffer in;
             if (carryover.position() > 0) {
                 int carrySize = carryover.position();
@@ -211,6 +224,9 @@ public class AppleScript {
             while (true) {
                 CoderResult result = decoder.decode(in, out, false);
                 appendCharBuffer(out);
+                if (truncated) {
+                    return;
+                }
                 if (result.isUnderflow()) {
                     if (in.hasRemaining()) {
                         carryover.put(in);
@@ -221,18 +237,46 @@ public class AppleScript {
                     out = CharBuffer.allocate(out.capacity() * 2);
                     continue;
                 }
-                // Malformed / unmappable: REPLACE policy already applied
-                // a U+FFFD; skip the offending byte(s) and continue.
+                // Malformed / unmappable: REPLACE policy already wrote a
+                // U+FFFD into out. Log so macOS encoding regressions like
+                // the chunk-boundary bug surface in DEBUG output.
+                LOGGER.debug("osascript decoder: replaced {} byte(s) at position {} with U+FFFD",
+                    result.length(), in.position());
                 in.position(in.position() + result.length());
             }
         }
 
         private void appendCharBuffer(CharBuffer out) {
             out.flip();
-            if (out.hasRemaining()) {
+            if (!out.hasRemaining()) {
+                out.clear();
+                return;
+            }
+            int remaining = MAX_OUTPUT_CHARS - outputBuffer.length();
+            if (remaining <= 0) {
+                markTruncated();
+                out.clear();
+                return;
+            }
+            if (out.remaining() <= remaining) {
                 outputBuffer.append(out);
+            } else {
+                // Append exactly the prefix that fits, then mark.
+                CharBuffer slice = out.slice();
+                slice.limit(remaining);
+                outputBuffer.append(slice);
+                markTruncated();
             }
             out.clear();
+        }
+
+        private void markTruncated() {
+            if (!truncated) {
+                truncated = true;
+                outputBuffer.append(TRUNCATION_MARKER);
+                LOGGER.warn("osascript output exceeded {} characters and was truncated",
+                    MAX_OUTPUT_CHARS);
+            }
         }
 
         public void processOutput(String s) {
