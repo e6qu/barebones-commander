@@ -36,9 +36,10 @@ What "−13.6% non-test LOC" really represents:
   on the AWS SDK v2 (~1,400 LOC of new module + ~600 LOC of tests).
 
 What grew:
-- 6 brand-new modules: `barebones-mount-helper`, `barebones-tailscale`,
-  `barebones-secret-store`, `barebones-protocol-s3` + Phase-7 build
-  scaffolding + Phase-8 `release.yaml`.
+- New modules: `barebones-secret-store`, `barebones-protocol-s3`
+  + Phase-7 build scaffolding + Phase-8 `release.yaml`.
+  (`barebones-tailscale` and `barebones-mount-helper` were added
+  in Phase 10 and both removed in PR #24.)
 - Test count rose from ~11k → 11.5k (small, but every Phase-since-9
   PR added tests rather than the historical "smoke test only" pattern).
 
@@ -147,7 +148,7 @@ Fix: hash credentials (SHA-256) into the cache key.
 
 `SpillingPutOutputStream.close()` is reachable from a Swing copy-job
 on the EDT. A 40 MiB upload then freezes the UI for the full upload
-duration. Needs a SwingWorker shim like Phase-10c's `MountTask`.
+duration. Needs a SwingWorker shim.
 
 ### 1.13 MED — Decompression-bomb / per-entry size limits absent
 **`barebones-format-zip/`**, **`barebones-format-tar/`**, **`barebones-archiver/`**
@@ -233,20 +234,16 @@ the stream leaks. Use try-with-resources.
 if `getChannel()` throws, the `FileInputStream` is unreachable and
 unclosed.
 
-### 1.24 MED — Mount username with `=` or `,` injects mount options
-**`barebones-mount-helper/.../LinuxMountCommand.java:67`**
+### 1.24 ~~MED — Mount username with `=` or `,` injects mount options~~ **OBSOLETE**
+The mount-helper module was removed in PR #24.
 
-For SMB the argv slot is `"user=" + spec.username()`. ProcessBuilder
-prevents shell injection, but `mount.cifs` interprets the `-o`
-value as comma-separated options. A username `alice,uid=0` would
-inject `uid=0`. `MountSpec` should reject these characters.
-
-### 1.25 ~~MED — Tailscale process stderr read after `waitFor`, can deadlock on big stderr~~ **FIXED**
-Both `TailscaleClient` and `MountExecutor` now route through a
-shared `ExternalCommand` helper in `barebones-commons-util` that
-drains stdout and stderr on dedicated daemon threads concurrently
-with the wait. Regression test pushes 256 KiB to stderr to confirm
-the deadlock is gone.
+### 1.25 ~~MED — External-process stderr read after `waitFor`, can deadlock on big stderr~~ **FIXED, then OBSOLETE**
+While the mount-helper and tailscale modules existed, both routed
+through a shared `ExternalCommand` helper in `barebones-commons-util`
+that drained stdout and stderr on dedicated daemon threads
+concurrently with the wait. PR #24 removed both modules and the
+helper itself (no remaining callers); the codebase now has zero
+external-process invocations outside vendored Sun-RPC code.
 
 ### 1.26 LOW — `System.err.println` in `Application.java:142,144`
 CLI code, but inconsistent with logger usage everywhere else.
@@ -264,10 +261,10 @@ encoded ones (CP932 etc) round-trip wrong.
 ## 2. UX gaps
 
 ### 2.1 No progress for S3 multipart uploads
-`SpillingPutOutputStream` blocks at `completionFuture().join()`
-with no progress callback wired in. AWS SDK v2 emits
-`TransferListener` events — surface them in a `JProgressBar` like
-`MountTask` does.
+`SpillingPutOutputStream` blocks at `completionFuture().join()`.
+PR #23 wired a `LoggingTransferListener` to log progress; a
+`JProgressBar` would consume the same `TransferListener` events
+emitted by AWS SDK v2.
 
 ### 2.2 No progress for folder browses / large directory listings
 Loading a 50k-entry SFTP directory freezes the panel; no spinner
@@ -284,19 +281,15 @@ or partial-load indicator.
 exception and surface a generic translator string. Reveal the
 root cause in an expandable detail section.
 
-### 2.5 Mount errors don't suggest next step
-"Operation not permitted" on `mount.nfs` should hint *try
-sudo / use the system mount helper / install nfs-common*.
-Currently the user sees raw stderr.
+### 2.5 ~~Mount errors don't suggest next step~~ **OBSOLETE**
+The mount-helper module was removed in PR #24.
 
 ### 2.6 S3 errors don't distinguish 401 / 403 / 404
 All wrap into a generic `IOException`. The user can't tell whether
 to fix credentials, fix the bucket name, or check IAM.
 
-### 2.7 Tailscale "not installed" surfaces only when invoked
-`TailscalePeerPanel` reads it from status, but the menu item itself
-doesn't disable / hide. A startup banner or a disabled menu item
-would be clearer than the per-action error.
+### 2.7 ~~Tailscale "not installed" surfaces only when invoked~~ **OBSOLETE**
+Tailscale support was removed in PR #24.
 
 ### 2.8 Preferences dialog: Cancel doesn't revert
 `AppearancePanel`, `ShortcutsPanel` apply changes immediately. The
@@ -329,13 +322,11 @@ None of `S3File`, `S3Bucket`, `S3Object`, `S3Listing`,
 `S3ProtocolProvider` calls `LOGGER.*`. Diagnosing user reports
 ("my upload hangs") is blind. Match the SFTP module's pattern.
 
-### 3.2 `MountExecutor` doesn't log stderr on failure
-`MountResult.stderr()` is captured but never auto-logged. Headless
-runs lose the failure reason.
+### 3.2 ~~`MountExecutor` doesn't log stderr on failure~~ **OBSOLETE**
+The mount-helper module was removed in PR #24.
 
-### 3.3 Tailscale timeout messages drop context
-"tailscale file cp timed out after 5s" — but which peer, which
-file? Include argv (sanitised) in the timeout exception.
+### 3.3 ~~Tailscale timeout messages drop context~~ **OBSOLETE**
+Tailscale support was removed in PR #24.
 
 ### 3.4 ~~`CredentialsMapping.toString()` may dump full URL with credentials~~ **FIXED**
 Fixed in Phase 14: `toString()` now returns
@@ -370,12 +361,8 @@ fuse via `LibsecretTimeout.withCancellable`. A daemon timer fires
 daemon makes the call return `G_IO_ERROR_CANCELLED` instead of
 hanging forever.
 
-### 4.2 ~~No retry / backoff on transient mount failures~~ **FIXED**
-`MountExecutor.mountWithRetry(spec, attempts, baseBackoffMs)` now
-wraps the bare `mount` invocation. Default 3 attempts with
-exponential backoff (500 → 1 000 → 2 000 ms…), capped at 30 s.
-Retries on non-zero exit OR IOException (covers
-`ExternalCommand` timeouts).
+### 4.2 ~~No retry / backoff on transient mount failures~~ **OBSOLETE**
+The mount-helper module was removed in PR #24.
 
 ### 4.3 S3 connection cache never closes connections (see 1.19)
 
@@ -394,8 +381,8 @@ not listener pseudo-sets, and are unaffected.
 ### 4.6 PARTIALLY FIXED — Shutdown hook registered for `SecretStore`
 Phase 14 wires `Bootstrap.shutdown()` as a JVM shutdown hook
 that closes the active `SecretStoreService.store()` (frees
-libsecret schema, zeroes AES-GCM key). Mount-helper temp files
-and cached `S3Connection`s are NOT yet cleaned up — to land in
+libsecret schema, zeroes AES-GCM key). Cached `S3Connection`s
+are NOT yet cleaned up — to land in
 Phase 16 alongside the rest of the shutdown / lifecycle work.
 
 ### 4.7 S3 `SpillingPutOutputStream` temp file: deletion-error masks upload error
@@ -445,11 +432,11 @@ Each of `barebones-format-{zip,tar,gzip,bzip2,xz}` has its own
 and let new formats register without touching `Bootstrap.java`.
 
 ### 5.5 Connectivity panels don't belong in `barebones-protocol-*`
-`MountPanel`, `TailscalePeerPanel` live next to `S3Panel` /
-`SFTPPanel` even though they aren't real protocols (they shell out
-to the OS / build a redirect URL). Better to live in a
+~~`MountPanel` lived next to `S3Panel` / `SFTPPanel` even though
+it wasn't a real protocol; removed in PR #24.~~ Remaining
+recommendation: pull `S3Panel` / `SFTPPanel` / `NFSPanel` into a
 `barebones-ui-connect` module that depends on
-`barebones-protocol-api`.
+`barebones-protocol-api`, leaving the protocol modules headless.
 
 ### 5.6 Action system: 100+ enum entries × 100+ classes × Map<String,Object> params
 **`barebones-os-api/.../ActionType.java`** + every
@@ -481,10 +468,10 @@ JDK 30 upgrade may not.
 
 ### 5.10 Hard-coded magic numbers across UI
 `REFRESH_RATE`, `TICK`, `POPUP_DELAY`, `CELL_EDITING_STATE_PERIOD`,
-SwingWorker timeouts, mount timeouts (30s), tailscale timeout (5s),
-SFTP connect (5s) — all sprinkled across files. A central
-`Tunables` class with overrideable defaults would let power users
-tune without rebuilds.
+SwingWorker timeouts, SFTP connect (now configurable via
+`SftpTimeouts`) — sprinkled across files. A central `Tunables`
+class with overrideable defaults would let power users tune
+without rebuilds.
 
 ### 5.11 Mixed dep-direction patterns
 Some modules use `compileOnly` cross-module deps so that runtime
@@ -503,11 +490,11 @@ for someone to fix them.
 
 ## 6. Refactor proposals *(REVIEW-ONLY — do NOT execute without approval)*
 
-### 6.1 Extract `ProcessRunnerHelper`
-Shared by `MountExecutor` and `TailscaleClient`: identical
-"start, close stdin, drain stdout/stderr concurrently, wait with
-timeout, return (exit, stdout, stderr)" pattern. A single helper
-also fixes the stderr-deadlock issue (1.25) in one place.
+### 6.1 ~~Extract `ProcessRunnerHelper`~~ **DONE, then OBSOLETE**
+Landed in PR #22 as `ExternalCommand` in `barebones-commons-util`,
+used by `MountExecutor` and `TailscaleClient`. PR #24 removed
+both callers and the helper itself (no remaining external-process
+sites outside vendored Sun-RPC code).
 
 ### 6.2 Extract `S3ErrorHandler`
 Move `S3File.toIOException(AwsServiceException, FileURL)` to its
@@ -516,9 +503,9 @@ own utility; map 401/403 → `AuthException`, 404 → file-not-found,
 both 2.6 (UX) and 1.18 (false-negative).
 
 ### 6.3 Centralised `LastValues` for connect-dialog panels
-Mount, Tailscale, S3, SFTP, NFS panels each define a
-`private static final class LastValues`. Pull it into a generic
-`ServerPanelMemory<T>` keyed on panel-class.
+S3, SFTP, NFS panels each define a `private static final class
+LastValues`. Pull it into a generic `ServerPanelMemory<T>` keyed
+on panel-class.
 
 ### 6.4 Centralised archive-entry validator
 A `SafePath.validate(String entryName)` in `barebones-archiver`
@@ -537,11 +524,12 @@ caps total expanded bytes / entry count / per-entry size, with
 per-archive-format-or-source defaults.
 
 ### 6.7 SwingWorker shim for S3 uploads
-Same pattern as `MountTask` from Phase 10c. Fixes 1.12 and 2.1
-together.
+Wrap `S3Object.SpillingPutOutputStream.uploadSpilledFile()` in a
+`SwingWorker` so progress events have a place to drive a
+`JProgressBar`. Fixes 1.12 and 2.1 together.
 
-### 6.8 Mount-helper retry policy
-`MountExecutor.withRetry(spec, attempts, backoff)` — solves 4.2.
+### 6.8 ~~Mount-helper retry policy~~ **OBSOLETE**
+The mount-helper module was removed in PR #24.
 
 ### 6.9 Tunables class
 Single source of truth for the 30+ scattered timeout/poll
