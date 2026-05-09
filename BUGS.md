@@ -25,7 +25,7 @@ so triage is cheap. Severity buckets:
 | current non-test                                                                |  1,128 | 183,368 |
 | current test                                                                    |     61 |  11,519 |
 | **Net delta** (non-test, vs upstream)                                           | **−163** | **−28,886 (−13.6%)** |
-| **Phase 15 dead-code sweep** (vs Phase-12 close)                                |    −7 | **−2,075** |
+| **Phase 15 dead-code sweep** (vs Phase-12 close)                                |   −23 | **~−6,000** |
 
 What "−13.6% non-test LOC" really represents:
 - Out-of-scope module deletions in Phase 1 (HTTP, SMB, FTP, Dropbox,
