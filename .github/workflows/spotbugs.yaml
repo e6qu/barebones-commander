@@ -43,15 +43,15 @@ jobs:
       - name: Stage SARIF reports for upload
         if: always()
         run: |
-          set -e
+          set -euo pipefail
           # Stage outside the project tree to avoid the find→cp loop
           # that would recurse into the destination directory.
           STAGE="$RUNNER_TEMP/spotbugs-sarif"
           mkdir -p "$STAGE"
-          for f in $(find . -path '*/build/reports/spotbugs/main.sarif' -size +0); do
+          while IFS= read -r -d '' f; do
             mod=$(echo "$f" | sed -E 's|^\./([^/]+)/.*|\1|')
             cp "$f" "$STAGE/${mod}.sarif"
-          done
+          done < <(find . -path '*/build/reports/spotbugs/main.sarif' -size +0 -print0)
           ls -la "$STAGE"
 
       - name: Upload SARIF to GitHub Code Scanning
