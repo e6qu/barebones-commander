@@ -26,6 +26,7 @@ import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 
@@ -148,7 +149,12 @@ public class DynamicList<E> extends JList {
 
 
     /**
-     * Action which, when triggered, removes the currently selected item from the list and selects the previous item (if any).
+     * Action which, when triggered, removes the currently selected
+     * item from the list and selects the previous item (if any).
+     *
+     * Asks for confirmation first — deletion is destructive and the
+     * action is bound to DELETE / BACKSPACE keystrokes that an
+     * unfocused user might hit by accident.
      */
     private class RemoveAction extends AbstractAction {
 
@@ -162,13 +168,23 @@ public class DynamicList<E> extends JList {
             if(!isIndexValid(selectedIndex))
                 return;
 
+            E item = items.elementAt(selectedIndex);
+            int answer = JOptionPane.showConfirmDialog(DynamicList.this,
+                Translator.get("confirm_delete", String.valueOf(item)),
+                Translator.get("delete"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+            if (answer != JOptionPane.YES_OPTION) {
+                return;
+            }
+
             items.removeElementAt(selectedIndex);
 
             // Select previous item (if there is one) and make sure it is visible.
             int nbItems = items.size();
             if(nbItems>0)
                 selectAndScroll(Math.min(selectedIndex, nbItems-1));
-            
+
             // Request focus back on the list
             requestFocus();
         }

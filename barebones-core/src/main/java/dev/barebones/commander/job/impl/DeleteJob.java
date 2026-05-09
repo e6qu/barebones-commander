@@ -145,7 +145,8 @@ public class DeleteJob extends FileJob {
                     catch(IOException e) {
                         LOGGER.debug("IOException caught", e);
 
-                        ret = showErrorDialog(errorDialogTitle, Translator.get("cannot_read_file", file.getAbsolutePath()));
+                        ret = showErrorDialog(errorDialogTitle,
+                            Translator.get("cannot_read_file", file.getAbsolutePath()), e);
                         // Retry loops
                         if(ret==FileJobAction.RETRY)
                             continue;
@@ -169,8 +170,8 @@ public class DeleteJob extends FileJob {
                 LOGGER.debug("IOException caught", e);
 
                 ret = showErrorDialog(errorDialogTitle,
-                                      Translator.get(file.isDirectory()?"cannot_delete_folder":"cannot_delete_file", file.getName())
-                                      );
+                                      Translator.get(file.isDirectory()?"cannot_delete_folder":"cannot_delete_file", file.getName()),
+                                      e);
                 // Retry loops
                 if(ret==FileJobAction.RETRY)
                     continue;
@@ -217,7 +218,8 @@ public class DeleteJob extends FileJob {
                     break;
                 }
                 catch(IOException e) {
-                    if(showErrorDialog(errorDialogTitle, Translator.get("error_while_optimizing_archive", archiveFile.getName()))==FileJobAction.RETRY)
+                    if(showErrorDialog(errorDialogTitle,
+                            Translator.get("error_while_optimizing_archive", archiveFile.getName()), e)==FileJobAction.RETRY)
                         continue;
 
                     break;

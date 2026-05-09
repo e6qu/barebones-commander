@@ -134,8 +134,10 @@ public class AddBookmarkDialog extends FocusDialog implements ActionListener, Do
                 BookmarkManager.writeBookmarks(false);
             } catch(Exception e2) {
                 InformationDialog.showErrorDialog(this,
+                    Translator.get("error"),
                     Translator.get("bookmarks_dialog.cannot_write_bookmarks"),
-                    e2.getMessage());
+                    e2.getMessage(),
+                    e2);
             }
             dispose();
         }

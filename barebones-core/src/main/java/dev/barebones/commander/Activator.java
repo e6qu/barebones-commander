@@ -74,6 +74,18 @@ public class Activator {
     public void register() {
         LOGGER.debug("starting");
         portable = "portable".equals(properties.get("app_mode"));
+        // Route producer-side progress hints (S3 multipart upload during
+        // OutputStream.close(), etc.) into the active MainFrame's status
+        // bar. Lazy lookup so the hint works once the UI is up; before
+        // then publishes are silently dropped, which is desired.
+        dev.barebones.commander.commons.file.progress.ProgressNotifier.install(message -> {
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                MainFrame mf = WindowManager.getCurrentMainFrame();
+                if (mf != null && mf.getStatusBar() != null) {
+                    mf.getStatusBar().setStatusInfo(message == null ? "" : message);
+                }
+            });
+        });
         MuSnapshot.registerHandler(new SearchSnapshot());
         MuSnapshot.registerHandler(new ViewerSnapshot());
         MuSnapshot.registerHandler(new EditorSnapshot());

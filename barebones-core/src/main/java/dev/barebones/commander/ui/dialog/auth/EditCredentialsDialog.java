@@ -220,8 +220,10 @@ public class EditCredentialsDialog extends FocusDialog implements ActionListener
             CredentialsManager.writeCredentials(false);
         } catch(Exception e) {
             InformationDialog.showErrorDialog(this,
+                Translator.get("error"),
                 Translator.get("credentials_dialog.cannot_write_credentials"),
-                e.getMessage());
+                e.getMessage(),
+                e);
         }
         super.dispose();
     }

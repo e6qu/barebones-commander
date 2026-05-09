@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dev.barebones.commander.commons.file.AbstractFile;
+import dev.barebones.commander.commons.file.FileOperation;
 import dev.barebones.commander.commons.file.util.FileSet;
 import dev.barebones.commander.commons.runtime.OsFamily;
 import dev.barebones.commander.conf.MuConfigurations;
@@ -225,9 +226,35 @@ public class FileDropTargetListener implements DropTargetListener {
             return false;
         }
 
+        // In normal (copy / move) mode, refuse the drop if the target
+        // folder is not writable — the cursor flips to "no drop" so
+        // the user sees the rejection before letting go of the mouse.
+        // Skipped in change-folder-only mode since no write happens.
+        if (!changeFolderOnlyMode && !isTargetFolderWritable()) {
+            return false;
+        }
+
         // Refuse drag if the drag was initiated by the same FolderPanel, or if its current folder is the same
         // as this one
         return !DnDContext.isDragInitiatedByMucommander() || !isPointToTargetFolder(DnDContext.getDragInitiator());
+    }
+
+    /**
+     * True if the active panel's current folder will accept new
+     * children. Defensive: an exception during the check is treated
+     * as not-writable so the drop is rejected rather than blowing
+     * up the drag handler.
+     */
+    private boolean isTargetFolderWritable() {
+        try {
+            AbstractFile target = folderPanel.getCurrentFolder();
+            return target != null
+                && target.isDirectory()
+                && target.isFileOperationSupported(FileOperation.WRITE_FILE);
+        } catch (RuntimeException e) {
+            LOGGER.debug("writability check on drop target failed; rejecting drop", e);
+            return false;
+        }
     }
 
     private boolean isPointToTargetFolder(FolderPanel dragInitiator) {

@@ -18,8 +18,13 @@ import dev.barebones.commander.commons.util.xml.XmlWriter;
 import dev.barebones.commander.secret.SecretRef;
 import dev.barebones.commander.secret.SecretStore;
 import dev.barebones.commander.secret.SecretStoreService;
+import dev.barebones.commander.text.Translator;
+import dev.barebones.commander.ui.main.MainFrame;
+import dev.barebones.commander.ui.main.WindowManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.swing.SwingUtilities;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -65,6 +70,8 @@ public class CredentialsWriter implements CredentialsConstants {
         Iterator<CredentialsMapping> iterator =
             CredentialsManager.getPersistentCredentialMappings().iterator();
 
+        boolean firstSecretStore = true;
+
         while (iterator.hasNext()) {
             CredentialsMapping credentialsMapping = iterator.next();
             FileURL realm = credentialsMapping.getRealm();
@@ -73,6 +80,10 @@ public class CredentialsWriter implements CredentialsConstants {
             // Push the secret into the keychain BEFORE writing the
             // XML, so the XML always references something real.
             if (secrets != null) {
+                if (firstSecretStore) {
+                    explainKeychainPromptIfNeeded(secrets);
+                    firstSecretStore = false;
+                }
                 try {
                     secrets.store(
                         new SecretRef(SECRET_STORE_SERVICE, realm.toString(false)),
@@ -115,5 +126,27 @@ public class CredentialsWriter implements CredentialsConstants {
         }
 
         out.endElement(ELEMENT_ROOT);
+    }
+
+    /**
+     * Posts a one-line status-bar message before the first
+     * {@code secrets.store()} call when the active backend is one
+     * that prompts the user (macOS Keychain, Linux libsecret).
+     * Without this, a first-time user sees an unexplained system
+     * prompt and may dismiss it. Best-effort: no MainFrame yet
+     * (e.g. headless tests, very early startup) → silent.
+     */
+    private static void explainKeychainPromptIfNeeded(SecretStore secrets) {
+        String backend = secrets.backendName();
+        boolean prompts = "macos-keychain".equals(backend) || "linux-libsecret".equals(backend);
+        if (!prompts) {
+            return;
+        }
+        MainFrame frame = WindowManager.getCurrentMainFrame();
+        if (frame == null || frame.getStatusBar() == null) {
+            return;
+        }
+        String message = Translator.get("status_bar.keychain_storing");
+        SwingUtilities.invokeLater(() -> frame.getStatusBar().setStatusInfo(message));
     }
 }

@@ -330,26 +330,32 @@ public abstract class TransferFileJob extends FileJob {
                 switch(e.getReason()) {
                     // Could not open source file for read
                     case OPENING_SOURCE:
-                        choice = showErrorDialog(errorDialogTitle, Translator.get("cannot_read_file", sourceFile.getName()));
+                        choice = showErrorDialog(errorDialogTitle,
+                            Translator.get("cannot_read_file", sourceFile.getName()), e);
                         break;
                     // Could not open destination file for write
                     case OPENING_DESTINATION:
-                        choice = showErrorDialog(errorDialogTitle, Translator.get("cannot_write_file", destFile.getName()));
+                        choice = showErrorDialog(errorDialogTitle,
+                            Translator.get("cannot_write_file", destFile.getName()), e);
                         break;
                     // Source and destination files are identical
                     case SOURCE_AND_DESTINATION_IDENTICAL:
+                        // The exception is the predicate result, not a transport
+                        // failure — message already self-explanatory.
                         choice = showErrorDialog(errorDialogTitle, Translator.get("same_source_destination"));
                         break;
                     // Checksum of source and destination files don't match
                     case CHECKSUM_MISMATCH:
-                        choice = showErrorDialog(errorDialogTitle, Translator.get("integrity_check_error"));
+                        choice = showErrorDialog(errorDialogTitle,
+                            Translator.get("integrity_check_error"), e);
                         break;
                     default:
                         choice = showErrorDialog(errorDialogTitle,
                                                  Translator.get("error_while_transferring", sourceFile.getName()),
                                                  Arrays.asList(FileJobAction.SKIP, FileJobAction.SKIP_ALL,
                                                          FileJobAction.APPEND, FileJobAction.RETRY,
-                                                         FileJobAction.CANCEL));
+                                                         FileJobAction.CANCEL),
+                                                 e);
                     break;
                 }
 

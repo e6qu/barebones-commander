@@ -116,7 +116,8 @@ public class CalculateChecksumJob extends TransferFileJob {
                 }
                 catch(IOException e) {
                     // file.ls() failed
-                    DialogAction ret = showErrorDialog(Translator.get("error"), Translator.get("cannot_read_folder", file.getName()));
+                    DialogAction ret = showErrorDialog(Translator.get("error"),
+                        Translator.get("cannot_read_folder", file.getName()), e);
                     // Retry loops
                     if(ret==FileJobAction.RETRY)
                         continue;
@@ -179,8 +180,9 @@ public class CalculateChecksumJob extends TransferFileJob {
                     return false;
 
                 LOGGER.debug("Caught IOException", e);
-                
-                DialogAction ret = showErrorDialog(Translator.get("error"), Translator.get("error_while_transferring", file.getAbsolutePath()));
+
+                DialogAction ret = showErrorDialog(Translator.get("error"),
+                    Translator.get("error_while_transferring", file.getAbsolutePath()), e);
                 // Retry loops
                 if(ret==FileJobAction.RETRY) {
                     // Reset processed bytes currentFileByteCounter
@@ -240,8 +242,8 @@ public class CalculateChecksumJob extends TransferFileJob {
             catch(Exception e) {
                 DialogAction choice = showErrorDialog(Translator.get("error"),
                                              Translator.get("cannot_write_file", checksumFile.getName()),
-                                             Arrays.asList(FileJobAction.CANCEL, FileJobAction.RETRY)
-                                             );
+                                             Arrays.asList(FileJobAction.CANCEL, FileJobAction.RETRY),
+                                             e);
 
                 // Retry loops
                 if(choice == FileJobAction.RETRY)

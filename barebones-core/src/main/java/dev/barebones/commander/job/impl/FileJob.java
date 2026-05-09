@@ -508,13 +508,45 @@ public abstract class FileJob implements dev.barebones.commander.job.FileJob {
     /**
      * Displays an error dialog with the specified title and message,
      * offers to skip the file, retry or cancel and waits for user choice.
-     * The job is stopped if 'cancel' or 'close' was chosen, and the result 
+     * The job is stopped if 'cancel' or 'close' was chosen, and the result
      * is returned.
      */
     protected DialogAction showErrorDialog(String title, String message) {
         List<DialogAction> actions = Arrays.asList(FileJobAction.SKIP, FileJobAction.SKIP_ALL,
                         FileJobAction.RETRY, FileJobAction.CANCEL);
         return showErrorDialog(title, message, actions);
+    }
+
+    /**
+     * Convenience overload that appends the underlying exception's
+     * class + message to the displayed dialog text. Same Skip / SkipAll /
+     * Retry / Cancel choices as the base overload.
+     *
+     * Use this at any site where the catch already has the exception
+     * in scope — surfacing the cause is cheap, the user-friendly
+     * summary stays at the top, and the operator gets the load-bearing
+     * detail for triage.
+     */
+    protected DialogAction showErrorDialog(String title, String message, Throwable cause) {
+        return showErrorDialog(title, appendCauseDetail(message, cause));
+    }
+
+    /**
+     * Convenience overload that appends the underlying exception's
+     * class + message to the displayed dialog text but lets the caller
+     * specify the action choices.
+     */
+    protected DialogAction showErrorDialog(String title, String message,
+                                           List<DialogAction> actionChoices, Throwable cause) {
+        return showErrorDialog(title, appendCauseDetail(message, cause), actionChoices);
+    }
+
+    private static String appendCauseDetail(String message, Throwable cause) {
+        if (cause == null) return message;
+        String causeMsg = cause.getMessage();
+        String suffix = "\n\n" + cause.getClass().getSimpleName()
+            + (causeMsg != null && !causeMsg.isBlank() ? ": " + causeMsg : "");
+        return message == null ? suffix.stripLeading() : message + suffix;
     }
 
 

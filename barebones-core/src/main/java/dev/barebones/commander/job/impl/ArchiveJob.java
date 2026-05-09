@@ -130,8 +130,9 @@ public class ArchiveJob extends TransferFileJob {
                     return false;
 
                 LOGGER.debug("Caught IOException", e);
-                
-                DialogAction ret = showErrorDialog(Translator.get("pack_dialog.error_title"), Translator.get("error_while_transferring", file.getAbsolutePath()));
+
+                DialogAction ret = showErrorDialog(Translator.get("pack_dialog.error_title"),
+                    Translator.get("error_while_transferring", file.getAbsolutePath()), e);
                 // Retry loops
                 if (ret == FileJobAction.RETRY) {
                     // Reset processed bytes currentFileByteCounter
@@ -193,8 +194,8 @@ public class ArchiveJob extends TransferFileJob {
             catch(Exception e) {
                 DialogAction choice = showErrorDialog(Translator.get("pack_dialog.error_title"),
                                              Translator.get("cannot_write_file", destFile.getName()),
-                                             Arrays.asList(FileJobAction.CANCEL, FileJobAction.RETRY)
-                                             );
+                                             Arrays.asList(FileJobAction.CANCEL, FileJobAction.RETRY),
+                                             e);
 
                 // Retry loops
                 if(choice == FileJobAction.RETRY)

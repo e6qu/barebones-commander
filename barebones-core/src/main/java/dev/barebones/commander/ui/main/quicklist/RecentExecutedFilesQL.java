@@ -69,7 +69,9 @@ public class RecentExecutedFilesQL extends QuickListWithIcons<AbstractFile> {
                 LOGGER.warn("failed to open {} via desktop manager", item.getURL(), e);
                 InformationDialog.showErrorDialog(mainFrame.getJFrame(),
                     Translator.get("error"),
-                    Translator.get("file_editor.cannot_open_file", item.getName()));
+                    Translator.get("file_editor.cannot_open_file", item.getName()),
+                    e.getMessage(),
+                    e);
             }
         }
 

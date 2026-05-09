@@ -286,58 +286,137 @@ encoded ones (CP932 etc) round-trip wrong.
 
 ## 2. UX gaps
 
-### 2.1 No progress for S3 multipart uploads
-`SpillingPutOutputStream` blocks at `completionFuture().join()`.
-PR #23 wired a `LoggingTransferListener` to log progress; a
-`JProgressBar` would consume the same `TransferListener` events
-emitted by AWS SDK v2.
+### 2.1 ~~No progress for S3 multipart uploads~~ **FIXED**
+`SpillingPutOutputStream.uploadSpilledFile()` attaches a
+`StatusBarProgressListener` (a `software.amazon.awssdk.transfer
+.s3.progress.TransferListener`) that publishes byte-accurate
+progress via `ProgressNotifier` to the active MainFrame status
+bar — e.g. "Uploading to s3://bucket/key: 47.3 MiB / 100.0 MiB
+(47%)". Throttled to one publish per 250 ms so a fast LAN upload
+doesn't flicker the status bar; always publishes the final 100 %.
+AWS SDK's `LoggingTransferListener` continues to emit per-10 %
+INFO logs.
 
-### 2.2 No progress for folder browses / large directory listings
-Loading a 50k-entry SFTP directory freezes the panel; no spinner
-or partial-load indicator.
+The byte formatter is locale-free (KiB / MiB / GiB / TiB,
+English-style decimal) on purpose — it runs on AWS SDK Netty
+threads with no `Translator` initialised. Pinned by
+`StatusBarProgressFormatTest` (5/5).
 
-### 2.3 Destructive ops missing confirmation
-- Bookmark deletion is currently *disabled* per a TODO in
-  `BookmarkManager.java:228` ("quick fix for #329"). Re-enable
-  with a confirmation prompt.
-- Batch rename has no preview-before-apply.
+A `JProgressBar`-in-the-FileJob-dialog version would require
+per-job sink wiring through `FileJob.currentFileByteCounter`;
+not implemented because the status-bar surface is sufficient
+("the upload isn't stuck") and the dialog progress reflects
+local-write bytes which is a different (and also valid)
+progress signal.
 
-### 2.4 "Operation failed" with no root cause
-`TransferFileJob` and several siblings catch the underlying
-exception and surface a generic translator string. Reveal the
-root cause in an expandable detail section.
+### 2.2 ~~No progress for folder browses / large directory listings~~ **MOSTLY ALREADY-FIXED**
+`LocationChanger.tryChangeCurrentFolder` already swaps the cursor
+to `WAIT_CURSOR` for the duration of the folder change. A
+deferred-spinner timer (a busy indicator that appears only after
+≥ 1 s of waiting) would be nicer but the basic feedback is
+present. Marked as not-a-current-gap.
+
+### 2.3 ~~Destructive ops missing confirmation~~ **FIXED**
+- `DynamicList.RemoveAction` (the action wired to the Delete /
+  Backspace keystroke and to the EditBookmarksDialog /
+  EditCredentialsDialog "Remove" buttons) now prompts with a
+  `JOptionPane.showConfirmDialog` before deleting.
+- Batch-rename preview-before-apply is already wired:
+  `BatchRenameDialog` shows the live old→new map in
+  `RenameTableModel`, and `BatchRenameConfirmationDialog` (with
+  changed/unchanged counts) opens before the rename job starts.
+
+The `BookmarkFile.delete()` `UnsupportedFileOperation` (file-system
+abstraction layer disabled by an upstream TODO) is a separate
+concern and is left as-is.
+
+### 2.4 ~~"Operation failed" with no root cause~~ **FIXED**
+Two surfaces:
+
+1. `InformationDialog.showErrorDialog(parent, title, message,
+   caption, throwable)` shows the throwable's stack trace in an
+   expandable / collapsible Details panel. The Phase-17 sites
+   (`AddBookmarkDialog`, `EditBookmarksDialog`,
+   `EditCredentialsDialog`, `ServerConnectDialog.browse`,
+   `RecentExecutedFilesQL.acceptListItem`) route through it.
+2. `FileJob.showErrorDialog` gained `(title, message, Throwable)`
+   and `(title, message, actionChoices, Throwable)` overloads
+   that append `<exception class>: <message>` to the displayed
+   text. Every catch in `TransferFileJob` / `CopyJob` / `MoveJob`
+   / `DeleteJob` / `ArchiveJob` / `MkdirJob` / `AbstractCopyJob`
+   / `ChangeFileAttributesJob` / `SplitFileJob` /
+   `CalculateChecksumJob` was walked and the exception threaded
+   through (~25 sites).
 
 ### 2.5 ~~Mount errors don't suggest next step~~ **OBSOLETE**
 The mount-helper module was removed in PR #24.
 
-### 2.6 S3 errors don't distinguish 401 / 403 / 404
-All wrap into a generic `IOException`. The user can't tell whether
-to fix credentials, fix the bucket name, or check IAM.
+### 2.6 ~~S3 errors don't distinguish 401 / 403 / 404~~ **FIXED**
+`S3ErrorHandler.toIOException` now returns:
+- `AuthException` for 401/403 (credentials dialog re-prompts)
+- `FileNotFoundException` for 404 / `NoSuchKey` / `NoSuchBucket`
+- generic `IOException` for everything else (5xx, throttling, etc.)
+Six unit tests in `S3ErrorHandlerTest` pin each case.
 
 ### 2.7 ~~Tailscale "not installed" surfaces only when invoked~~ **OBSOLETE**
 Tailscale support was removed in PR #24.
 
-### 2.8 Preferences dialog: Cancel doesn't revert
-`AppearancePanel`, `ShortcutsPanel` apply changes immediately. The
-Cancel button is misleading.
+### 2.8 ~~Preferences dialog: Cancel doesn't revert~~ **AS-DESIGNED**
+Audit shows neither `AppearancePanel` nor `ShortcutsPanel`
+mutates global state live — both write only via their `commit()`
+method (called when the user presses OK or Apply). Cancel without
+Apply correctly drops pending changes. The Apply-then-Cancel case
+preserves the Apply'd changes, which is the standard "Apply means
+make permanent now" semantics across most apps. Marked as
+not-a-bug; original report appears to describe a previous
+version's behaviour.
 
-### 2.9 Dialogs without default-button focus
-`InformationDialog`, `QuestionDialog` open with no preselected
-button; pressing Enter does nothing until you tab.
+### 2.9 ~~Dialogs without default-button focus~~ **FIXED**
+`InformationDialog.showDialog` already calls
+`setInitialFocusComponent(okButton)`; `QuestionDialog.init` calls
+`setInitialFocusComponent(buttons.get(0))`. The original report's
+premise ("no preselected button") is no longer accurate — every
+dialog opens with a default. Audit kept for any specific dialog
+subclass that might bypass this; none found in the current tree.
 
-### 2.10 No file-size prompt before opening huge archives / files
-Both archive opening and the text viewer happily try to load a
-multi-GB blob and freeze.
+### 2.10 ~~No file-size prompt before opening huge archives / files~~ **FIXED**
+- Text viewer: Phase 13 added the `JOptionPane` prompt above
+  100 MiB.
+- Archive open: bounded by Phase-13 `BoundedExtraction` (per-entry
+  1 GiB / cumulative 10× compressed or 100 MiB floor / count
+  100k caps). A user opening a 5 GB zip lists the central directory
+  fast (O(entries)); an extraction attempt on a malicious archive
+  is capped well before exhausting memory.
 
-### 2.11 Keychain prompts unexpected for first-time users
+### 2.11 ~~Keychain prompts unexpected for first-time users~~ **FIXED**
+`CredentialsWriter.write` now posts a one-line status-bar hint
+("Saving credentials in the OS keychain — your system may prompt
+for authorisation") before the first `secrets.store()` call when
+the active backend is one that prompts (`macos-keychain` or
+`linux-libsecret`). Best-effort: if no `MainFrame` is present
+(headless tests, very-early startup) the hint is silently dropped
+rather than crashing.
+
+<!-- Original report:
 Phase 12: a new install on macOS pops the keychain authorisation
 prompt the first time credentials are saved. A status-bar one-liner
 explaining what's happening would help.
+-->
 
-### 2.12 Drag-and-drop doesn't validate target writability
+### 2.12 ~~Drag-and-drop doesn't validate target writability~~ **FIXED**
+`FileDropTargetListener.isDragAccepted` now rejects copy / move
+drops when the target folder fails
+`isFileOperationSupported(WRITE_FILE)` or isn't a directory.
+The cursor flips to "no drop" so the user sees the rejection
+before letting go of the mouse. Skipped in change-folder-only
+mode (no write happens). Defensive `try` so a writability-check
+exception rejects the drop rather than blowing up the drag handler.
+
+<!-- Original report:
 **`barebones-core/.../ui/dnd/FileDropTargetListener.java`** accepts
 the drop and only fails after the user releases. Reject the drop
 gesture if target is read-only.
+-->
 
 ---
 

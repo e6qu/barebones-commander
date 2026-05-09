@@ -10,7 +10,6 @@
 package dev.barebones.commander.commons.file.protocol.s3;
 
 import dev.barebones.commander.commons.file.AbstractFile;
-import dev.barebones.commander.commons.file.AuthException;
 import dev.barebones.commander.commons.file.FilePermissions;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.PermissionAccess;
@@ -23,9 +22,6 @@ import dev.barebones.commander.commons.io.RandomAccessOutputStream;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -43,8 +39,6 @@ import java.util.Objects;
  * honest than fabricating values.
  */
 public abstract class S3File extends ProtocolFile {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(S3File.class);
 
     /** Read-only permissions: anyone can read, no one can write. */
     static final FilePermissions READ_ONLY_PERMISSIONS =
@@ -170,24 +164,14 @@ public abstract class S3File extends ProtocolFile {
         return connection.client();
     }
 
-    /** Translates S3 SDK exceptions into AuthException (403/401) or generic IOException.
-     *  Logs the AWS error at WARN with status + AWS errorCode + url
-     *  (no credentials, no payload). */
+    /** Delegates to {@link S3ErrorHandler#toIOException(AwsServiceException, FileURL)}.
+     *  Kept as a convenience so call sites don't all need the
+     *  extra import; the translation rule lives in one place. */
     static IOException toIOException(AwsServiceException e, FileURL url) {
-        int status = e.statusCode();
-        String awsCode = e.awsErrorDetails() != null
-            ? e.awsErrorDetails().errorCode() : "(none)";
-        LOGGER.warn("S3 error: status={} awsCode={} url={} msg={}",
-            status, awsCode, url, e.getMessage());
-        if (status == 401 || status == 403) {
-            return new AuthException(url, e.getMessage());
-        }
-        return new IOException(e.awsErrorDetails() != null
-            ? e.awsErrorDetails().errorMessage()
-            : e.getMessage(), e);
+        return S3ErrorHandler.toIOException(e, url);
     }
 
     static IOException toIOException(S3Exception e, FileURL url) {
-        return toIOException((AwsServiceException) e, url);
+        return S3ErrorHandler.toIOException(e, url);
     }
 }
