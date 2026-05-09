@@ -1,0 +1,58 @@
+name: SpotBugs
+
+# SpotBugs + FindSecBugs static analysis. Runs on every PR and push
+# to main. Fails the build on any HIGH-confidence finding not listed
+# in config/spotbugs/exclude.xml (the Phase-9 baseline). SARIF output
+# is uploaded to GitHub Code Scanning so findings are visible in the
+# Security tab.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  spotbugs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25 (toolchain target)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Set up JDK 21 (Gradle runtime)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: gradle/wrapper-validation-action@v2
+      - uses: gradle/actions/setup-gradle@v3
+
+      - name: SpotBugs + FindSecBugs
+        run: ./gradlew spotbugsMain --stacktrace
+
+      - name: Merge SARIF reports
+        if: always()
+        run: |
+          set -e
+          mkdir -p build/reports/spotbugs-merged
+          # GitHub code-scanning accepts a single SARIF or a directory
+          # tree; uploading the per-module reports as a tree works.
+          find . -path '*/build/reports/spotbugs/main.sarif' -size +0 -exec \
+            cp --parents {} build/reports/spotbugs-merged/ \;
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: build/reports/spotbugs-merged
+          category: spotbugs
