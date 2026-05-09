@@ -40,19 +40,23 @@ jobs:
       - name: SpotBugs + FindSecBugs
         run: ./gradlew spotbugsMain --stacktrace
 
-      - name: Merge SARIF reports
+      - name: Stage SARIF reports for upload
         if: always()
         run: |
           set -e
-          mkdir -p build/reports/spotbugs-merged
-          # GitHub code-scanning accepts a single SARIF or a directory
-          # tree; uploading the per-module reports as a tree works.
-          find . -path '*/build/reports/spotbugs/main.sarif' -size +0 -exec \
-            cp --parents {} build/reports/spotbugs-merged/ \;
+          # Stage outside the project tree to avoid the find→cp loop
+          # that would recurse into the destination directory.
+          STAGE="$RUNNER_TEMP/spotbugs-sarif"
+          mkdir -p "$STAGE"
+          for f in $(find . -path '*/build/reports/spotbugs/main.sarif' -size +0); do
+            mod=$(echo "$f" | sed -E 's|^\./([^/]+)/.*|\1|')
+            cp "$f" "$STAGE/${mod}.sarif"
+          done
+          ls -la "$STAGE"
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: build/reports/spotbugs-merged
+          sarif_file: ${{ runner.temp }}/spotbugs-sarif
           category: spotbugs
