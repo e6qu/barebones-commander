@@ -8,13 +8,13 @@
  */
 package dev.barebones.commander.ui.macos;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 
-import static org.testng.Assert.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
 
 /**
  * Regression test for the AppleScript stdout decoding fix.
@@ -149,10 +149,10 @@ public class AppleScriptOutputDecodingTest {
         listener.processDied(0);
 
         String result = out.toString();
-        org.testng.Assert.assertTrue(
+        dev.barebones.commander.test.TestAssertions.assertTrue(
             result.length() >= AppleScript.ScriptOutputListener.MAX_OUTPUT_CHARS,
             "expected at least the cap, got " + result.length());
-        org.testng.Assert.assertTrue(
+        dev.barebones.commander.test.TestAssertions.assertTrue(
             result.endsWith(AppleScript.ScriptOutputListener.TRUNCATION_MARKER),
             "expected truncation marker at end; tail was: "
                 + result.substring(Math.max(0, result.length() - 100)));
@@ -180,7 +180,7 @@ public class AppleScriptOutputDecodingTest {
 
         assertEquals(out.length(), afterFirstWrite,
             "post-truncation writes should not extend the buffer");
-        org.testng.Assert.assertTrue(
+        dev.barebones.commander.test.TestAssertions.assertTrue(
             out.toString().endsWith(AppleScript.ScriptOutputListener.TRUNCATION_MARKER));
     }
 

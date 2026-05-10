@@ -17,7 +17,7 @@
 
 package dev.barebones.commander.commons.conf;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * A test case for the {@link BufferedConfigurationExplorer} class.

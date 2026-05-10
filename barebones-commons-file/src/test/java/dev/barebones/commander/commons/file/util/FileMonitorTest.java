@@ -22,8 +22,8 @@ import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.PermissionAccess;
 import dev.barebones.commander.commons.file.PermissionType;
 import dev.barebones.commander.commons.io.RandomAccessOutputStream;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -146,7 +146,7 @@ public class FileMonitorTest implements FileMonitorConstants {
     /**
      * Called after each test, stops monitoring file changes.
      */
-    @AfterMethod
+    @AfterEach
     protected void tearDown() {
         fileMonitor.stopMonitoring();
     }

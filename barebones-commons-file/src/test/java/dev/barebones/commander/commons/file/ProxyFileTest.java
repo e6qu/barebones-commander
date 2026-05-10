@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * An {@link AbstractFileTest} implementation for {@link ProxyFile}, with some additional

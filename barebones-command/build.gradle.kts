@@ -6,5 +6,5 @@ dependencies {
 
     implementation(libs.snakeyaml)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }

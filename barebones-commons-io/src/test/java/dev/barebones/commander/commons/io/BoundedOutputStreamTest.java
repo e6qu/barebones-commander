@@ -17,7 +17,7 @@
 
 package dev.barebones.commander.commons.io;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 

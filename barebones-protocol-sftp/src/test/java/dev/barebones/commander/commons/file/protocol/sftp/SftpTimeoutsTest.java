@@ -8,14 +8,14 @@
  */
 package dev.barebones.commander.commons.file.protocol.sftp;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
-import static org.testng.Assert.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
 
 public class SftpTimeoutsTest {
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void clearProps() {
         System.clearProperty(SftpTimeouts.CONNECT_PROP);
         System.clearProperty(SftpTimeouts.READ_PROP);

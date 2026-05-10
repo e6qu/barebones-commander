@@ -8,16 +8,16 @@
  */
 package dev.barebones.commander.commons.file.archive;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertThrows;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertNull;
+import static dev.barebones.commander.test.TestAssertions.assertThrows;
 
 public class BoundedExtractionTest {
 

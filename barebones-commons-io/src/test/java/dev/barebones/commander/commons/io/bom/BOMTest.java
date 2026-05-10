@@ -17,7 +17,7 @@
 
 package dev.barebones.commander.commons.io.bom;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,25 +31,27 @@ import java.io.InputStream;
  */
 public class BOMTest implements BOMConstants {
 
+    private static final BOM UTF8 = BOM.getInstance("UTF-8");
+
     /**
      * Tests {@link BOM} comparison methods.
      */
     @Test
     public void testBOMComparisons() {
         // Tests BOM#sigStartsWith method
-        assert UTF8_BOM.sigStartsWith(new byte[]{(byte)0xEF, (byte)0xBB});
-        assert UTF8_BOM.sigStartsWith(new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF});
-        assert !UTF8_BOM.sigStartsWith(new byte[]{(byte)0xAA});
-        assert !UTF8_BOM.sigStartsWith(new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF, (byte)0xAA});
+        assert UTF8.sigStartsWith(new byte[]{(byte)0xEF, (byte)0xBB});
+        assert UTF8.sigStartsWith(new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF});
+        assert !UTF8.sigStartsWith(new byte[]{(byte)0xAA});
+        assert !UTF8.sigStartsWith(new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF, (byte)0xAA});
 
         // Tests BOM#sigEquals method
-        assert UTF8_BOM.sigEquals(UTF8_BOM.getSignature());
-        assert !UTF8_BOM.sigEquals(UTF16_LE_BOM.getSignature());
+        assert UTF8.sigEquals(UTF8.getSignature());
+        assert !UTF8.sigEquals(UTF16_LE_BOM.getSignature());
 
         // Tests BOM#equals method
-        assert UTF8_BOM.equals(UTF8_BOM);
-        assert !UTF8_BOM.equals(UTF16_LE_BOM);
-        assert !UTF8_BOM.equals(new Object());
+        assert UTF8.equals(UTF8);
+        assert !UTF8.equals(UTF16_LE_BOM);
+        assert !UTF8.equals(new Object());
     }
 
     /**
@@ -71,7 +73,7 @@ public class BOMTest implements BOMConstants {
         // UTF-8 BOM, plus one byte after
         b = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF, (byte)0x27};
         bomIn = getBOMInputStream(b);
-        assert UTF8_BOM.equals(bomIn.getBOM());
+        assert UTF8.equals(bomIn.getBOM());
         assertStreamEquals(new byte[]{(byte)0x27}, bomIn);
         assertEOF(bomIn);
 
@@ -90,7 +92,7 @@ public class BOMTest implements BOMConstants {
         // BOMs should not match
         b = UTF16_BE_BOM.getSignature();
         bomIn = getBOMInputStream(b);
-        assert !UTF8_BOM.equals(bomIn.getBOM());
+        assert !UTF8.equals(bomIn.getBOM());
         assertEOF(bomIn);
     }
 

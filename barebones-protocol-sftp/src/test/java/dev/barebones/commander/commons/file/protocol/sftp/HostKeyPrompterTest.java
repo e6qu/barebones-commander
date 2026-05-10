@@ -8,26 +8,26 @@
  */
 package dev.barebones.commander.commons.file.protocol.sftp;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertFalse;
+import static dev.barebones.commander.test.TestAssertions.assertTrue;
 
 public class HostKeyPrompterTest {
 
     private HostKeyPrompter saved;
 
-    @BeforeMethod
+    @BeforeEach
     public void capture() {
         saved = HostKeyPrompter.current();
     }
 
-    @AfterMethod
+    @AfterEach
     public void restore() {
         HostKeyPrompter.setDefault(saved);
     }

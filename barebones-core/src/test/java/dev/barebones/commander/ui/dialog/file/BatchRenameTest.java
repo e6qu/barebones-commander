@@ -22,8 +22,8 @@ import dev.barebones.commander.commons.file.DummyFile;
 import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.ui.dialog.file.BatchRenameDialog.*;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
 import java.util.Calendar;
@@ -72,10 +72,10 @@ public class BatchRenameTest {
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     protected void setUp() throws Exception {
         TestFile parent = new TestFile(FileFactory.getTemporaryFolder() + "parent", null);
-        
+
         abcdef = new TestFile(FileFactory.getTemporaryFolder() + "abcdef", parent);
         abcdef_ghi = new TestFile(FileFactory.getTemporaryFolder() + "abcdef.ghi", parent);
         abcdef_ghi_jkl = new TestFile(FileFactory.getTemporaryFolder() + "abcdef.ghi.jkl", parent);

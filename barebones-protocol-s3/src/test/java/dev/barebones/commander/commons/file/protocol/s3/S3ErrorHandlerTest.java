@@ -11,16 +11,16 @@ package dev.barebones.commander.commons.file.protocol.s3;
 import dev.barebones.commander.commons.file.AuthException;
 import dev.barebones.commander.commons.file.FileURL;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertSame;
+import static dev.barebones.commander.test.TestAssertions.assertTrue;
 
 public class S3ErrorHandlerTest {
 

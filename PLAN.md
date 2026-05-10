@@ -48,6 +48,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **26** | done | **Modernize macOS Keychain binding** — migrated legacy `SecKeychain*` JNA calls to `SecItem*` while preserving keychain behavior. | this PR |
 | **27** | done | **Platform process hardening** — centralized short-lived desktop helper command execution with timeouts and interrupt handling. | this PR |
 | **28** | done | **Remove dead FreeBSD mount shell-out** — deleted the unsupported `/sbin/mount -p` path and kept Linux mount discovery on `/proc/mounts`. | this PR |
+| **29** | in progress | **JUnit 5 + protocol scope cleanup** — migrate legacy tests to JUnit 5, improve S3 endpoint URL parsing, remove retired-protocol future scope, and evaluate NFSv4 replacement options. | this PR |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -64,7 +65,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 7. Modern, **non-OSGi** packaging — single fat JAR / native installers, no Felix container.
 8. Clean **rename and rebrand** to remove muCommander trademark concerns. *(Done in #2.)*
 9. **PR-only** workflow on `e6qu/barebones-commander` — every change lands via a reviewed PR. **One PR in flight at a time.** The user decides scope and pacing of the next PR.
-10. **Preserve the VFS extensibility** — the upstream `barebones-commons-file` abstraction (`AbstractFile`) and the `barebones-protocol-api` SPI stay, so future backends (rsync, etc.) can be added without core changes.
+10. **Preserve the VFS extensibility** — the upstream `barebones-commons-file` abstraction (`AbstractFile`) and the `barebones-protocol-api` SPI stay, so kept remote backends can evolve without core changes.
 
 ## 2. Non-goals (explicitly removed scope)
 
@@ -98,7 +99,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | YAML config | SnakeYAML 2.6+ |
 | Packaging | `jpackage` for DMG (macOS) and DEB / RPM / AppImage (Linux) |
 | CI | GitHub Actions (`ubuntu-latest`, `macos-15` matrix only) |
-| Tests | TestNG for legacy tests; JUnit 5 where modules already use it |
+| Tests | JUnit 5 on the JUnit Platform |
 
 ## 4. Licensing & trademark posture
 
@@ -129,7 +130,7 @@ For the pruned dependency set (SFTP-only barebones build):
 | Apache bzip2 (vendored from Ant) | Apache 2.0 | ✅ |
 | `mbassador` | MIT | ✅ |
 | `jcommander` | Apache 2.0 | ✅ |
-| TestNG / JUnit 5 (test-only) | Apache 2.0 / EPL 2.0 | ✅ |
+| JUnit 5 (test-only) | EPL 2.0 | ✅ |
 
 **Removing** the cloud / SMB / RAR / PDF / image deps **also removes the awkward licenses** — e.g. `junrar`'s effective UnRAR-license (no-modification clause for unrar code), `sevenzipjbinding`'s embedded UnRAR DLL bundle, and the abandoned `jets3t` chain.
 
@@ -180,10 +181,10 @@ Phase 23 replaced the last direct `jsr305` compile-only dependency with
 | `barebones-encoding` | Keep. |
 | `barebones-process` | Keep. |
 | `barebones-command` | Custom-command feature. **Apply XXE hardening.** |
-| `barebones-protocol-api` | SPI. Keep — this is the VFS plug-in contract; future backends (e.g. rsync) can hook in here. |
+| `barebones-protocol-api` | SPI. Keep — this is the VFS plug-in contract for the kept remote backends. |
 | `barebones-protocol-sftp` | SFTP backend. Bump `jsch` to fix Terrapin (Phase 4). |
 | `barebones-protocol-s3` | **Deleted in Phase 4.** Will be reintroduced in Phase 11 on top of AWS SDK v2 (`software.amazon.awssdk:s3`). |
-| `barebones-protocol-nfs` | In-process NFSv2/v3 backend (Yanfs-based via the vendored `sun-net-www`). Yanfs has no NFSv4 support and a Java NFSv4 client is not worth carrying — NFSv4 users should mount at the OS level outside the app, then point the app at the local mountpoint. |
+| `barebones-protocol-nfs` | In-process NFSv2/v3 backend (Yanfs-based via the vendored `sun-net-www`). Phase 29 re-checked NFSv4 options: dCache nfs4j is active and supports NFSv4.x, but its public API is explicitly beta/unstable and not a low-risk drop-in for the current `AbstractFile` adapter. Keep the existing isolated backend until there is an integration-test fixture and a stable client API. |
 | `sun-net-www` (vendored) | Keep — required by `barebones-protocol-nfs` (Yanfs / NFS RPC support). |
 | `barebones-os-api` | Keep. |
 | `barebones-os-linux` | Keep. **Refactor `KdeConfig` to `ProcessBuilder(List)` in Phase 5.** |
@@ -331,7 +332,7 @@ that's otherwise mechanical.
 
 ### Phase 6 — Rename to `barebones-commander`
 
-✅ **Done in PR #2.** Class-rename (`muCommander.java` → e.g. `BareCommander.java`) and icon replacement deferred — they can be folded into Phase 8 release polish or a small dedicated PR if the user requests.
+✅ **Done in PR #2.** Branding and package renames landed. Icon replacement remains deferred and can be folded into Phase 8 release polish or a small dedicated PR if the user requests.
 
 ### Phase 7 — Build polish (one PR)
 
@@ -496,8 +497,8 @@ unwieldy.
 (all in one PR per the user's "no more sub-phases" directive):
 
 - `S3Panel` (the connection dialog) rebuilt for the AWS-SDK-v2
-  inputs: endpoint host, bucket, access key, secret key, region,
-  port, HTTPS toggle, path-style toggle. Registered via
+  inputs: endpoint host or `http(s)://` endpoint URL, bucket, access
+  key, secret key, region, port, HTTPS toggle, path-style toggle. Registered via
   `ProtocolPanelRegistry` so the existing Connect-to-server dialog
   grows an "S3" tab.
 - `S3TransferManager` plumbed into `S3Connection`; `S3Object`'s
@@ -540,10 +541,6 @@ backed mount progress dialog.
   Taildrop's own UI, and the peer-list UX could be approximated
   by typing `<peer>.ts.net` into the SFTP / NFS panels (MagicDNS
   resolves them).
-
-NFSv4 users who really want the mount-as-folder UX should mount at
-the OS level outside the app and point the app at the local
-mountpoint via the regular Local panel.
 
 The detailed narrative of what shipped and what's gone is
 deliberately not preserved here — `git log` is authoritative for
@@ -1071,8 +1068,7 @@ None of the above runs without explicit "do 21x" from the user.
 
 Phase 22 chose a small internal facade (`barebones-logging`) backed by
 JDK logging APIs. Production code no longer depends on SLF4J or
-Logback. Test runtime keeps `slf4j-nop` only because TestNG uses SLF4J
-internally and otherwise emits provider warnings. The app also has a
+Logback. The app also has a
 `--debug` switch that raises logging verbosity.
 
 **Exit criteria met**: zero production `org.slf4j` imports, no
@@ -1115,7 +1111,7 @@ Findings:
 - AppleScript and desktop opener shell-outs stay where they provide Finder /
   desktop-manager behavior Java does not fully cover.
 - Vendored NFS/Sun RPC is pure Java and isolated; replacing it should wait for
-  an integration-test fixture and a proven maintained alternative.
+  an integration-test fixture and a stable maintained client alternative.
 
 **Exit criteria met**: audit doc committed; candidate replacements split into
 Phase 25+ follow-ups; no mass swap attempted.
@@ -1172,6 +1168,24 @@ is unchanged.
 **Exit criteria met**: the unsupported FreeBSD shell-out is gone; local file
 tests and full checks pass; CI green.
 
+### Phase 29 — JUnit 5 + protocol scope cleanup (this PR)
+
+Phase 29 moves all legacy tests onto the JUnit Platform, removes the
+old external test-runner dependency, and adds a small internal test-support module
+to preserve legacy assertion argument order during the migration. It also
+lets the S3 connection panel accept pasted `http://` / `https://` endpoint
+URLs while still storing canonical `s3://host[:port]/bucket/` FileURLs.
+
+Protocol scope is narrowed: retired protocol candidates are not planned. NFSv4 was
+re-evaluated against dCache nfs4j; despite active releases and NFSv4.x
+support, the upstream README marks the public API beta/unstable, so it is
+not a low-risk replacement for the current in-process NFSv2/v3 adapter in
+this phase.
+
+**Exit criteria**: no external legacy test-runner dependency remains;
+S3 endpoint URL parsing has focused coverage; plan docs no longer present
+retired protocol candidates as future work; full checks and CI are green.
+
 ## 7. Compatibility with upstream
 
 We may want to **pull bug fixes from upstream muCommander** for at least 1 year. To keep this cheap:
@@ -1193,16 +1207,10 @@ We may want to **pull bug fixes from upstream muCommander** for at least 1 year.
 
 ## 9. Open questions / decisions deferred
 
-1. **Class rename of `muCommander.java`** — defer until a clear opportunity (Phase 8 polish or its own micro-PR when the user asks).
-2. **TestNG → JUnit 5 migration** — non-blocking. Defer.
-3. **Apple Developer ID for notarization** — until acquired, ship ad-hoc-signed DMG and document the `xattr -d` workaround.
-4. **GPLv3 → AGPLv3** — no. We are a desktop app, not a network service.
-5. **Translation maintenance** — keep upstream `dictionary_*.properties` files. New translation contributions: blocked by §2 (no contributions) until v1.0.
-6. **macOS L&F: keep VAqua or rely on FlatLaf macOS variant** — drop VAqua in Phase 1 (§5.2 vendored helpers — also covers the upstream `fix #1458` "filter out vaqua for macOS 13+" workaround).
-7. **JRE submodule** (`.gitmodules` still points at `mucommander/JRE`) — replace with a build-time-downloaded JDK or unbundled assumption in Phase 8.
-8. **rsync support** — not present in upstream and not in scope for v1.0. The kept VFS SPI (`barebones-protocol-api`, see §1.10) means a future `barebones-protocol-rsync` plug-in can be added as an additive PR without core changes when there is a use case.
-9. **WebDAV** — out of scope; not currently implemented. SMB is reachable by mounting at the OS level outside the app and pointing the Local panel at the mountpoint. NFS v2/v3 is supported in-process; v4 follows the same OS-mount path as SMB.
-10. **S3 endpoint configuration UI** — AWS SDK v2 makes `--endpoint-override` for MinIO / Ceph / R2 trivial in code, but a UX surface for non-AWS S3 endpoints needs design. Treat as a follow-up after Phase 4 lands the SDK swap.
+1. **Apple Developer ID for notarization** — until acquired, ship ad-hoc-signed DMG and document the `xattr -d` workaround.
+2. **GPLv3 → AGPLv3** — no. We are a desktop app, not a network service.
+3. **Translation maintenance** — keep upstream `dictionary_*.properties` files. New translation contributions: blocked by §2 (no contributions) until v1.0.
+4. **JRE submodule** (`.gitmodules` still points at `mucommander/JRE`) — replace with a build-time-downloaded JDK or unbundled assumption in Phase 8.
 
 ## 10. Quick reference — workflow conventions
 

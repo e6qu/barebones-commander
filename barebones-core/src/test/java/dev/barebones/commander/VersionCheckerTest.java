@@ -17,13 +17,13 @@
 
 package dev.barebones.commander;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.testng.Assert.*;
+import static dev.barebones.commander.test.TestAssertions.*;
 
 /**
  * Unit tests for {@link VersionChecker}.
@@ -158,13 +158,13 @@ public class VersionCheckerTest {
         assertFalse(checker.isNewVersionAvailable("abc1235", "20240416"));
     }
 
-    @Test(expectedExceptions = Exception.class)
+    @Test
     public void testHandleIOException() throws Exception {
         MockReadFromURL mockReader = new MockReadFromURL();
         // Don't add any responses - this will cause an IOException
 
         // This should throw an Exception wrapping the IOException
-        VersionChecker.getInstance(false, mockReader);
+        assertThrows(Exception.class, () -> VersionChecker.getInstance(false, mockReader));
     }
 
     @Test

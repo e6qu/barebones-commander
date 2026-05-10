@@ -25,7 +25,7 @@ dependencies {
 
     implementation(libs.unix4j.command)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
@@ -40,7 +40,7 @@ tasks.jar {
 }
 
 tasks.test {
-    useTestNG()
+    useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
     }

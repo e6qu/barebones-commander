@@ -23,10 +23,10 @@ import dev.barebones.commander.commons.file.protocol.ProtocolProvider;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
-import org.testng.SkipException;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.opentest4j.TestAbortedException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -38,10 +38,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertFalse;
+import static dev.barebones.commander.test.TestAssertions.assertNotNull;
+import static dev.barebones.commander.test.TestAssertions.assertTrue;
 
 /**
  * End-to-end tests against a real S3-compatible endpoint provided
@@ -63,10 +63,10 @@ public class S3LocalStackIntegrationTest {
     private S3ProtocolProvider provider;
     private String bucketName;
 
-    @BeforeClass
+    @BeforeAll
     public void startLocalStack() throws Exception {
         if (!DockerClientFactory.instance().isDockerAvailable()) {
-            throw new SkipException(
+            throw new TestAbortedException(
                 "Docker is not available on this runner; skipping LocalStack S3 integration tests.");
         }
 
@@ -96,7 +96,7 @@ public class S3LocalStackIntegrationTest {
         bucketName = "test-" + UUID.randomUUID().toString().substring(0, 8);
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public void stopLocalStack() {
         if (container != null) {
             container.stop();

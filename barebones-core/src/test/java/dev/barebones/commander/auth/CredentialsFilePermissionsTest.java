@@ -8,7 +8,7 @@
  */
 package dev.barebones.commander.auth;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,8 +19,8 @@ import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertTrue;
 
 public class CredentialsFilePermissionsTest {
 

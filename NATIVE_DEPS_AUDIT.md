@@ -13,8 +13,9 @@ The remaining native and shell-out surfaces are intentional platform integration
 points. The best follow-up work is not a bulk rewrite; it is a small set of
 targeted PRs:
 
-1. Evaluate NFS replacement only if NFS becomes a maintenance hotspot; today
-   the vendored NFS code is pure Java and already isolated.
+1. Keep NFS isolated. Phase 29 re-checked dCache nfs4j as the credible Java
+   NFSv4.x candidate; it is active, but its public API is explicitly beta and
+   not a low-risk drop-in without an integration-test fixture.
 
 ## Inventory
 
@@ -32,7 +33,7 @@ targeted PRs:
 | Credentials permissions | `CredentialsFilePermissions.java`, `CredentialsManager.java` | Java NIO POSIX permissions | Set credentials file to mode `0600` on Unix-like systems | Already Java-native after Phase 25. | Done: the former `chmod` shell-out helper was deleted. |
 | FreeBSD mount list | `LocalFile` | none | Removed unsupported mount-list fallback | Linux path already uses `/proc/mounts`; FreeBSD is outside current supported OS targets. | Done in Phase 28: deleted the `/sbin/mount -p` shell-out. |
 | SFTP | `barebones-protocol-sftp` | `com.github.mwiede:jsch` pure Java SSH/SFTP | SFTP backend | Apache MINA SSHD is a maintained pure Java alternative. | Defer. JSch fork is current and working; migrate only if a concrete capability or maintenance issue appears. |
-| NFS | `barebones-protocol-nfs`, `sun-net-www` | Vendored pure Java Sun/Yanfs RPC/NFS code | In-process NFSv2/v3 backend | A maintained Java NFS client would be preferable, but credible drop-in options need proof-of-concept testing. | Keep isolated. Do not attempt a large replacement without an integration-test fixture. |
+| NFS | `barebones-protocol-nfs`, `sun-net-www` | Vendored pure Java Sun/Yanfs RPC/NFS code | In-process NFSv2/v3 backend | dCache nfs4j is the credible maintained Java NFSv4.x candidate, but its public API is beta/unstable and its examples are not a direct `AbstractFile` replacement. | Keep isolated. Do not attempt a large replacement without an integration-test fixture and stable client API. |
 
 ## Current Native Libraries
 

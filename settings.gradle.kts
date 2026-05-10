@@ -33,6 +33,8 @@ include("barebones-secret-store")
 
 include("barebones-viewer-text")
 
+include("barebones-test-support")
+
 include("apache-bzip2")
 include("sun-net-www")
 

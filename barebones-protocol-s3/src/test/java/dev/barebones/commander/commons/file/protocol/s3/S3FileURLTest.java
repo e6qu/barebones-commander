@@ -14,19 +14,19 @@ import dev.barebones.commander.commons.file.DefaultSchemeParser;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.SchemeHandler;
 
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertFalse;
+import static dev.barebones.commander.test.TestAssertions.assertTrue;
 
 public class S3FileURLTest {
 
-    @BeforeClass
+    @BeforeAll
     public void registerS3Scheme() throws Exception {
         // FileURL.getFileURL needs a SchemeHandler registered for "s3"
         // before parsing. Hits the same FileURL.registerHandler that

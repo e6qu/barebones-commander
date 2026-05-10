@@ -17,7 +17,7 @@
 
 package dev.barebones.commander.commons.runtime;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * A JUnit test case for {@link JavaVersion}.

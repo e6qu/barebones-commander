@@ -30,9 +30,9 @@ import dev.barebones.commander.commons.io.RandomGeneratorInputStream;
 import dev.barebones.commander.commons.io.security.MuProvider;
 import dev.barebones.commander.commons.runtime.OsFamily;
 import dev.barebones.commander.commons.util.StringUtils;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.swing.Icon;
 import java.awt.Dimension;
@@ -98,7 +98,7 @@ public abstract class AbstractFileTest {
      *
      * @throws IOException if an error occurred while creating test variables
      */
-    @BeforeMethod
+    @BeforeEach
     public void setUp() throws IOException {
         filesToDelete = new Vector<AbstractFile>();
 
@@ -118,7 +118,7 @@ public abstract class AbstractFileTest {
      *
      * @throws IOException if an error occurred while delete files registered with {@link #deleteWhenFinished(AbstractFile)}
      */
-    @AfterMethod
+    @AfterEach
     public void tearDown() throws IOException {
         Iterator<AbstractFile> iterator = filesToDelete.iterator();
 

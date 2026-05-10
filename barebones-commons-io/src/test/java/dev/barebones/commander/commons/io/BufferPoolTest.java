@@ -17,10 +17,10 @@
 
 package dev.barebones.commander.commons.io;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
- * This class is a TestNG test case for {@link BufferPool}.
+ * Tests {@link BufferPool}.
  *
  * @author Maxence Bernard, Nicolas Rinaudo
  */

@@ -20,10 +20,10 @@ package dev.barebones.commander.commons.file.archive.zip;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.AbstractFileTest;
@@ -37,7 +37,6 @@ import dev.barebones.commander.commons.file.archive.AbstractArchiveEntryFile;
  *
  * @author Maxence Bernard
  */
-@Test
 public class ZipArchiveFileTest extends AbstractFileTest {
 
     /** The archive file which contains the temporary entries */
@@ -83,7 +82,7 @@ public class ZipArchiveFileTest extends AbstractFileTest {
      * application runtime this happens in the module's Activator;
      * unit tests need to do it explicitly.
      */
-    @BeforeClass
+    @BeforeAll
     public void registerZipFormat() {
         FileFactory.registerArchiveFormat(new ZipFormatProvider());
     }
@@ -92,7 +91,7 @@ public class ZipArchiveFileTest extends AbstractFileTest {
      * Overridden to create the archive file before each test.
      */
     @Override
-    @BeforeMethod
+    @BeforeEach
     public void setUp() throws IOException {
         entryNum = 0;
         tempZipFile = (ZipArchiveFile)FileFactory.getTemporaryFile(ZipArchiveFileTest.class.getName()+".zip", false);
@@ -112,7 +111,7 @@ public class ZipArchiveFileTest extends AbstractFileTest {
      * Overridden to delete the archive file after each test.
      */
     @Override
-    @AfterMethod
+    @AfterEach
     public void tearDown() throws IOException {
         // Delete all archive entries
         super.tearDown();

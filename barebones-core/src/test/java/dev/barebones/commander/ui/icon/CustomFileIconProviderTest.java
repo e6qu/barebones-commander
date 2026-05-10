@@ -19,7 +19,7 @@ package dev.barebones.commander.ui.icon;
 
 import javax.swing.Icon;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * A test case for the custom file icon set.

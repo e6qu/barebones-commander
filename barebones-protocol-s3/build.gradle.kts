@@ -10,7 +10,7 @@ dependencies {
     implementation(libs.aws.sdk.s3.transfer.manager)
     implementation(libs.aws.sdk.crt.client)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
     testImplementation(platform(libs.testcontainers.bom))
     testImplementation(libs.testcontainers)
     testImplementation(libs.testcontainers.localstack)

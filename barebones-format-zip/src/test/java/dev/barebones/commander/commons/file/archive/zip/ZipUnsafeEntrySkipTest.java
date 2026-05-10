@@ -10,7 +10,7 @@ package dev.barebones.commander.commons.file.archive.zip;
 
 import dev.barebones.commander.commons.file.archive.ArchiveEntry;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
@@ -26,9 +26,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertFalse;
+import static dev.barebones.commander.test.TestAssertions.assertTrue;
 
 /**
  * End-to-end test for the zip-slip defence: build a real malicious

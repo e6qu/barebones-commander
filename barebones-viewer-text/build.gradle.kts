@@ -11,7 +11,7 @@ dependencies {
     compileOnly(libs.jetbrains.annotations)
     implementation(libs.rsyntaxtextarea)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }
 
 tasks.jar {
