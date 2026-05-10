@@ -16,13 +16,11 @@
  */
 package dev.barebones.commander.viewer;
 
-import javax.annotation.Nonnull;
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for file viewer service.
  */
-@ParametersAreNonnullByDefault
 public interface FileViewerService extends FileOpenService {
 
     /**
@@ -31,6 +29,6 @@ public interface FileViewerService extends FileOpenService {
      * @param fromSearchWithContent whether opened file is from File Search with Content
      * @return a new instance of {@link FileViewer}.
      */
-    @Nonnull
+    @NotNull
     FileViewer createFileViewer(boolean fromSearchWithContent);
 }

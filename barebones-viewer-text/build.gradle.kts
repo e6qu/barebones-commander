@@ -8,7 +8,7 @@ dependencies {
     api(project(":barebones-translator"))
     api(project(":barebones-encoding"))
     api(project(":barebones-preferences"))
-    compileOnly(libs.jsr305)
+    compileOnly(libs.jetbrains.annotations)
     implementation(libs.rsyntaxtextarea)
 
     testImplementation(libs.testng)

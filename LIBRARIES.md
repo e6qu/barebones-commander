@@ -1,119 +1,127 @@
-# muCommander — Architecture & Libraries
+# barebones-commander — Architecture & Libraries
 
-Inventory generated from a clone of `mucommander/mucommander` at HEAD `8662144` (2026-04-30).
+Current inventory for `barebones-commander` after Phase 23.
 
-## At a glance
+## At A Glance
 
 | | |
 |---|---|
-| Type | Cross-platform desktop file manager (dual-pane, Total-Commander-style) |
-| Primary language | **Java 11** (compiled with `--release 11`, source ~212k LOC across 1,352 files) |
-| Other JVM languages | Kotlin (no first-party Kotlin code; `kotlin-stdlib` is pulled in for transitive deps and `kotlin-reflect` is shipped as an OSGi bundle) |
-| Build system | **Gradle** (multi-module, OSGi manifests via `biz.aQute.bnd`) |
-| Runtime model | **OSGi (Apache Felix 7.0.5)** — every protocol/format/viewer is its own bundle |
-| UI toolkit | **Swing** + **FlatLaf** look-and-feel + **VAqua** on macOS |
-| Min JDK to build | 11 (CI runs 17/18) |
-| License | GPL |
-| Top maintainer | Arik Hadas (`@ahadas`, `* @ahadas` in CODEOWNERS) |
+| Type | Desktop dual-pane file manager |
+| Primary language | Java 25 |
+| Other JVM languages | No first-party Kotlin; Kotlin stdlib is pinned only for transitive dependency hygiene |
+| Build system | Gradle 9.5.x, Kotlin DSL, version catalog |
+| Runtime model | Plain JVM application; no OSGi/Felix runtime |
+| UI toolkit | Swing + FlatLaf |
+| Supported OS | macOS and Linux |
+| Logging | Internal `barebones-logging` facade backed by JDK logging APIs |
+| License | GPLv3 |
 
-## Module / architecture layout
-
-The repo is one root Gradle project with ~70 subprojects. They group cleanly into layers:
+## Modules
 
 ### Core
-- `mucommander-core` — main UI, jobs, search, bookmarks, auth, snapshots, OSGi container glue
-- `mucommander-core-preload` — early bootstrap bundle
-- `mucommander-commons-{file,io,collections,conf,runtime,util}` — generic file abstractions, streams, XML config, OS-runtime detection
-- `mucommander-preferences`, `mucommander-translator`, `mucommander-encoding`, `mucommander-process`, `mucommander-command`, `mucommander-bonjour`
 
-### Protocol bundles (`mucommander-protocol-*`)
-`adb`, `dropbox`, `ftp`, `gcs`, `gdrive`, `hadoop`, `http`, `nfs`, `onedrive`, `ovirt`, `registry`, `s3`, `sftp`, `smb`, `vsphere`, plus the `protocol-api` SPI.
-
-### Archive-format bundles (`mucommander-format-*`)
-`ar`, `bzip2`, `cpio`, `gzip`, `iso`, `libguestfs` (work-in-progress), `lst`, `rar`, `rpm`, `sevenzip`, `tar`, `xz`, `zip`, plus `mucommander-archiver` (writes archives).
-
-### Viewers (`mucommander-viewer-*`)
-`api`, `binary`, `image`, `pdf`, `text` (separate Swing-based viewers).
-
-### OS adapters (`mucommander-os-*`)
-`api`, `linux`, `macos`, `macos-java8` (legacy), `openvms`, `win`.
-
-### Vendored helpers
-`apache-bzip2`, `gson`, `jetbrains-jediterm`, `kotlin-reflect`, `sevenzipjbindings`, `sun-net-www` — re-bundled or wrapped third-party code (mostly to make non-OSGi jars OSGi-friendly).
-
-## Main libraries
-
-### Core / UI
-| Library | Version | Purpose |
-|---|---|---|
-| Apache Felix `org.apache.felix.main` | 7.0.5 | OSGi container at runtime |
-| FlatLaf (`com.formdev:flatlaf`) | 2.6 (and 2.2 in pdf viewer) | Modern Swing look-and-feel |
-| VAqua (`org.violetlib:vaqua`) | 10 | Native-style L&F on macOS |
-| JediTerm (`org.jetbrains.jediterm:jediterm-{core,ui}`) | 3.57 | Embedded terminal widget |
-| pty4j (`org.jetbrains.pty4j`) | 0.13.11 | PTY for the embedded terminal |
-| MBassador (`net.engio:mbassador`) | 1.3.0 | In-process event bus |
-| JCommander (`com.beust`) | 1.82 | CLI argument parsing |
-| ICU4J (`com.ibm.icu`) | 78.3 | Collation / locale-aware sorting |
-| JNA (`net.java.dev.jna`) | 5.18.1 | Native interop for macOS and Linux OS integration |
-| `java.lang.System.Logger` | JDK | Application logging facade |
-| SLF4J API | 1.7.36 | Transitive logging API used by AWS SDK / unix4j |
-| Log4j (`log4j-core`, `log4j-1.2-api`) | 2.25.3 | Logging compat (transitive) |
-| Gson | 2.11.0 | JSON (cloud SDK helpers) |
-| SnakeYAML | 2.3 | Custom-command/config YAML parsing |
-| dd-plist (`com.googlecode.plist`) | 1.23 | Apple plist parsing |
-| Bouncy Castle (`bcprov-jdk18on`) | 1.79 | Crypto (transitive via SMB/cloud SDKs) |
+- `barebones-core`
+- `barebones-core-preload`
+- `barebones-logging`
+- `barebones-commons-{collections,conf,file,io,runtime,util}`
+- `barebones-preferences`
+- `barebones-translator`
+- `barebones-encoding`
+- `barebones-process`
+- `barebones-command`
 
 ### Protocols
-| Library | Version | Used by |
-|---|---|---|
-| jsch — mwiede fork (`com.github.mwiede:jsch`) | 0.2.10 | SFTP |
-| commons-net | 3.8.0 | FTP |
-| jcifs-ng (`eu.agno3.jcifs`) | 2.1.10 | SMB (legacy path) |
-| smbj (`com.hierynomus`) | 0.13.0 | SMB (modern path) |
-| jets3t | 0.9.7 | S3 (very old; abandoned upstream) |
-| Apache Hadoop client | 3.4.1 | HDFS |
-| Avro | 1.11.4 | Hadoop transitive |
-| Dropbox SDK | 7.0.0 | Dropbox |
-| Google API client + OAuth client | 2.0.0 / 1.34.1 | Google Drive |
-| google-api-services-drive | v3-rev20220815-2.0.0 | Google Drive |
-| Microsoft Graph SDK | 5.67.0 | OneDrive |
-| Azure Identity / Azure XML | 1.9.2 / 1.0.0-beta.2 | OneDrive auth |
-| oVirt engine SDK | 4.4.5 | oVirt |
-| jaxws-api / javax.xml.soap | 2.2.12 / 10.0-b28 | vSphere SOAP |
-| `vim25.jar` (bundled) | n/a | vSphere VMware client |
-| `jadb-v1.2.1.jar` (bundled) | 1.2.1 | Android (ADB) |
-| jmDNS | 3.5.5 | Bonjour discovery |
-| jaxrpc-api / glassfish soap | 1.1 / 10.0-b28 | S3 transitive |
 
-### Archive formats
-| Library | Version | Format |
-|---|---|---|
-| commons-compress | 1.28.0 | tar / cpio / ar / many |
-| commons-vfs2 | **2.3** (very old) | RAR streaming wrapper |
-| junrar (`com.github.junrar`) | 7.5.5 | RAR extraction |
-| sevenzipjbinding | 16.02-2.01 | 7z, ISO, RPM |
-| xz (`org.tukaani`) | 1.9 | xz / lzma |
-| `mail.osgi-1.4.jar` (bundled) | 1.4 | s3 transitive (very old JavaMail) |
+- `barebones-protocol-api`
+- `barebones-protocol-sftp`
+- `barebones-protocol-s3`
+- `barebones-protocol-nfs`
+- `sun-net-www` (vendored support code required by Yanfs/NFS)
+
+### Archive Formats
+
+- `barebones-archiver`
+- `barebones-format-{zip,tar,gzip,bzip2,xz}`
+- `apache-bzip2` (vendored Ant bzip2 stream implementation)
 
 ### Viewers
+
+- `barebones-viewer-api`
+- `barebones-viewer-text`
+
+### OS Integration
+
+- `barebones-os-api`
+- `barebones-os-linux`
+- `barebones-os-macos`
+
+## Main Libraries
+
+Versions are declared in `gradle/libs.versions.toml`.
+
+### UI / Core
+
 | Library | Version | Purpose |
-|---|---|---|
-| icepdf-viewer (`com.github.pcorless.icepdf`) | 7.3.1 | PDF viewer |
-| TwelveMonkeys imageio (`common-io`, `common-lang`, `imageio-core`/`-jpeg`/`-metadata`/`-psd`/`-tiff`/`-webp`) | 3.12.0 | Extra image-format support |
+|---|---:|---|
+| FlatLaf | 3.7.1 | Swing look-and-feel |
+| RSyntaxTextArea | 3.6.2 | Text viewer/editor component |
+| ICU4J | 78.3 | Locale-aware collation |
+| JCommander | 1.82 | CLI argument parsing |
+| json-smart | 2.6.0 | JSON helper |
+| unix4j-command | 0.6 | Small Unix-style command helpers |
+| SnakeYAML | 2.6 | YAML parsing |
+| dd-plist | 1.29 | Apple plist parsing |
+| JetBrains annotations | 26.1.0 | Compile-only nullability annotations |
 
-### Build / packaging
-- Gradle plugins: `org.ajoberstar.grgit`, `org.cyclonedx.bom`, `com.github.spotbugs`, and `org.owasp.dependencycheck`; Java `jpackage` builds DMG/RPM/DEB installers.
+### Native Interop
 
-### CI / tests
-- GitHub Actions: `nightly.yml`, `stable.yml`, `tests.yaml` (matrix on ubuntu-latest + macos-15)
-- TestNG 7.11.0 across most modules; JUnit 5 (5.14.1 BOM) in onedrive and vsphere
-- Apple notarization via `xcrun notarytool` in nightly/stable workflows
-- Static analysis: Coverity Scan badge in README (project 3642)
+| Library | Version | Purpose |
+|---|---:|---|
+| JNA / JNA Platform | 5.18.1 | macOS Keychain/Security.framework, libsecret, OS file integration |
 
-## Things to know about this codebase
+### Protocols
 
-- **OSGi-first**. Every protocol or format is a bundle, wired by Felix at startup. Bundles ship in `bundle/`, the OSGi cache lives in `felix-cache/`. Bundling instructions in the root `build.gradle` (`wrapInstructions { manifest("...") { ... } }`) rewrite imports of non-OSGi-friendly transitive deps (okhttp, smbj, msal4j, microsoft-graph-core, azure-core, kotlin-stdlib, etc.) so they can run in Felix.
-- **Vendored sub-trees**. `apache-bzip2`, `gson`, `kotlin-reflect`, `sevenzipjbindings`, `sun-net-www`, `jetbrains-jediterm` are checked-in source trees to wrap or shade dependencies. Each has its own `build.gradle`.
-- **Loose-jar dependencies** sit under `*/libs/*.jar` (e.g. `mucommander-protocol-vsphere/libs/vim25.jar`, `mucommander-protocol-adb/libs/jadb-v1.2.1.jar`, `mucommander-protocol-s3/libs/mail.osgi-1.4.jar`). These have no version metadata and are not checked by typical SCA tools.
-- **Private "release" repo**. The CI checks out `mucommander/release` (private) which carries patches that inject Google Drive / Dropbox / OneDrive client credentials at build time — meaningful only for distributed builds, not source builds.
-- **Original author** Maxence Bernard last committed in 2013; the project transitioned to Arik Hadas, who is now the sole CODEOWNER.
+| Library | Version | Used by |
+|---|---:|---|
+| `com.github.mwiede:jsch` | 2.28.2 | SFTP |
+| AWS SDK v2 BOM | 2.44.4 | S3-compatible storage |
+| Testcontainers BOM | 1.21.4 | LocalStack S3 integration tests |
+
+### Archive / Utility
+
+| Library | Version | Purpose |
+|---|---:|---|
+| commons-collections4 | 4.5.0 | Collections helpers |
+| commons-compress | 1.28.0 | Tar and archive support |
+| commons-lang3 | 3.20.0 | Utility helpers |
+| XZ for Java | 1.12 | xz/lzma support |
+
+### Tests / Analysis / Build Plugins
+
+| Library / plugin | Version | Purpose |
+|---|---:|---|
+| TestNG | 7.12.0 | Legacy test suite |
+| JUnit BOM | 5.14.4 | JUnit modules |
+| FindSecBugs plugin | 1.14.0 | SpotBugs security rules |
+| Grgit Gradle plugin | 5.3.3 | Git metadata in build |
+| CycloneDX Gradle plugin | 3.2.4 | SBOM generation |
+| SpotBugs Gradle plugin | 6.5.4 | Static analysis |
+| OWASP Dependency-Check Gradle plugin | 12.2.2 | Vulnerability scan |
+
+## Phase 23 Pin Decisions
+
+Phase 23 checked Maven Central and Gradle Plugin Portal metadata on 2026-05-10.
+Most catalog entries were already current stable releases. Intentional pins:
+
+| Catalog key | Current | Metadata latest | Reason |
+|---|---:|---:|---|
+| `testcontainers` | 1.21.4 | 2.0.5 | `org.testcontainers:localstack` metadata currently releases only through 1.21.4; 2.x needs a separate migration. |
+| `junit-bom` | 5.14.4 | 6.1.0-RC1 | Latest metadata is a JUnit 6 release candidate; keep latest stable JUnit 5.x. |
+| `kotlin-stdlib` | 2.3.21 | 2.4.0-Beta2 | Latest metadata is beta; keep latest stable 2.3.x. |
+| `grgit` | 5.3.3 | marker says 5.0.0-rc.3 | Plugin marker metadata is stale/inconsistent; 5.3.3 is present in the version list and already works with the build. |
+
+## Removed Surfaces
+
+The fork intentionally removed Windows/OpenVMS support, OSGi/Felix runtime,
+FTP/HTTP/SMB/cloud-drive protocols, embedded terminal support, image/PDF/binary
+viewers, and heavyweight archive formats outside zip/tar/gzip/bzip2/xz.

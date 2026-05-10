@@ -104,7 +104,7 @@ dependencies {
     implementation(libs.jcommander)
     implementation(libs.flatlaf)
 
-    compileOnly(libs.jsr305)
+    compileOnly(libs.jetbrains.annotations)
 
     // Compile-time deps for the new Bootstrap launcher in
     // src/main/java/dev/barebones/commander/bootstrap/. Bootstrap.java
@@ -224,7 +224,9 @@ allprojects {
 // `nvd.apiKey` is read from the NVD_API_KEY env var by the
 // dependency-check plugin itself when the property isn't set; we
 // don't shim a fallback here. CI sets the env var from a repo
-// secret; a missing key just means slower NVD downloads.
+// secret. A missing key can hit NVD API rate limits and fail the
+// update, so dependency-check runs should be treated as requiring
+// NVD_API_KEY unless a local cache is already fresh.
 dependencyCheck {
     failBuildOnCVSS = 7.0f
     formats = listOf("HTML", "JSON", "SARIF")

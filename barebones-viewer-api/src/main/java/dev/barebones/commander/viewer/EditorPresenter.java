@@ -16,16 +16,15 @@
  */
 package dev.barebones.commander.viewer;
 
-import javax.annotation.Nonnull;
-import javax.annotation.ParametersAreNonnullByDefault;
 import javax.swing.JFrame;
+
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for file editor.
  *
  * @author Miroslav Hajda
  */
-@ParametersAreNonnullByDefault
 public interface EditorPresenter {
 
     /**
@@ -34,14 +33,14 @@ public interface EditorPresenter {
      * @param title
      *            title
      */
-    void extendTitle(String title);
+    void extendTitle(@NotNull String title);
 
     /**
      * Returns presenter's frame.
      *
      * @return frame
      */
-    @Nonnull
+    @NotNull
     JFrame getWindowFrame();
 
     /**
@@ -50,5 +49,5 @@ public interface EditorPresenter {
      * @param operation
      *            operation
      */
-    void longOperation(Runnable operation);
+    void longOperation(@NotNull Runnable operation);
 }

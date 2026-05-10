@@ -21,7 +21,6 @@ json-smart = "2.6.0"
 unix4j-command = "0.6"
 snakeyaml = "2.6"
 dd-plist = "1.29"
-jsr305 = "3.0.2"
 jetbrains-annotations = "26.1.0"
 
 # Protocols
@@ -37,12 +36,14 @@ junit-bom = "5.14.4"
 
 # Constraint pins (transitive hygiene)
 okio = "3.17.0"
+# pinned because Maven metadata latest is 2.4.0-Beta2; keep latest stable 2.3.x.
 kotlin-stdlib = "2.3.21"
 
 # SAST
 findsecbugs = "1.14.0"
 
 # Plugins
+# pinned because Gradle Plugin Portal marker metadata reports 5.0.0-rc.3 as latest despite listing 5.3.3.
 grgit = "5.3.3"
 cyclonedx = "3.2.4"
 spotbugs = "6.5.4"
@@ -67,7 +68,6 @@ json-smart = { group = "net.minidev", name = "json-smart", version.ref = "json-s
 unix4j-command = { group = "org.unix4j", name = "unix4j-command", version.ref = "unix4j-command" }
 snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyaml" }
 dd-plist = { group = "com.googlecode.plist", name = "dd-plist", version.ref = "dd-plist" }
-jsr305 = { group = "com.google.code.findbugs", name = "jsr305", version.ref = "jsr305" }
 jetbrains-annotations = { group = "org.jetbrains", name = "annotations", version.ref = "jetbrains-annotations" }
 
 jsch-mwiede = { group = "com.github.mwiede", name = "jsch", version.ref = "jsch-mwiede" }

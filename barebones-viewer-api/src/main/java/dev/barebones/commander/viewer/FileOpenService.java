@@ -18,13 +18,12 @@ package dev.barebones.commander.viewer;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 
-import javax.annotation.Nonnull;
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface for file editor & viewer services.
  */
-@ParametersAreNonnullByDefault
 public interface FileOpenService {
 
     /**
@@ -32,7 +31,7 @@ public interface FileOpenService {
      *
      * @return name title
      */
-    @Nonnull
+    @NotNull
     String getName();
 
     /**
@@ -57,12 +56,14 @@ public interface FileOpenService {
      *            file for which an editor or viewer should be created.
      * @return <code>CanOpen</code> if this factory can create a file editor for the specified file.
      */
-    CanOpen canOpenFile(AbstractFile file);
+    @NotNull
+    CanOpen canOpenFile(@NotNull AbstractFile file);
 
     /**
      * Returns a text message (a key in dictionary) to be displayed if #canOpenFile returns
      * CanOpen.YES_WITH_CONFIRMATION. May return null if CanOpen.YES_WITH_CONFIRMATION is never returned.
      * @return the message (dictionary key), can be null
      */
+    @Nullable
     default String getConfirmationMsg() { return null; }
 }
