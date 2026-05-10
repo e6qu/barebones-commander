@@ -26,7 +26,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
       - name: Resolve version
         id: version
         run: |
@@ -37,12 +37,12 @@ jobs:
           fi
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5.2.0
         with:
           java-version: '25'
           distribution: 'temurin'
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@v6.1.0
 
       - name: Build fat-jar + SBOM
         run: ./gradlew fatJar :cyclonedxDirectBom --stacktrace
@@ -54,7 +54,7 @@ jobs:
           cp build/reports/bom.json staging/barebones-commander-bom.json
           cp build/reports/bom.xml  staging/barebones-commander-bom.xml
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: jar-and-sbom
           path: staging/
@@ -68,17 +68,17 @@ jobs:
       matrix:
         type: [deb, rpm]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
       # jpackage uses the current JDK to build the runtime image bundled
       # in the installer. JDK 25 == app's runtime target.
       - name: Set up JDK 25 (jpackage runtime image source)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5.2.0
         with:
           java-version: '25'
           distribution: 'temurin'
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8.0.1
         with:
           name: jar-and-sbom
           path: staging/
@@ -106,7 +106,7 @@ jobs:
             --linux-shortcut \
             --dest dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: installer-linux-${{ matrix.type }}
           path: dist/*
@@ -116,15 +116,15 @@ jobs:
     needs: build-jar-and-sbom
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up JDK 25 (jpackage runtime image source)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5.2.0
         with:
           java-version: '25'
           distribution: 'temurin'
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8.0.1
         with:
           name: jar-and-sbom
           path: staging/
@@ -148,7 +148,7 @@ jobs:
             --mac-package-name barebones-commander \
             --dest dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: installer-macos-aarch64
           path: dist/*
@@ -163,18 +163,18 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8.0.1
         with:
           path: artifacts/
           merge-multiple: true
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4.1.0
         with:
           subject-path: 'artifacts/*'
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.0
         with:
           files: artifacts/*
           generate_release_notes: true
