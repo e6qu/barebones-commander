@@ -10,21 +10,16 @@ package dev.barebones.commander.secret.macos;
 
 import com.sun.jna.Library;
 import com.sun.jna.Native;
-import com.sun.jna.Pointer;
-import com.sun.jna.ptr.IntByReference;
+import com.sun.jna.NativeLibrary;
+import com.sun.jna.platform.mac.CoreFoundation.CFBooleanRef;
+import com.sun.jna.platform.mac.CoreFoundation.CFDictionaryRef;
+import com.sun.jna.platform.mac.CoreFoundation.CFStringRef;
+import com.sun.jna.platform.mac.CoreFoundation.CFTypeRef;
 import com.sun.jna.ptr.PointerByReference;
 
 /**
  * JNA binding for the subset of macOS {@code Security.framework}
  * that we need for keychain-backed credential storage.
- *
- * The functions chosen are the legacy "keychain item" API
- * ({@code SecKeychainAddGenericPassword} et al.) rather than the
- * modern {@code SecItem*} family because they're easier to bind
- * via JNA — the modern family takes {@code CFDictionaryRef} and
- * needs CoreFoundation marshalling. The legacy API is still
- * supported on macOS 14 (Sonoma) and 15 (Sequoia) and works on
- * the OS user's default keychain.
  */
 public interface SecurityFramework extends Library {
 
@@ -34,50 +29,49 @@ public interface SecurityFramework extends Library {
     int OK = 0;
     /** errSecItemNotFound */
     int ITEM_NOT_FOUND = -25300;
+    /** errSecDuplicateItem */
+    int DUPLICATE_ITEM = -25299;
 
-    /**
-     * Adds a new generic-password item to the user's default keychain.
-     *
-     * @return errSecSuccess (0) on success, errSecDuplicateItem (-25299)
-     *         if an item already exists, or another negative status.
-     */
-    int SecKeychainAddGenericPassword(
-        Pointer keychain,                          // null = default
-        int serviceNameLength,
-        byte[] serviceName,                        // UTF-8
-        int accountNameLength,
-        byte[] accountName,                        // UTF-8
-        int passwordLength,
-        byte[] passwordData,                       // UTF-8
-        PointerByReference itemRef);               // out, may be null
+    int SecItemAdd(CFDictionaryRef attributes, PointerByReference result);
 
-    /**
-     * Looks up a generic-password item in the user's default keychain.
-     */
-    int SecKeychainFindGenericPassword(
-        Pointer keychain,                          // null = default
-        int serviceNameLength,
-        byte[] serviceName,                        // UTF-8
-        int accountNameLength,
-        byte[] accountName,                        // UTF-8
-        IntByReference passwordLength,             // out
-        PointerByReference passwordData,           // out (use SecKeychainItemFreeContent)
-        PointerByReference itemRef);               // out (use CFRelease)
+    int SecItemCopyMatching(CFDictionaryRef query, PointerByReference result);
 
-    /** Removes the keychain item that was located by Find. */
-    int SecKeychainItemDelete(Pointer itemRef);
+    int SecItemUpdate(CFDictionaryRef query, CFDictionaryRef attributesToUpdate);
 
-    /** Frees a buffer allocated by SecKeychainFindGenericPassword. */
-    int SecKeychainItemFreeContent(Pointer attrList, Pointer data);
+    int SecItemDelete(CFDictionaryRef query);
 
-    /**
-     * CoreFoundation CFRelease — decrements the refcount of any CFTypeRef.
-     * The itemRef returned by SecKeychainFindGenericPassword is a
-     * CFTypeRef and needs CFRelease to avoid leaking it.
-     *
-     * Lives on the CoreFoundation library, but JNA binds it through
-     * the same Library instance because dlsym walks the global
-     * namespace on macOS.
-     */
-    void CFRelease(Pointer cf);
+    final class Constants {
+        static final CFStringRef SEC_CLASS = securityString("kSecClass");
+        static final CFStringRef SEC_CLASS_GENERIC_PASSWORD = securityString("kSecClassGenericPassword");
+        static final CFStringRef ATTR_SERVICE = securityString("kSecAttrService");
+        static final CFStringRef ATTR_ACCOUNT = securityString("kSecAttrAccount");
+        static final CFStringRef VALUE_DATA = securityString("kSecValueData");
+        static final CFStringRef RETURN_DATA = securityString("kSecReturnData");
+        static final CFStringRef MATCH_LIMIT = securityString("kSecMatchLimit");
+        static final CFStringRef MATCH_LIMIT_ONE = securityString("kSecMatchLimitOne");
+        static final CFBooleanRef CF_BOOLEAN_TRUE = coreFoundationBoolean("kCFBooleanTrue");
+
+        private Constants() {
+        }
+
+        private static CFStringRef securityString(String symbol) {
+            return new CFStringRef(
+                NativeLibrary.getInstance("Security")
+                    .getGlobalVariableAddress(symbol)
+                    .getPointer(0));
+        }
+
+        private static CFBooleanRef coreFoundationBoolean(String symbol) {
+            return new CFBooleanRef(
+                NativeLibrary.getInstance("CoreFoundation")
+                    .getGlobalVariableAddress(symbol)
+                    .getPointer(0));
+        }
+    }
+
+    static void release(CFTypeRef ref) {
+        if (ref != null) {
+            ref.release();
+        }
+    }
 }
