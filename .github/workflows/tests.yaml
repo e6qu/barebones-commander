@@ -17,8 +17,7 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
-      - uses: gradle/wrapper-validation-action@v2
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew test --stacktrace
 
   package-smoke:
@@ -32,8 +31,7 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
-      - uses: gradle/wrapper-validation-action@v2
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build fat JAR and SBOM
         run: ./gradlew fatJar :cyclonedxDirectBom --stacktrace
 
