@@ -17,7 +17,7 @@
 
 package dev.barebones.commander.commons.file.util;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Runs tests on {@link PathTokenizer}.

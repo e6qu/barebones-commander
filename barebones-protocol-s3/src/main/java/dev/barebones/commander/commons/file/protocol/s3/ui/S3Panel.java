@@ -27,17 +27,17 @@ import java.text.ParseException;
  * Connect-dialog tab for S3-compatible endpoints. Form maps directly
  * onto the AWS-SDK-v2 inputs that {@link S3ProtocolProvider} reads
  * back from the URL:
- *   - endpoint host  → URL host
- *   - port           → URL port (0 = default for the chosen scheme)
+ *   - endpoint host or URL → URL host + scheme property
+ *   - port                 → URL port (0 = default for the chosen scheme)
  *   - access key     → URL credentials.login
  *   - secret key     → URL credentials.password
  *   - region         → URL property "region"
  *   - path-style     → URL property "pathStyle" ("true"/"false")
  *   - HTTPS/HTTP     → URL property "useHttps" ("true"/"false")
  *
- * MinIO-style: endpoint = minio.local, port = 9000, path-style = on,
- * HTTPS off. AWS-style: endpoint = s3.amazonaws.com, port = 0,
- * path-style off, HTTPS on, region = us-east-1.
+ * MinIO-style: endpoint = http://minio.local:9000, path-style = on.
+ * AWS-style: endpoint = s3.amazonaws.com, port = 0, path-style off,
+ * HTTPS on, region = us-east-1.
  */
 public class S3Panel extends ServerPanel {
 
@@ -111,16 +111,15 @@ public class S3Panel extends ServerPanel {
     @Override
     public FileURL getServerURL() throws MalformedURLException {
         updateValues();
-        if (LAST.endpoint.isEmpty()) {
-            throw new MalformedURLException("S3 endpoint must not be blank");
-        }
+        S3EndpointConfig endpoint = S3EndpointConfig.parse(
+            LAST.endpoint, LAST.port, LAST.useHttps);
         String path = "/";
         if (!LAST.bucket.isEmpty()) {
             path = "/" + LAST.bucket + "/";
         }
-        FileURL url = FileURL.getFileURL("s3://" + LAST.endpoint + path);
-        if (LAST.port > 0) {
-            url.setPort(LAST.port);
+        FileURL url = FileURL.getFileURL("s3://" + endpoint.host() + path);
+        if (endpoint.port() > 0) {
+            url.setPort(endpoint.port());
         }
         if (!LAST.accessKey.isEmpty()) {
             String secret = new String(secretKeyField.getPassword());
@@ -132,7 +131,7 @@ public class S3Panel extends ServerPanel {
         url.setProperty(S3ProtocolProvider.PROPERTY_PATH_STYLE,
             Boolean.toString(LAST.pathStyle));
         url.setProperty(S3ProtocolProvider.PROPERTY_USE_HTTPS,
-            Boolean.toString(LAST.useHttps));
+            Boolean.toString(endpoint.useHttps()));
         return url;
     }
 

@@ -8,10 +8,10 @@
  */
 package dev.barebones.commander.secret.linux;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
-import static org.testng.Assert.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
 
 /**
  * Pure-config tests. The live cancellable behaviour requires
@@ -20,7 +20,7 @@ import static org.testng.Assert.assertEquals;
  */
 public class LibsecretTimeoutTest {
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void clearProps() {
         System.clearProperty(LibsecretTimeout.TIMEOUT_PROP);
     }

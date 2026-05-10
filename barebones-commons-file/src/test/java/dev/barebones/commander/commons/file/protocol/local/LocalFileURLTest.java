@@ -21,7 +21,7 @@ import dev.barebones.commander.commons.file.AuthenticationType;
 import dev.barebones.commander.commons.file.Credentials;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.FileURLTestCase;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
 

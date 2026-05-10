@@ -22,9 +22,9 @@ import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.TestFile;
 import dev.barebones.commander.commons.file.util.FileComparator.CRITERION;
 
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import dev.barebones.commander.test.TestAssertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -43,7 +43,7 @@ public class FileComparatorTest {
     private TestFile D;
     
 
-    @BeforeMethod
+    @BeforeEach
     protected void setUp() throws Exception {
         A = new TestFile(FileFactory.getTemporaryFolder() + "A", false, 500, 1, null);
         B = new TestFile(FileFactory.getTemporaryFolder() + "B.e9.e1", true, 0, 2, null);
@@ -209,9 +209,9 @@ public class FileComparatorTest {
         AbstractFile[] files = new AbstractFile[]{fileA, fileB, fileC};
         Arrays.sort(files, new FileComparator(CRITERION.NAME, true, true, AbstractFile::getName, Locale.getDefault(), FileComparator.Mode.LEXICOGRAPHIC));
 
-        Assert.assertEquals(files[0], fileA);
-        Assert.assertEquals(files[1], fileC);
-        Assert.assertEquals(files[2], fileB);
+        TestAssertions.assertEquals(files[0], fileA);
+        TestAssertions.assertEquals(files[1], fileC);
+        TestAssertions.assertEquals(files[2], fileB);
     }
 
     @Test
@@ -223,9 +223,9 @@ public class FileComparatorTest {
         AbstractFile[] files = new AbstractFile[]{fileA, fileB, fileC};
         Arrays.sort(files, new FileComparator(CRITERION.NAME, true, true, AbstractFile::getName, Locale.getDefault(), FileComparator.Mode.NATURAL));
 
-        Assert.assertEquals(files[0], fileA);
-        Assert.assertEquals(files[1], fileB);
-        Assert.assertEquals(files[2], fileC);
+        TestAssertions.assertEquals(files[0], fileA);
+        TestAssertions.assertEquals(files[1], fileB);
+        TestAssertions.assertEquals(files[2], fileC);
     }
 
     @Test
@@ -236,8 +236,8 @@ public class FileComparatorTest {
         AbstractFile[] files = new AbstractFile[]{fileA, fileB};
         Arrays.sort(files, new FileComparator(CRITERION.NAME, true, true, AbstractFile::getName, Locale.getDefault(), FileComparator.Mode.NATURAL));
 
-        Assert.assertEquals(files[0], fileB);
-        Assert.assertEquals(files[1], fileA);
+        TestAssertions.assertEquals(files[0], fileB);
+        TestAssertions.assertEquals(files[1], fileA);
     }
     
 }

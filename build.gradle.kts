@@ -49,10 +49,14 @@ subprojects {
         if (project.name != "barebones-logging") {
             "implementation"(project(":barebones-logging"))
         }
-        // TestNG uses SLF4J internally. Keep a no-op provider on test
-        // runtime classpaths so tests do not emit provider warnings while
-        // production code remains on the JDK-backed logger.
+        // Keep a no-op provider on test runtime classpaths so tests do not
+        // emit provider warnings while production code remains on the
+        // JDK-backed logger.
         "testRuntimeOnly"("org.slf4j:slf4j-nop:2.0.17")
+        "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+        if (project.name != "barebones-test-support") {
+            "testImplementation"(project(":barebones-test-support"))
+        }
         constraints {
             "implementation"("com.squareup.okio:okio-jvm:3.17.0")
             "implementation"("org.jetbrains.kotlin:kotlin-stdlib:2.3.21")
@@ -62,10 +66,8 @@ subprojects {
         }
     }
     tasks.withType<Test>().configureEach {
-        // Default subproject test framework to TestNG. Modules that use
-        // JUnit 5 (e.g. barebones-protocol-nfs) override with
-        // useJUnitPlatform() in their own build.gradle.kts.
-        useTestNG()
+        useJUnitPlatform()
+        systemProperty("junit.jupiter.testinstance.lifecycle.default", "per_class")
         jvmArgs("--enable-native-access=ALL-UNNAMED")
         testLogging {
             events("failed", "standardError")
@@ -173,7 +175,8 @@ tasks.named<Jar>("jar") {
 }
 
 tasks.named<Test>("test") {
-    useTestNG()
+    useJUnitPlatform()
+    systemProperty("junit.jupiter.testinstance.lifecycle.default", "per_class")
 }
 
 // CycloneDX SBOM published per release. The direct task writes

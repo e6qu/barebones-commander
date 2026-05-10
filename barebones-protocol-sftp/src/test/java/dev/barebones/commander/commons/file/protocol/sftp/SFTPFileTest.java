@@ -21,7 +21,7 @@ import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.AbstractFileTest;
 import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.FileOperation;
-import org.testng.annotations.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -47,13 +47,13 @@ public class SFTPFileTest extends AbstractFileTest {
 //        SFTPFile.setAttributeCachingPeriod(5000);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setupTemporaryFolder() {
         String tempFolderUri = System.getProperty(TEMP_FOLDER_PROPERTY);
         if (tempFolderUri == null) {
             // Integration test — needs a live SFTP endpoint configured via
             // -D test_properties.sftp_test.temp_folder. Skip in CI.
-            throw new org.testng.SkipException(
+            throw new org.opentest4j.TestAbortedException(
                     "SFTPFileTest requires -D" + TEMP_FOLDER_PROPERTY
                             + "=<sftp-uri> at JVM start; skipping in CI.");
         }

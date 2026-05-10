@@ -17,11 +17,14 @@
 
 package dev.barebones.commander.text;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParsePosition;
+import java.util.Collections;
+import java.util.Locale;
 
 /**
  * A test case for {@link SizeFormat}.
@@ -41,10 +44,10 @@ public class SizeFormatTest {
 
     private final static String DECIMAL_SEPARATOR = ""+DECIMAL_FORMAT.getDecimalFormatSymbols().getDecimalSeparator();
 
-    static {
-        // SizeFormat uses localized strings
-//        try { Translator.init(); }
-//        catch(Exception e) { throw new RuntimeException(e); }
+    @BeforeAll
+    public static void initTranslator() {
+        Locale locale = Activator.loadLocale();
+        Translator.init(Activator.getDictionaryBundle(locale), Activator.getLanguageBundle(locale), Collections.emptyList());
     }
 
     /**

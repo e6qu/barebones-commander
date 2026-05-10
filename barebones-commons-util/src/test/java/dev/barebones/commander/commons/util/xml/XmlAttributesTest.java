@@ -19,8 +19,8 @@ package dev.barebones.commander.commons.util.xml;
 
 import java.util.Iterator;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Runs test on the {@link XmlAttributes} class.
@@ -52,7 +52,7 @@ public class XmlAttributesTest {
     /**
      * Initialises the test case.
      */
-    @BeforeMethod
+    @BeforeEach
     public void setUp() {
         attributes = new XmlAttributes();
     }

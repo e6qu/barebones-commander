@@ -17,8 +17,9 @@
 
 package dev.barebones.commander.commons.util;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -35,7 +36,6 @@ public class StringUtilsTest {
      * Provides test cases for {@link #testEndsWith(String, String, boolean)}.
      * @return test cases for {@link #testEndsWith(String, String, boolean)}.
      */
-    @DataProvider(name = "endsWith")
     public Iterator<Object[]> endsWithTestCases() {
       List<Object[]> data;
 
@@ -63,7 +63,8 @@ public class StringUtilsTest {
      * @param b        char array to test.
      * @param expected expected return value of {@link StringUtils#endsWith(String, char[])}.
      */
-    @Test(dataProvider = "endsWith")
+    @ParameterizedTest
+    @MethodSource("endsWithTestCases")
     public void testEndsWith(String a, String b, boolean expected) {
         assert StringUtils.endsWith(a, b.toCharArray()) == expected;
     }
@@ -72,7 +73,6 @@ public class StringUtilsTest {
 
     // - matchesIgnoreCase tests ---------------------------------------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
-    @DataProvider(name = "matchesIgnoreCase")
     public Iterator<Object[]> matchesIgnoreCaseTestCases() {
       List<Object[]> data;
 
@@ -98,12 +98,14 @@ public class StringUtilsTest {
         return data.iterator();
     }
 
-    @Test(dataProvider = "matchesIgnoreCase")
+    @ParameterizedTest
+    @MethodSource("matchesIgnoreCaseTestCases")
     public void testMatchesIgnoreCaseCharArray(String a, String b, int pos, boolean expected) {
         assert StringUtils.matchesIgnoreCase(a, b.toCharArray(), pos) == expected;
     }
 
-    @Test(dataProvider = "matchesIgnoreCase")
+    @ParameterizedTest
+    @MethodSource("matchesIgnoreCaseTestCases")
     public void testMatchesIgnoreCase(String a, String b, int pos, boolean expected) {
         assert StringUtils.matchesIgnoreCase(a, b, pos) == expected;
     }
@@ -116,7 +118,6 @@ public class StringUtilsTest {
      * Provides test cases for {@link #testMatches(String, String, int, boolean)}.
      * @return test cases for {@link #testMatches(String, String, int, boolean)}.
      */
-    @DataProvider(name = "matches")
     public Iterator<Object[]> matchesTestCases() {
       List<Object[]> data;
 
@@ -149,7 +150,8 @@ public class StringUtilsTest {
      * @param pos      position at which to start the comparison.
      * @param expected expected return value of {@link StringUtils#matches(String, char[], int)}
      */
-    @Test(dataProvider = "matches")
+    @ParameterizedTest
+    @MethodSource("matchesTestCases")
     public void testMatches(String a, String b, int pos, boolean expected) {
         assert StringUtils.matches(a, b.toCharArray(), pos) == expected;
     }
@@ -162,7 +164,6 @@ public class StringUtilsTest {
      * Provides test cases for {@link #testParseIntDef(String, int, int)}.
      * @return test cases for {@link #testParseIntDef(String, int, int)}.
      */
-    @DataProvider(name = "parseIntDef")
     public Iterator<Object[]> parseIntDefTestCases() {
       List<Object[]> data;
 
@@ -182,7 +183,8 @@ public class StringUtilsTest {
      * @param def      default value.
      * @param expected expected return value of {@link StringUtils#parseIntDef(String, int)}.
      */
-    @Test(dataProvider = "parseIntDef")
+    @ParameterizedTest
+    @MethodSource("parseIntDefTestCases")
     public void testParseIntDef(String input, int def, int expected) {
         assert StringUtils.parseIntDef(input, def) == expected;
     }
@@ -194,7 +196,6 @@ public class StringUtilsTest {
      * Provides test cases for {@link #testEndsWithIgnoreCaseCharArray(String, String, boolean)} and {@link #testEndsWithIgnoreCase(String, String, boolean)}.
      * @return test cases for {@link #testEndsWithIgnoreCaseCharArray(String, String, boolean)} and {@link #testEndsWithIgnoreCase(String, String, boolean)}.
      */
-    @DataProvider(name = "endsWithIgnoreCase")
     public Iterator<Object[]> endsWithIgnoreCaseTestCases() {
         List<Object[]> data;
         
@@ -247,7 +248,8 @@ public class StringUtilsTest {
      * @param b        second string to compare.
      * @param expected expected return value of {@link StringUtils#endsWithIgnoreCase(String, String)}
      */
-    @Test(dataProvider = "endsWithIgnoreCase")
+    @ParameterizedTest
+    @MethodSource("endsWithIgnoreCaseTestCases")
     public void testEndsWithIgnoreCase(String a, String b, boolean expected) {
         assert StringUtils.endsWithIgnoreCase(a, b) == expected;
     }
@@ -258,7 +260,8 @@ public class StringUtilsTest {
      * @param b        second string to compare.
      * @param expected expected return value of {@link StringUtils#endsWithIgnoreCase(String, char[])}
      */
-    @Test(dataProvider = "endsWithIgnoreCase")
+    @ParameterizedTest
+    @MethodSource("endsWithIgnoreCaseTestCases")
     public void testEndsWithIgnoreCaseCharArray(String a, String b, boolean expected) {
         assert StringUtils.endsWithIgnoreCase(a, b.toCharArray()) == expected;
     }
@@ -271,7 +274,6 @@ public class StringUtilsTest {
      * Provides test cases for {@link #testStartsWithIgnoreCase(String, String, boolean)}.
      * @return test cases for {@link #testStartsWithIgnoreCase(String, String, boolean)}.
      */
-    @DataProvider(name = "startsWithIgnoreCase")
     public Iterator<Object[]> startsWithIgnoreCaseTestCases() {
         List<Object[]> data;
 
@@ -326,7 +328,8 @@ public class StringUtilsTest {
      * @param b        second string to compare.
      * @param expected expected return value of {@link StringUtils#startsWithIgnoreCase(String, String)}.
      */
-    @Test(dataProvider = "startsWithIgnoreCase")
+    @ParameterizedTest
+    @MethodSource("startsWithIgnoreCaseTestCases")
     public void testStartsWithIgnoreCase(String a, String b, boolean expected) {
         assert StringUtils.startsWithIgnoreCase(a, b) == expected;
     }
@@ -339,7 +342,6 @@ public class StringUtilsTest {
      * Provides test cases for {@link #testCaseInsensitiveEquals(String, String, boolean)}.
      * @return test cases for {@link #testCaseInsensitiveEquals(String, String, boolean)}.
      */
-    @DataProvider(name = "caseInsensitiveEquals")
     public Iterator<Object[]> caseInsensitiveEqualsTestCases() {
         List<Object[]> data;
 
@@ -361,7 +363,6 @@ public class StringUtilsTest {
      * Provides test cases for {@link #testCaseSensitiveEquals(String, String, boolean)}.
      * @return test cases for {@link #testCaseSensitiveEquals(String, String, boolean)}.
      */
-    @DataProvider(name = "caseSensitiveEquals")
     public Iterator<Object[]> caseSensitiveEqualsTestCases() {
         List<Object[]> data;
 
@@ -385,7 +386,8 @@ public class StringUtilsTest {
      * @param b        second string to compare
      * @param expected expected return value of {@link StringUtils#equals(String, String, boolean)}
      */
-    @Test(dataProvider = "caseSensitiveEquals")
+    @ParameterizedTest
+    @MethodSource("caseSensitiveEqualsTestCases")
     public void testCaseSensitiveEquals(String a, String b, boolean expected) {
         assert StringUtils.equals(a, b, true) == expected;
     }
@@ -396,7 +398,8 @@ public class StringUtilsTest {
      * @param b        second string to compare
      * @param expected expected return value of {@link StringUtils#equals(String, String, boolean)}
      */
-    @Test(dataProvider = "caseInsensitiveEquals")
+    @ParameterizedTest
+    @MethodSource("caseInsensitiveEqualsTestCases")
     public void testCaseInsensitiveEquals(String a, String b, boolean expected) {
         assert StringUtils.equals(a, b, false) == expected;
     }
@@ -409,7 +412,6 @@ public class StringUtilsTest {
      * Provides test cases for {@link #testCapitalize(String, String)}.
      * @return test cases for {@link #testCapitalize(String, String)}.
      */
-    @DataProvider(name = "capitalize")
     public Iterator<String[]> capitalizeTestCases() {
         List<String[]> data;
 
@@ -434,7 +436,8 @@ public class StringUtilsTest {
      * @param input    string to capitalize.
      * @param expected expected result of the capitalization.
      */
-    @Test(dataProvider = "capitalize")
+    @ParameterizedTest
+    @MethodSource("capitalizeTestCases")
     public void testCapitalize(String input, String expected) {
         assert expected.equals(StringUtils.capitalize(input));
     }
@@ -447,7 +450,6 @@ public class StringUtilsTest {
      * Provides test cases for {@link #testFlatten(String, String[], String)}.
      * @return test cases for {@link #testFlatten(String, String[], String)}.
      */
-    @DataProvider(name = "flatten")
     public Iterator<Object[]> flattenTestCases() {
         List<Object[]> data;
 
@@ -469,7 +471,8 @@ public class StringUtilsTest {
      * @param data      data to flatten.
      * @param separator separator to use when flattening.
      */
-    @Test(dataProvider = "flatten")
+    @ParameterizedTest
+    @MethodSource("flattenTestCases")
     public void testFlatten(String expected, String[] data, String separator) {
         assert expected.equals(StringUtils.flatten(data, separator));
         if(separator.equals(" "))

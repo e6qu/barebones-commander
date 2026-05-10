@@ -17,8 +17,9 @@
 
 package dev.barebones.commander.commons.conf;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
@@ -33,7 +34,6 @@ public class ConfigurationSectionTest {
      * Provides test cases for {@link #testRemoveVariable(String)}.
      * @return test cases for {@link #testRemoveVariable(String)}.
      */
-    @DataProvider(name = "removeVariable")
     public Iterator<Object[]> removeVariableCases() {
         List<Object[]> data;
 
@@ -41,7 +41,7 @@ public class ConfigurationSectionTest {
 
         // setVariable rejects null / empty for an unset variable (returns
         // false), so the testRemoveVariable assertion only holds for a
-        // genuinely set value. Pre-Phase-3 the wrong dataProvider name
+        // genuinely set value. Pre-Phase-3 the wrong parameter source name
         // was referenced by @Test, so these edge cases never actually ran;
         // when fixing the reference we trim to the only viable case.
         data.add(new Object[] {"value"});
@@ -53,7 +53,8 @@ public class ConfigurationSectionTest {
      * Tests the {@link ConfigurationSection#removeVariable(String)} method.
      * @param value value to which the variable should be set before being removed.
      */
-    @Test(dataProvider = "removeVariable")
+    @ParameterizedTest
+    @MethodSource("removeVariableCases")
     public void testRemoveVariable(String value) {
         ConfigurationSection section;
 
@@ -73,7 +74,6 @@ public class ConfigurationSectionTest {
      * Provides test cases for {@link #testSetVariable(String, String, boolean)}.
      * @return test cases for {@link #testSetVariable(String, String, boolean)}.
      */
-    @DataProvider(name = "setVariable")
     public Iterator<Object[]> setVariableCases() {
         List<Object[]> data;
 
@@ -109,7 +109,8 @@ public class ConfigurationSectionTest {
      * @param expected expected return value of the second call to
      *                 {@link ConfigurationSection#setVariable(String, String)}.
      */
-    @Test(dataProvider = "setVariable")
+    @ParameterizedTest
+    @MethodSource("setVariableCases")
     public void testSetVariable(String first, String second, boolean expected) {
         ConfigurationSection section;
 

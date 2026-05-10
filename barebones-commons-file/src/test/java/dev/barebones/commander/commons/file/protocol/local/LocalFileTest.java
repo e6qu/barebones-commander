@@ -21,7 +21,7 @@ import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.AbstractFileTest;
 import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.FileOperation;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -31,7 +31,6 @@ import java.security.NoSuchAlgorithmException;
  *
  * @author Maxence Bernard
  */
-@Test
 public class LocalFileTest extends AbstractFileTest {
 
     /////////////////////////////////////

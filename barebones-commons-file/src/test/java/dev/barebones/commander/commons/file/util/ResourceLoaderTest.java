@@ -19,8 +19,7 @@ package dev.barebones.commander.commons.file.util;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.io.StreamUtils;
-import org.testng.annotations.Ignore;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -135,9 +134,8 @@ public class ResourceLoaderTest {
      * Tests <code>ResourceLoader#getRootPackageAsFile</code> methods.
      *
      * @throws IOException should not happen
-     */
+    */
     @Test
-    @Ignore
     public void testRootPackageAsFile() throws IOException {
         AbstractFile rootPackageFile = ResourceLoader.getRootPackageAsFile(getClass());
         assert rootPackageFile != null;

@@ -8,5 +8,5 @@ dependencies {
     implementation(libs.commons.compress)
     implementation(libs.xz)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }

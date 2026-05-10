@@ -1,5 +1,5 @@
 repositories.mavenCentral()
 
 dependencies {
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }

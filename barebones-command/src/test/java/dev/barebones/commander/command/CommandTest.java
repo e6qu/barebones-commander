@@ -19,8 +19,8 @@ package dev.barebones.commander.command;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileFactory;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -53,7 +53,7 @@ public class CommandTest {
     /**
      * Creates a batch of files used for testing.
      */
-    @BeforeClass
+    @BeforeAll
     public void setUp() {
         command = new Command(null, null);
         try {

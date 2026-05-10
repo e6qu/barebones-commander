@@ -17,8 +17,8 @@
 
 package dev.barebones.commander.commons.conf;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * A test case for the {@link ConfigurationExplorer} class.
@@ -52,7 +52,7 @@ public class ConfigurationExplorerTest {
     /**
      * Fills the configuration instance with test values.
      */
-    @BeforeMethod
+    @BeforeEach
     public void setUp() {
         StringBuilder buffer;
 

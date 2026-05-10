@@ -7,5 +7,5 @@ dependencies {
     implementation(libs.jna)
     implementation(libs.jna.platform)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }

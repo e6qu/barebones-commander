@@ -6,5 +6,5 @@ dependencies {
 
     implementation(libs.commons.compress)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }

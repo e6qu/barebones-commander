@@ -3,5 +3,5 @@ repositories.mavenCentral()
 dependencies {
     api(project(":barebones-commons-io"))
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }

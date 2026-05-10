@@ -17,8 +17,8 @@
 
 package dev.barebones.commander.commons.conf;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Vector;
 
@@ -65,7 +65,7 @@ public class ConfigurationEventTest {
     /**
      * Initialises the test case.
      */
-    @BeforeMethod
+    @BeforeEach
     public void setUp() {
         conf = new Configuration();
     }

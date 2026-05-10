@@ -8,11 +8,11 @@
  */
 package dev.barebones.commander.secret.macos;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
-import static org.testng.Assert.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
 
 public class KeychainSecretStoreTest {
 

@@ -8,15 +8,15 @@
  */
 package dev.barebones.commander.commons.file.protocol.sftp;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertThrows;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertThrows;
 
 public class HostKeyPolicyTest {
 
-    @AfterMethod
+    @AfterEach
     public void clearProperty() {
         System.clearProperty("barebones.sftp.hostKey");
     }

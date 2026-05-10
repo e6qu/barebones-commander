@@ -13,9 +13,9 @@ dependencies {
     // the java.desktop module that contains macOS-specific extensions
     compileOnly(files("libs/java.desktop.jar"))
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }
 
 tasks.test {
-    useTestNG()
+    useJUnitPlatform()
 }

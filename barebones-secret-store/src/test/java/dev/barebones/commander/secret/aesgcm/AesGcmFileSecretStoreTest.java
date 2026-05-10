@@ -10,31 +10,31 @@ package dev.barebones.commander.secret.aesgcm;
 
 import dev.barebones.commander.secret.SecretRef;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertThrows;
-import static org.testng.Assert.assertTrue;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertFalse;
+import static dev.barebones.commander.test.TestAssertions.assertThrows;
+import static dev.barebones.commander.test.TestAssertions.assertTrue;
 
 public class AesGcmFileSecretStoreTest {
 
     private Path file;
 
-    @BeforeMethod
+    @BeforeEach
     public void newFile() throws IOException {
         file = Files.createTempFile("aesgcm-test-", ".bin");
         Files.delete(file); // we want a non-existing path
     }
 
-    @AfterMethod
+    @AfterEach
     public void cleanup() throws IOException {
         Files.deleteIfExists(file);
         Files.deleteIfExists(file.resolveSibling(file.getFileName().toString() + ".tmp"));

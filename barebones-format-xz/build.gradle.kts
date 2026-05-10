@@ -5,5 +5,5 @@ dependencies {
 
     implementation(libs.xz)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }

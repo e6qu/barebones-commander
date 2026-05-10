@@ -17,7 +17,7 @@
 
 package dev.barebones.commander.commons.file.filter;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests the {@link ExtensionFilenameFilter} class.

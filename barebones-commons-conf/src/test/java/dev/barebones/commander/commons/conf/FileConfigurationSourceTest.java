@@ -17,8 +17,8 @@
 
 package dev.barebones.commander.commons.conf;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +49,7 @@ public class FileConfigurationSourceTest  {
     /**
      * Creates a new temporary file with which to work.
      */
-    @BeforeMethod
+    @BeforeEach
     public void setUp() throws IOException {
         file = File.createTempFile("conf", "test");
         file.deleteOnExit();

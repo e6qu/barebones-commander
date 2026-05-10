@@ -8,9 +8,9 @@
  */
 package dev.barebones.commander.commons.file.protocol.s3;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.testng.Assert.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
 
 /**
  * Pins the locale-free byte formatter used for S3 upload progress

@@ -8,10 +8,10 @@
  */
 package dev.barebones.commander.commons.file.archive;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertThrows;
+import static dev.barebones.commander.test.TestAssertions.assertEquals;
+import static dev.barebones.commander.test.TestAssertions.assertThrows;
 
 public class SafePathTest {
 

@@ -15,7 +15,7 @@ dependencies {
 
     implementation(libs.jsch.mwiede)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
     testImplementation(files(commonsFileTestOutput))
     testImplementation(project(":barebones-format-zip"))
 }

@@ -6,5 +6,5 @@ dependencies {
 
     compileOnly(libs.jetbrains.annotations)
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
 }

@@ -21,7 +21,7 @@ import dev.barebones.commander.commons.runtime.OsFamily;
 import dev.barebones.commander.commons.util.StringUtils;
 import dev.barebones.commander.ui.macos.AppleScript;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Locale;
 

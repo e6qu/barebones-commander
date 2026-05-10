@@ -9,7 +9,7 @@ val commonsFileTestOutput = project(":barebones-commons-file")
 dependencies {
     api(project(":barebones-commons-file"))
 
-    testImplementation(libs.testng)
+    testImplementation(libs.junit.jupiter)
     testImplementation(project(":barebones-commons-file"))
     testImplementation(files(commonsFileTestOutput))
 }
