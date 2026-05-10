@@ -6,6 +6,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 
 > Companion docs in this repo:
 > - `LIBRARIES.md` — current architecture & full library inventory.
+> - `NATIVE_DEPS_AUDIT.md` — Phase 24 native/JNA/shell-out audit.
 > - `SECURITY_REVIEW.md` — full Critical/High vulnerability audit.
 
 ---
@@ -42,7 +43,10 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
 | **22** | done | **Modern logging migration** — internal `barebones-logging` facade backed by JDK logging APIs; `--debug` support; SLF4J/logback removed from production dependencies. | landed in #30 |
 | **23** | done | **Systematic dependency upgrade pass** — audited every `gradle/libs.versions.toml` entry against Maven Central / Gradle Plugin Portal release metadata; removed `jsr305`; documented major/pre-release pins. | this PR |
-| **24** | pending | **Native-deps audit** — catalogue every JNI binding, JNA call, and shell-out (osascript, applescript, libsecret, macOS Security.framework, NFS Sun-RPC vendored code). For each, evaluate: Java-native replacement available? worth the swap? maintenance burden? Output: an audit doc + a list of candidate replacements (e.g. ssh-shell-out → Apache MINA SSHD client; vendored Sun NFS → embedded Java NFS client). | research PR (audit doc), then per-candidate PRs |
+| **24** | done | **Native-deps audit** — catalogued every JNA binding, shell-out, and vendored native-adjacent protocol surface; removed the unused `barebones-commons-file` JNA/`libc` wrapper; documented candidate follow-ups. | this PR |
+| **25** | pending | **Remove avoidable chmod shell-out** — replace credentials-file `chmod 0600` with Java NIO POSIX permissions. | next code PR |
+| **26** | pending | **Modernize macOS Keychain binding** — migrate legacy `SecKeychain*` JNA calls to `SecItem*` while preserving keychain behavior. | follow-up |
+| **27** | pending | **Platform process hardening** — centralize short-lived desktop helper command execution with timeouts and interrupt handling. | follow-up |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -1094,34 +1098,27 @@ migrated the viewer API annotations to `org.jetbrains:annotations`.
 **Exit criteria met**: catalog entries are either current or documented
 pins; direct `jsr305` removed; CI green on the resulting graph.
 
-### Phase 24 — Native-deps audit (research PR; per-candidate PRs follow)
+### Phase 24 — Native-deps audit (done in this PR)
 
 Every native binding and shell-out is a portability tax (one more
 build target, one more failure mode at runtime). Worth knowing
 exactly where they are and what they'd cost to replace.
 
-**Audit deliverable** (in the PR description, not committed):
-table of every native dependency with columns:
+The committed audit lives in `NATIVE_DEPS_AUDIT.md`.
 
-| where | mechanism | what it does | java-native alternative | swap cost |
+Findings:
 
-Known entries to populate:
+- Deleted dead native surface: `barebones-commons-file` no longer carries JNA
+  just for the unused `libc` / `statvfs` wrapper.
+- macOS Keychain and Linux libsecret stay on JNA; Java SE has no equivalent OS
+  keychain API.
+- AppleScript and desktop opener shell-outs stay where they provide Finder /
+  desktop-manager behavior Java does not fully cover.
+- Vendored NFS/Sun RPC is pure Java and isolated; replacing it should wait for
+  an integration-test fixture and a proven maintained alternative.
 
-- macOS Keychain via JNA → no Java alternative; keep.
-- Linux libsecret via JNA → could call D-Bus directly via
-  `jdbus` or a Java D-Bus client; weigh against the simplicity
-  of the current binding.
-- macOS `Security.framework` `CFRelease` → JNA; same as above.
-- `osascript` shell-out (chunked AppleScript) →
-  no Java alternative, AppleScript is Apple-proprietary.
-- Vendored **Sun NFS / RPC** (`com.sun.nfs`, `com.sun.rpc`,
-  `com.sun.gssapi`) → already pure Java; the question is whether
-  to keep or replace with a maintained library.
-- JSch SSH client → MINA SSHD is the maintained successor.
-
-**Exit criteria**: an audit doc exists (in PR description /
-review comments). Each candidate replacement gets its own
-follow-up PR if it survives review; nothing is mass-swapped.
+**Exit criteria met**: audit doc committed; candidate replacements split into
+Phase 25+ follow-ups; no mass swap attempted.
 
 ## 7. Compatibility with upstream
 

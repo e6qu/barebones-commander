@@ -1,6 +1,6 @@
 # barebones-commander — Architecture & Libraries
 
-Current inventory for `barebones-commander` after Phase 23.
+Current inventory for `barebones-commander` after Phase 24.
 
 ## At A Glance
 
@@ -15,6 +15,9 @@ Current inventory for `barebones-commander` after Phase 23.
 | Supported OS | macOS and Linux |
 | Logging | Internal `barebones-logging` facade backed by JDK logging APIs |
 | License | GPLv3 |
+
+See `NATIVE_DEPS_AUDIT.md` for the native/JNA/shell-out inventory and
+candidate replacements.
 
 ## Modules
 
@@ -77,7 +80,7 @@ Versions are declared in `gradle/libs.versions.toml`.
 
 | Library | Version | Purpose |
 |---|---:|---|
-| JNA / JNA Platform | 5.18.1 | macOS Keychain/Security.framework, libsecret, OS file integration |
+| JNA / JNA Platform | 5.18.1 | macOS Keychain/Security.framework, libsecret, macOS OS integration |
 
 ### Protocols
 
@@ -125,3 +128,6 @@ Most catalog entries were already current stable releases. Intentional pins:
 The fork intentionally removed Windows/OpenVMS support, OSGi/Felix runtime,
 FTP/HTTP/SMB/cloud-drive protocols, embedded terminal support, image/PDF/binary
 viewers, and heavyweight archive formats outside zip/tar/gzip/bzip2/xz.
+
+Phase 24 also removed the unused `barebones-commons-file` JNA dependency and
+its dead `libc`/`statvfs` wrapper.
