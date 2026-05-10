@@ -44,7 +44,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **22** | done | **Modern logging migration** — internal `barebones-logging` facade backed by JDK logging APIs; `--debug` support; SLF4J/logback removed from production dependencies. | landed in #30 |
 | **23** | done | **Systematic dependency upgrade pass** — audited every `gradle/libs.versions.toml` entry against Maven Central / Gradle Plugin Portal release metadata; removed `jsr305`; documented major/pre-release pins. | this PR |
 | **24** | done | **Native-deps audit** — catalogued every JNA binding, shell-out, and vendored native-adjacent protocol surface; removed the unused `barebones-commons-file` JNA/`libc` wrapper; documented candidate follow-ups. | this PR |
-| **25** | pending | **Remove avoidable chmod shell-out** — replace credentials-file `chmod 0600` with Java NIO POSIX permissions. | next code PR |
+| **25** | done | **Remove avoidable chmod shell-out** — replaced credentials-file `chmod 0600` with Java NIO POSIX permissions and deleted the old shell-out helper. | this PR |
 | **26** | pending | **Modernize macOS Keychain binding** — migrate legacy `SecKeychain*` JNA calls to `SecItem*` while preserving keychain behavior. | follow-up |
 | **27** | pending | **Platform process hardening** — centralize short-lived desktop helper command execution with timeouts and interrupt handling. | follow-up |
 
@@ -1119,6 +1119,17 @@ Findings:
 
 **Exit criteria met**: audit doc committed; candidate replacements split into
 Phase 25+ follow-ups; no mass swap attempted.
+
+### Phase 25 — Remove avoidable chmod shell-out (done in this PR)
+
+`CredentialsManager.writeCredentials` no longer shells out to `chmod`.
+On Unix-like systems it uses `Files.setPosixFilePermissions` to set the
+credentials XML file to owner read/write only (`0600`). The old
+`barebones-commons-file` `Chmod` helper had no other app call sites and was
+deleted.
+
+**Exit criteria met**: no app call sites remain for the `chmod` helper; the
+credentials-file permission helper has focused tests; CI green.
 
 ## 7. Compatibility with upstream
 

@@ -35,7 +35,6 @@ import dev.barebones.commander.commons.file.Authenticator;
 import dev.barebones.commander.commons.file.Credentials;
 import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.FileURL;
-import dev.barebones.commander.commons.file.util.Chmod;
 import dev.barebones.commander.commons.runtime.OsFamily;
 import dev.barebones.commander.conf.PlatformManager;
 import dev.barebones.commander.io.backup.BackupOutputStream;
@@ -193,12 +192,13 @@ public class CredentialsManager {
 
         // Under UNIX-based systems, change the credentials file's permissions so that the file can't be read by
         // 'group' and 'other'.
-        boolean fileSecured = !OsFamily.getCurrent().isUnixBased() || Chmod.chmod(credentialsFile, 0600);     // rw-------
+        boolean fileSecured = !OsFamily.getCurrent().isUnixBased()
+            || CredentialsFilePermissions.secure(credentialsFile);
 
         if(fileSecured)
         	LOGGER.debug("Credentials file saved successfully.");
         else
-        	LOGGER.warn("Credentials file could not be chmod!");
+            LOGGER.warn("Credentials file permissions could not be restricted to owner read/write!");
     }
 
 
