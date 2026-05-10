@@ -17,7 +17,9 @@
 
 package dev.barebones.commander.desktop.linux.kde;
 
-import dev.barebones.commander.process.ProcessRunner;
+import dev.barebones.commander.process.TimedProcessRunner;
+
+import java.util.List;
 
 /**
  * 'Guessed' desktop adapter for KDE 5. The availability of this desktop depends on the presence of the
@@ -34,7 +36,7 @@ public class GuessedKde5DesktopAdapter extends Kde5DesktopAdapter {
     @Override
     public boolean isAvailable() {
         try {
-            ProcessRunner.execute(BASE_COMMAND);
+            TimedProcessRunner.run(List.of(BASE_COMMAND));
             return true;
         }
         catch(Exception e) {

@@ -17,7 +17,9 @@
 
 package dev.barebones.commander.desktop.linux.xfce;
 
-import dev.barebones.commander.process.ProcessRunner;
+import dev.barebones.commander.process.TimedProcessRunner;
+
+import java.util.List;
 
 /**
  * 'Guessed' desktop adapter for Xfce. The availability of this desktop depends on the presence of the
@@ -31,7 +33,7 @@ public class GuessedXfceDesktopAdapter extends XfceDesktopAdapter {
     @Override
     public boolean isAvailable() {
         try {
-            ProcessRunner.execute("exo-open");
+            TimedProcessRunner.run(List.of("exo-open"));
             return true;
         }
         catch(Exception e) {return false;}

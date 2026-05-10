@@ -13,9 +13,7 @@ The remaining native and shell-out surfaces are intentional platform integration
 points. The best follow-up work is not a bulk rewrite; it is a small set of
 targeted PRs:
 
-1. Harden platform command execution with timeouts and consistent interrupt
-   handling where the app currently waits on external commands.
-2. Evaluate NFS replacement only if NFS becomes a maintenance hotspot; today
+1. Evaluate NFS replacement only if NFS becomes a maintenance hotspot; today
    the vendored NFS code is pure Java and already isolated.
 
 ## Inventory
@@ -26,9 +24,9 @@ targeted PRs:
 | Linux Secret Service | `barebones-secret-store/.../linux/Libsecret.java` | JNA to `libsecret-1` and GLib/GIO cancellation symbols | Store, lookup, clear credentials via the user's Secret Service provider | Direct D-Bus via a Java D-Bus client is possible, but would replace a small stable C binding with a larger protocol implementation. | Keep libsecret JNA. The current wrapper is small and has cancellation timeouts. |
 | macOS trash | `barebones-os-macos/.../OSXTrash.java` | JNA Platform `MacFileUtils`; AppleScript fallback for SMB/Finder cases | Move files to Trash, count/open/empty Finder Trash | `java.awt.Desktop.moveToTrash` can move files, but does not cover Finder count/empty/open behavior. | Keep. Consider `Desktop.moveToTrash` as a fallback simplification only after manual macOS testing. |
 | macOS xattrs | `barebones-os-macos/.../XAttrUtils.java`, `OSXDesktopAdapter.java` | JNA Platform xattr binding | Preserve Finder tags and comments on local file copies | No Java SE API for macOS Finder metadata xattrs. | Keep. Scope is local-only and isolated to post-copy metadata preservation. |
-| macOS AppleScript | `barebones-os-macos/.../AppleScript.java`, `OSXTrash.java`, `OSXDesktopAdapter.java` | `osascript` through `ProcessRunner` | Finder trash actions, Finder comment writes, URL opening workaround | No Java SE Apple Event or Finder API. | Keep. Already has streaming decoding, bounded output, and tests. |
-| macOS discovery tools | `OSXDesktopAdapter.java` | `dscl`, `duti`, `mdfind`, shell `command -v duti` | User shell discovery and "Open With" app discovery | Partial APIs exist, but not for `duti`'s per-UTI default-app listing. | Keep, but centralize execution and ensure processes are destroyed after timeout. |
-| Linux desktop settings | `GSettings.java`, `GConfTool.java`, `KdeConfig.java` | `gsettings`, `gconftool`, `kreadconfig` | Read multi-click interval / desktop config values | Direct D-Bus or dconf/KConfig libraries would add platform-specific complexity. | Keep shell-outs, but add timeouts and restore interrupt status consistently. |
+| macOS AppleScript | `barebones-os-macos/.../AppleScript.java`, `OSXTrash.java`, `OSXDesktopAdapter.java` | `osascript` through `ProcessRunner` | Finder trash actions, Finder comment writes, URL opening workaround | No Java SE Apple Event or Finder API. | Keep. Phase 27 added a bounded wait; streaming decoding and bounded output remain tested. |
+| macOS discovery tools | `OSXDesktopAdapter.java` | `dscl`, `duti`, `mdfind`, shell `command -v duti` | User shell discovery and "Open With" app discovery | Partial APIs exist, but not for `duti`'s per-UTI default-app listing. | Done in Phase 27: keep, but run through bounded timed process execution. |
+| Linux desktop settings | `GSettings.java`, `GConfTool.java`, `KdeConfig.java` | `gsettings`, `gconftool`, `kreadconfig` | Read multi-click interval / desktop config values | Direct D-Bus or dconf/KConfig libraries would add platform-specific complexity. | Done in Phase 27: keep shell-outs, but use timed execution and restored interrupt status. |
 | Linux openers/trash UI | `GnomeDesktopAdapter.java`, `KdeDesktopAdapter.java`, `XfceDesktopAdapter.java`, trash classes | `xdg-open`, `gvfs-open`, `gnome-open`, `kfmclient`, `kioclient`, `thunar`, `nautilus`, `ktrash` | Open files, URLs, terminals, and Trash in the user's desktop environment | `java.awt.Desktop` covers some open/browse cases but not every desktop-specific Trash action. | Keep for now. Consider a later Desktop API fallback pass, not a blind replacement. |
 | Local process runner | `barebones-process/.../LocalProcess.java` and callers | `ProcessBuilder` | User commands, file openers, AppleScript, desktop helpers | This is the Java-native process API. | Keep. It is the correct abstraction for user-configured commands. |
 | Credentials permissions | `CredentialsFilePermissions.java`, `CredentialsManager.java` | Java NIO POSIX permissions | Set credentials file to mode `0600` on Unix-like systems | Already Java-native after Phase 25. | Done: the former `chmod` shell-out helper was deleted. |
@@ -60,17 +58,18 @@ The keychain code now uses `SecItemAdd`, `SecItemCopyMatching`,
 replacement still needs JNA because Java SE has no keychain API. The value is
 deprecation reduction, not native dependency removal.
 
-### Phase 27 Candidate: Platform Process Hardening
+### Phase 27: Platform Process Hardening
 
-Several desktop helpers invoke short-lived platform tools. Most use argument
-arrays, which avoids shell injection, but timeouts and interrupt handling are
-inconsistent. A follow-up should provide a small shared helper for bounded
-platform commands and migrate:
+Several desktop helpers invoke short-lived platform tools. Most already used
+argument arrays, which avoids shell injection. Phase 27 added a shared helper
+for bounded platform commands and migrated:
 
 - `OSXDesktopAdapter.runCommand`
 - `KdeConfig.getValue`
 - `OSCommand.runCommand`
 - Linux Trash `open` / `empty` helpers where they wait synchronously
+- Linux GNOME/KDE/Xfce command-availability probes
+- AppleScript's `osascript` wait path
 
 User-configured commands should stay on `ProcessRunner`; that is application
 functionality, not an accidental native dependency.

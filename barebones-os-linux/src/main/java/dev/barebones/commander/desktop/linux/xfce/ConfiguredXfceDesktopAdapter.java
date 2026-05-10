@@ -17,8 +17,6 @@
 
 package dev.barebones.commander.desktop.linux.xfce;
 
-import dev.barebones.commander.process.ProcessRunner;
-
 /**
  * 'Configured' desktop adapter for Xfce. This check content of
  * <code>XDG_CURRENT_DESKTOP</code> system variable.

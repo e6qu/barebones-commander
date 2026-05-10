@@ -21,6 +21,7 @@ package dev.barebones.commander.process;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
 
 import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
@@ -103,6 +104,17 @@ public abstract class AbstractProcess {
      * @throws IOException          thrown if an error occurs while waiting for the process to die.
      */
     public abstract int waitFor() throws InterruptedException, IOException;
+
+    /**
+     * Makes the current thread wait for the process to die, bounded by a timeout.
+     * @param timeout maximum time to wait.
+     * @param unit timeout unit.
+     * @return true if the process exited before the timeout elapsed.
+     * @throws InterruptedException thrown if the current thread is interrupted while waiting on the process to die.
+     * @throws IOException          thrown if an error occurs while waiting for the process to die.
+     */
+    public abstract boolean waitFor(long timeout, TimeUnit unit)
+        throws InterruptedException, IOException;
 
     /**
      * Destroys the process.

@@ -32,7 +32,8 @@ import dev.barebones.commander.commons.file.protocol.local.LocalFile;
 import dev.barebones.commander.commons.file.util.FileSet;
 import dev.barebones.commander.desktop.QueuedTrash;
 import dev.barebones.commander.job.impl.DeleteJob;
-import dev.barebones.commander.process.ProcessRunner;
+import dev.barebones.commander.process.TimedProcessResult;
+import dev.barebones.commander.process.TimedProcessRunner;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.dialog.file.ProgressDialog;
 import dev.barebones.commander.ui.main.MainFrame;
@@ -226,9 +227,13 @@ public class GnomeTrash extends QueuedTrash {
     @Override
     public void open() {
         try {
-            ProcessRunner.execute(REVEAL_TRASH_COMMAND).waitFor();
+            TimedProcessResult result = TimedProcessRunner.runTokenized(REVEAL_TRASH_COMMAND);
+            if (!result.succeeded(0)) {
+                LOGGER.debug("Command \"{}\" failed: timedOut={}, exitCode={}",
+                    REVEAL_TRASH_COMMAND, result.timedOut(), result.exitCode());
+            }
         }
-        catch(Exception e) {    // IOException, InterruptedException
+        catch(Exception e) {
         	LOGGER.debug("Caught an exception running command \"" + REVEAL_TRASH_COMMAND + "\"", e);
         }
     }

@@ -19,9 +19,13 @@ package dev.barebones.commander.desktop.linux.gnome;
 
 import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
+import dev.barebones.commander.process.TimedProcessResult;
+import dev.barebones.commander.process.TimedProcessRunner;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.function.Function;
 
 /**
@@ -47,29 +51,27 @@ class OSCommand {
      * @throws InterruptedException if the current thread is interrupted while waiting
      */
     static String runCommand(String... command) throws IOException, InterruptedException {
-        ProcessBuilder pb = new ProcessBuilder(command);
-        pb.directory(Paths.get(System.getProperty("user.dir")).toFile());
-
         String commandStr = String.join(" ", command);
         LOGGER.debug("Executing: {}", commandStr);
-
-        Process process = pb.start();
-        int exitCode = process.waitFor();
 
         // Child process inherits the JVM's default charset (which itself
         // mirrors LC_ALL / LANG via -Dfile.encoding); decoding its output
         // with the same charset is the only encoding choice we can make
         // without guessing.
-        java.nio.charset.Charset cs = java.nio.charset.Charset.defaultCharset();
-        String output = new String(process.getInputStream().readAllBytes(), cs)
-            .replace("\n", "").replace("\r", "");
+        Charset cs = Charset.defaultCharset();
+        TimedProcessResult result = TimedProcessRunner.run(
+            Arrays.asList(command),
+            Paths.get(System.getProperty("user.dir")).toFile(),
+            TimedProcessRunner.defaultTimeout(),
+            cs);
+        String output = result.stdout().replace("\n", "").replace("\r", "");
 
-        if (exitCode != 0) {
-            String error = new String(process.getErrorStream().readAllBytes(), cs);
+        if (!result.succeeded(0)) {
             LOGGER.error("Error executing command: {}", commandStr);
-            LOGGER.error("Exit code: {}", exitCode);
+            LOGGER.error("Timed out: {}", result.timedOut());
+            LOGGER.error("Exit code: {}", result.exitCode());
             LOGGER.error("Output: {}", output);
-            LOGGER.error("Error: {}", error);
+            LOGGER.error("Error: {}", result.stderr());
         }
 
         return output;

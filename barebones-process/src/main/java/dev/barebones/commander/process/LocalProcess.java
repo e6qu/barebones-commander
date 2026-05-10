@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Process running on the local computer.
@@ -76,6 +77,11 @@ class LocalProcess extends AbstractProcess {
      */
     @Override
     public int waitFor() throws InterruptedException {return process.waitFor();}
+
+    @Override
+    public boolean waitFor(long timeout, TimeUnit unit) throws InterruptedException {
+        return process.waitFor(timeout, unit);
+    }
 
     /**
      * Destroys the process.

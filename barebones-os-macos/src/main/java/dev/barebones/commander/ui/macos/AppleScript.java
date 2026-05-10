@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
+import java.util.concurrent.TimeUnit;
 
 import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
@@ -63,6 +64,8 @@ import dev.barebones.commander.process.ProcessRunner;
  */
 public class AppleScript {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AppleScript.class);
+
+    private static final long OSASCRIPT_TIMEOUT_MS = 10_000L;
 	
     /** The UTF-8 encoding */
     public final static String UTF8 = "UTF-8";
@@ -108,7 +111,12 @@ public class AppleScript {
             pout.close();
 
             // Wait for the process to die
-            int returnCode = process.waitFor();
+            if (!process.waitFor(OSASCRIPT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                LOGGER.debug("osascript timed out after {} ms", OSASCRIPT_TIMEOUT_MS);
+                process.destroy();
+                return false;
+            }
+            int returnCode = process.exitValue();
 
             LOGGER.debug("osascript returned code="+returnCode+", output="+ outputBuffer);
 
@@ -119,7 +127,21 @@ public class AppleScript {
 
             return true;
         }
-        catch(Exception e) {        // IOException, InterruptedException
+        catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.debug("Interrupted while executing AppleScript", e);
+
+            try {
+                if(pout!=null)
+                    pout.close();
+            }
+            catch(IOException e1) {
+                // Can't do much about it
+            }
+
+            return false;
+        }
+        catch(Exception e) {        // IOException
             // Shouldn't normally happen
         	LOGGER.debug("Unexcepted exception while executing AppleScript", e);
 
