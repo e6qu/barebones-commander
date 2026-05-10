@@ -46,7 +46,6 @@ import dev.barebones.commander.commons.logging.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -259,15 +258,14 @@ public class LocalFile extends ProtocolFile {
     }
 
     /**
-     * Parses the output of <code>/sbin/mount -p</code> on FreeBSD or the <code>/proc/mounts</code> kernel virtual file
-     * otherwise, resolves all the mount points that look like regular filesystems it contains and adds them to the
-     * given <code>Vector</code>.
+     * Parses the <code>/proc/mounts</code> kernel virtual file, resolves all the mount points that look like regular
+     * filesystems it contains and adds them to the given <code>Vector</code>.
      *
      * @param volumes the <code>Vector</code> to add mount points to
      */
     private static void addMountEntries(Set<AbstractFile> volumes) {
         try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(streamMountPoints(), java.nio.charset.StandardCharsets.UTF_8))) {
+                new InputStreamReader(new FileInputStream("/proc/mounts"), java.nio.charset.StandardCharsets.UTF_8))) {
             String line;
             // read each line in file and parse it
             while ((line = br.readLine()) != null) {
@@ -287,9 +285,7 @@ public class LocalFile extends ProtocolFile {
                 }
             }
         } catch (Exception e) {
-            String warning =
-                    "Error parsing" + (OsFamily.FREEBSD.isCurrent() ? "/sbin/mount -p output" : "/proc/mounts entries");
-            LOGGER.warn(warning, e);
+            LOGGER.warn("Error parsing /proc/mounts entries", e);
         }
     }
 
@@ -311,11 +307,6 @@ public class LocalFile extends ProtocolFile {
         } catch (IOException e) {
             LOGGER.debug("Thrown exception while getting Desktop folder", e);
         }
-    }
-
-    private static InputStream streamMountPoints() throws FileNotFoundException, IOException {
-        return OsFamily.FREEBSD.isCurrent() ? new ProcessBuilder("/sbin/mount", "-p").start().getInputStream()
-                : new FileInputStream("/proc/mounts");
     }
 
     /**
