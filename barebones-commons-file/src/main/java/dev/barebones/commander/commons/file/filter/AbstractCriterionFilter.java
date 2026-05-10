@@ -19,6 +19,7 @@ package dev.barebones.commander.commons.file.filter;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 
+import java.util.Arrays;
 import java.util.Vector;
 
 /**
@@ -104,7 +105,7 @@ public abstract class AbstractCriterionFilter<C> extends AbstractFileFilter impl
                 filteredValuesV.add(value);
         }
 
-        C filteredValues[] = (C[]) new Object[filteredValuesV.size()];
+        C filteredValues[] = Arrays.copyOf(values, filteredValuesV.size());
         filteredValuesV.toArray(filteredValues);
         return filteredValues;
     }

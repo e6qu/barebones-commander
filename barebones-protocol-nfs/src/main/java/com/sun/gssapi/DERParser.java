@@ -79,7 +79,7 @@ class DERParser {
     /**
      * Decodes a DER encoding of an Oid object into vector components.
      */
-    static Vector decodeOid(InputStream is) throws GSSException {
+    static Vector<Integer> decodeOid(InputStream is) throws GSSException {
 	
 	//check the tag first
 	try {
@@ -98,10 +98,10 @@ class DERParser {
      * Returns a vector of integer components.
      */
 	
-    static Vector decodeOidOctets(InputStream is, int numOfOctets)
+    static Vector<Integer> decodeOidOctets(InputStream is, int numOfOctets)
 				throws GSSException {
 	
-	Vector v = new Vector(9, 3);
+	Vector<Integer> v = new Vector<>(9, 3);
 		
 	//first octet is combination of first two numbers
 	try {
@@ -174,7 +174,7 @@ class DERParser {
      * Produces ASN.1 DER encoding for the object.
      * @return byte[] DER encoding for the object
      */    
-    static byte[] encodeOid(Vector v) throws GSSException {
+    static byte[] encodeOid(Vector<Integer> v) throws GSSException {
 
 	//use byte array output stream - 32 initial bytes should be enough
 	ByteArrayOutputStream o = new ByteArrayOutputStream();
@@ -219,7 +219,7 @@ class DERParser {
     /**
      * Encodes the oid octets onto the stream.
      */
-    static void writeOidOctets(OutputStream o, Vector v) throws IOException {
+    static void writeOidOctets(OutputStream o, Vector<Integer> v) throws IOException {
 	
 	//first 2 components occupy 1 octet
 	o.write(((Integer)v.elementAt(0)).intValue() * 40 +

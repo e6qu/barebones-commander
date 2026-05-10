@@ -33,6 +33,7 @@ import dev.barebones.commander.commons.file.MonitoredFile;
 import dev.barebones.commander.commons.file.filter.AbstractFileFilter;
 import dev.barebones.commander.commons.file.filter.FileFilter;
 import dev.barebones.commander.commons.file.filter.OrFileFilter;
+import dev.barebones.commander.commons.runtime.Tunables;
 import dev.barebones.commander.commons.file.protocol.FileProtocols;
 import dev.barebones.commander.conf.MuConfigurations;
 import dev.barebones.commander.conf.MuPreference;
@@ -100,12 +101,6 @@ public class FolderChangeMonitor implements Runnable, WindowListener, LocationLi
     /** Delay in milliseconds before folder date check after a folder has been refreshed */
     private static long waitAfterRefresh;
 	
-    /** If folder change check took an average of N milliseconds, thread will wait at least N*WAIT_MULTIPLIER before next check */
-    private final static int WAIT_MULTIPLIER = 50;
-
-    /** Granularity of the thread check (number of milliseconds to sleep before next loop) */
-    private final static int TICK = 300;
-
     /** This forces refreshing the displayed locations immediately */
     private static boolean forceRefresh;
 
@@ -179,7 +174,7 @@ public class FolderChangeMonitor implements Runnable, WindowListener, LocationLi
         while (monitorThread != null) {
             // Sleep for a while
             try {
-                Thread.sleep(TICK);
+                Thread.sleep(Tunables.FOLDER_MONITOR_TICK_MS);
             } catch(InterruptedException e) {
                 LOGGER.trace("Folder Changer Monitor interrupted", e);
             }
@@ -244,7 +239,8 @@ public class FolderChangeMonitor implements Runnable, WindowListener, LocationLi
      * folder's date has changed.
      *
      * @return the time (msec) to wait before next refresh attempt
-     * Note that folder change check took an average of N milliseconds, the returned value will be at least N*WAIT_MULTIPLIER
+     * Note that folder change check took an average of N milliseconds, the returned value will be at least
+     * N * Tunables.FOLDER_MONITOR_WAIT_MULTIPLIER.
      */
     private synchronized long checkAndRefresh(boolean forceRefresh) {
         if (!mayFolderChangeByFileJob() && isFileTableAutoRefreshable() && isFolderChanged(forceRefresh)) {
@@ -252,12 +248,14 @@ public class FolderChangeMonitor implements Runnable, WindowListener, LocationLi
             folderPanel.tryRefreshCurrentFolder();
             return nbSamples==0 ?
                     waitAfterRefresh
-                    : Math.max(waitAfterRefresh, (int)(WAIT_MULTIPLIER*(totalCheckTime/(float)nbSamples)));
+                    : Math.max(waitAfterRefresh,
+                        (int)(Tunables.FOLDER_MONITOR_WAIT_MULTIPLIER * (totalCheckTime / (float) nbSamples)));
         }
 
         return nbSamples==0 ?
                 checkPeriod
-                : Math.max(checkPeriod, (int)(WAIT_MULTIPLIER*(totalCheckTime/(float)nbSamples)));
+                : Math.max(checkPeriod,
+                    (int)(Tunables.FOLDER_MONITOR_WAIT_MULTIPLIER * (totalCheckTime / (float) nbSamples)));
     }
 
     /**

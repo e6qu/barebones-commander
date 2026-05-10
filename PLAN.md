@@ -48,7 +48,8 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **26** | done | **Modernize macOS Keychain binding** — migrated legacy `SecKeychain*` JNA calls to `SecItem*` while preserving keychain behavior. | this PR |
 | **27** | done | **Platform process hardening** — centralized short-lived desktop helper command execution with timeouts and interrupt handling. | this PR |
 | **28** | done | **Remove dead FreeBSD mount shell-out** — deleted the unsupported `/sbin/mount -p` path and kept Linux mount discovery on `/proc/mounts`. | this PR |
-| **29** | in progress | **JUnit 5 + protocol scope cleanup** — migrate legacy tests to JUnit 5, improve S3 endpoint URL parsing, remove retired-protocol future scope, and evaluate NFSv4 replacement options. | this PR |
+| **29** | done | **JUnit 5 + protocol scope cleanup** — migrate legacy tests to JUnit 5, improve S3 endpoint URL parsing, remove retired-protocol future scope, and evaluate NFSv4 replacement options. | landed in #37 |
+| **30** | in progress | **Architecture refactor batch** — archive format `ServiceLoader`, remove vendored `apache-bzip2`, centralize runtime tunables, and make javac unchecked/deprecation warnings fail the build. | this PR |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -184,7 +185,7 @@ Phase 23 replaced the last direct `jsr305` compile-only dependency with
 | `barebones-protocol-api` | SPI. Keep — this is the VFS plug-in contract for the kept remote backends. |
 | `barebones-protocol-sftp` | SFTP backend. Bump `jsch` to fix Terrapin (Phase 4). |
 | `barebones-protocol-s3` | **Deleted in Phase 4.** Will be reintroduced in Phase 11 on top of AWS SDK v2 (`software.amazon.awssdk:s3`). |
-| `barebones-protocol-nfs` | In-process NFSv2/v3 backend (Yanfs-based via the vendored `sun-net-www`). Phase 29 re-checked NFSv4 options: dCache nfs4j is active and supports NFSv4.x, but its public API is explicitly beta/unstable and not a low-risk drop-in for the current `AbstractFile` adapter. Keep the existing isolated backend until there is an integration-test fixture and a stable client API. |
+| `barebones-protocol-nfs` | In-process NFSv2/v3 backend (Yanfs-based via the vendored `sun-net-www`). Phase 29/30 re-checked NFSv4 options: dCache nfs4j is the best Java-native candidate and includes a basic client artifact, but replacing the current backend still needs an integration-test fixture and proof that the client API covers the `AbstractFile` contract. |
 | `sun-net-www` (vendored) | Keep — required by `barebones-protocol-nfs` (Yanfs / NFS RPC support). |
 | `barebones-os-api` | Keep. |
 | `barebones-os-linux` | Keep. **Refactor `KdeConfig` to `ProcessBuilder(List)` in Phase 5.** |
@@ -195,7 +196,6 @@ Phase 23 replaced the last direct `jsr305` compile-only dependency with
 | `barebones-format-gzip` | Keep. |
 | `barebones-format-bzip2` | Keep. |
 | `barebones-format-xz` | Keep. |
-| `apache-bzip2` (vendored) | Keep — needed by bzip2 module. |
 | `barebones-viewer-api` | Keep. |
 | `barebones-viewer-text` | Keep — minimal text viewer. |
 
@@ -1050,19 +1050,21 @@ graduate to a Phase 21+ PR are up to the user. Candidates:
   `java.util.ServiceLoader`. Concurrent split of leftover OSGi
   package names (`...commons.file.osgi.*`).
 - 21c — Vendored `apache-bzip2` → direct dep on
-  `org.apache.commons:commons-compress` (already pulled in by
-  `barebones-archiver`).
+  `org.apache.commons:commons-compress` (done in Phase 30).
 - 21d — Connectivity panels (S3, SFTP, NFS) into a new
   `barebones-ui-connect` module, leaving `barebones-protocol-api`
   honestly protocol-only.
 - 21e — Per-format `Activator` pattern → single `ServiceLoader`
-  registry.
+  registry (done for archive formats in Phase 30).
 - 21f — Strongly-type Action parameters: replace `Map<String,
   Object>` with sealed interface / records per action shape.
 - 21g — Centralised `Tunables` for the 30+ scattered timeout / poll
-  constants.
+  constants (started in Phase 30 for jobs, folder refresh, shortcut
+  editing, notifier, location bar, directory-size refresh, and S3
+  upload/progress thresholds).
 
-None of the above runs without explicit "do 21x" from the user.
+The remaining items stay parked until the user explicitly asks for the next
+architecture-refactor batch.
 
 ### Phase 22 — Modern logging migration (done in PR #30)
 
@@ -1168,7 +1170,7 @@ is unchanged.
 **Exit criteria met**: the unsupported FreeBSD shell-out is gone; local file
 tests and full checks pass; CI green.
 
-### Phase 29 — JUnit 5 + protocol scope cleanup (this PR)
+### Phase 29 — JUnit 5 + protocol scope cleanup (done in PR #37)
 
 Phase 29 moves all legacy tests onto the JUnit Platform, removes the
 old external test-runner dependency, and adds a small internal test-support module
@@ -1177,14 +1179,31 @@ lets the S3 connection panel accept pasted `http://` / `https://` endpoint
 URLs while still storing canonical `s3://host[:port]/bucket/` FileURLs.
 
 Protocol scope is narrowed: retired protocol candidates are not planned. NFSv4 was
-re-evaluated against dCache nfs4j; despite active releases and NFSv4.x
-support, the upstream README marks the public API beta/unstable, so it is
-not a low-risk replacement for the current in-process NFSv2/v3 adapter in
-this phase.
+re-evaluated against dCache nfs4j; it remains the best Java-native candidate, but
+replacing the current in-process NFSv2/v3 adapter needs a dedicated spike and
+integration-test fixture.
 
 **Exit criteria**: no external legacy test-runner dependency remains;
 S3 endpoint URL parsing has focused coverage; plan docs no longer present
 retired protocol candidates as future work; full checks and CI are green.
+
+### Phase 30 — Architecture refactor batch (this PR)
+
+Phase 30 executes the low-risk Phase 21+ refactors first: archive formats now
+register with `ServiceLoader<ArchiveFormatProvider>`, the vendored
+`apache-bzip2` project is gone in favor of Commons Compress, runtime delays and
+thresholds have started moving into `Tunables`, and javac now treats unchecked
+and deprecation warnings as build failures.
+
+This phase also fixes the existing unchecked-warning backlog that enabling
+`-Xlint:unchecked` exposed, including raw Swing models/renderers and raw
+collections in the isolated Yanfs/NFS code. The larger refactors remain future
+work: `AbstractFile` interface decomposition, protocol connection-panel module
+split, and strongly typed action parameters.
+
+**Exit criteria**: `./gradlew check` green with `-Werror`; no vendored
+`apache-bzip2` project remains; archive format registration has no per-format
+Activator classes.
 
 ## 7. Compatibility with upstream
 

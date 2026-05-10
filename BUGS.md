@@ -542,11 +542,14 @@ Each mixes orchestration with leaf logic; classic
 `Bootstrap.java`; the names mislead a new contributor into looking
 for a Felix container that no longer exists.
 
-### 5.4 Per-format Activator pattern is boilerplate
+### 5.4 ~~Per-format Activator pattern is boilerplate~~ **FIXED (archive formats)**
 Each of `barebones-format-{zip,tar,gzip,bzip2,xz}` has its own
 `Activator.register()` doing essentially the same thing. A single
 `ServiceLoader<FormatProvider>` would eliminate the boilerplate
 and let new formats register without touching `Bootstrap.java`.
+
+Phase 30 replaced the archive-format Activators with
+`ServiceLoader<ArchiveFormatProvider>` provider files.
 
 ### 5.5 Connectivity panels don't belong in `barebones-protocol-*`
 ~~`MountPanel` lived next to `S3Panel` / `SFTPPanel` even though
@@ -571,12 +574,15 @@ checking. (The current pattern is intentional after Phase 2 — it
 keeps the root project from compile-depending on every leaf — but
 it pays at runtime in error messages.)
 
-### 5.8 Vendored `apache-bzip2` module
+### 5.8 ~~Vendored `apache-bzip2` module~~ **FIXED**
 A copy of Apache Commons Compress's bzip2 lives as its own module.
 A direct dep on `org.apache.commons:commons-compress` (already
 pulled in by `barebones-archiver`!) would let us delete the whole
 sub-project. The vendored copy never gets the upstream's bzip2
 fixes.
+
+Phase 30 deleted the vendored module and switched bzip2 read/write
+paths to Commons Compress.
 
 ### 5.9 `com.sun.*` internals in `barebones-protocol-nfs` + `sun-net-www`
 Vendored from old Sun source trees. Internal-API style; portability

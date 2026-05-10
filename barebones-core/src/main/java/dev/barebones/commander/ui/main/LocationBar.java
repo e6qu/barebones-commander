@@ -32,6 +32,8 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 
+import dev.barebones.commander.commons.runtime.Tunables;
+
 /**
  * A wrapper panel that sits in place of the location text field in each FolderPanel.
  *
@@ -43,7 +45,7 @@ import java.awt.event.MouseEvent;
  *       by {@code ›} glyphs.</li>
  * </ul>
  *
- * <p>When the Ctrl key (or Meta on macOS) is held for {@value #BREADCRUMB_SHOW_DELAY_MS}ms
+ * <p>When the Ctrl key (or Meta on macOS) is held for the configured breadcrumb delay
  * <em>and</em> the location text field does not have keyboard focus (i.e. the user is not
  * actively editing the path), the breadcrumb card is shown. The delayed appearance prevents
  * the breadcrumb from flickering during quick keyboard shortcuts (Ctrl+C, Ctrl+V, etc.).
@@ -59,9 +61,6 @@ public class LocationBar extends JPanel {
 
     private static final String CARD_TEXT_FIELD = "textField";
     private static final String CARD_BREADCRUMB = "breadcrumb";
-
-    /** Delay in milliseconds before showing breadcrumb when Ctrl/Meta is held */
-    private static final int BREADCRUMB_SHOW_DELAY_MS = 250;
 
     private final FolderPanel folderPanel;
     private final LocationTextField locationTextField;
@@ -93,7 +92,7 @@ public class LocationBar extends JPanel {
         final boolean isMac = menuShortcutMask == InputEvent.META_DOWN_MASK;
 
         // Initialize the timer that delays showing the breadcrumb
-        showBreadcrumbTimer = new Timer(BREADCRUMB_SHOW_DELAY_MS, e -> {
+        showBreadcrumbTimer = new Timer(Tunables.LOCATION_BAR_BREADCRUMB_SHOW_DELAY_MS, e -> {
             // Only show breadcrumb if:
             // 1. Text field is currently visible (not already showing breadcrumb)
             // 2. Mouse is over this panel OR mouse is over neither panel

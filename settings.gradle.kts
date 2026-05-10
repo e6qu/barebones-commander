@@ -35,7 +35,6 @@ include("barebones-viewer-text")
 
 include("barebones-test-support")
 
-include("apache-bzip2")
 include("sun-net-www")
 
 rootProject.name = "barebones-commander"

@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.apache.tools.bzip2.CBZip2OutputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.tukaani.xz.XZOutputStream;
 import org.tukaani.xz.LZMA2Options;
 
@@ -329,14 +329,7 @@ public abstract class Archiver {
      * @throws IOException if an error occurred while initializing the Bzip2 OutputStream
      */
     protected static OutputStream createBzip2OutputStream(OutputStream out) throws IOException {
-        // Writes the 2 magic bytes 'BZ', as required by CBZip2OutputStream. A quote from CBZip2OutputStream's Javadoc:
-        // "Attention: The caller is resonsible to write the two BZip2 magic bytes "BZ" to the specified stream
-        // prior to calling this constructor."
-
-        out.write('B');
-        out.write('Z');
-
-        return new CBZip2OutputStream(out);
+        return new BZip2CompressorOutputStream(out);
     }
 
 

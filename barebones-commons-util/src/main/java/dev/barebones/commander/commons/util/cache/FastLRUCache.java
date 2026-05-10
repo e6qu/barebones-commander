@@ -39,7 +39,7 @@ import java.util.Map;
 public class FastLRUCache<K, V> extends LRUCache<K,V> {
 
     /** Cache key->value/expirationDate map */
-    private LinkedHashMap<K, Object[]> cacheMap;
+    private LinkedHashMap<K, CacheEntry<V>> cacheMap;
 
     /** Timestamp of last expired items purge */
     private long lastExpiredPurge;
@@ -49,13 +49,16 @@ public class FastLRUCache<K, V> extends LRUCache<K,V> {
 
     public FastLRUCache(int capacity) {
         super(capacity);
-        this.cacheMap = new LinkedHashMap<K, Object[]>(16, 0.75f, true) {
+        this.cacheMap = new LinkedHashMap<K, CacheEntry<V>>(16, 0.75f, true) {
             // Override this method to automatically remove eldest entry before insertion when cache is full
             @Override
-            protected final boolean removeEldestEntry(Map.Entry<K, Object[]> eldest) {
+            protected final boolean removeEldestEntry(Map.Entry<K, CacheEntry<V>> eldest) {
                 return cacheMap.size() > FastLRUCache.this.capacity;
             }
         };
+    }
+
+    private record CacheEntry<V>(V value, Long expirationDate) {
     }
 
 
@@ -66,12 +69,12 @@ public class FastLRUCache<K, V> extends LRUCache<K,V> {
         String s = super.toString()+" size="+cacheMap.size()+" capacity="+capacity+" eldestExpirationDate="+eldestExpirationDate+"\n";
 
         Object key;
-        Object value[];
+        CacheEntry<V> value;
         int i=0;
-        for(Map.Entry<K, Object[]> mapEntry : cacheMap.entrySet()) {
+        for(Map.Entry<K, CacheEntry<V>> mapEntry : cacheMap.entrySet()) {
             key = mapEntry.getKey();
             value = mapEntry.getValue();
-            s += (i++)+"- key="+key+" value="+value[0]+" expirationDate="+value[1]+"\n";
+            s += (i++)+"- key="+key+" value="+value.value()+" expirationDate="+value.expirationDate()+"\n";
         }
 
         if(UPDATE_CACHE_COUNTERS)
@@ -96,10 +99,10 @@ public class FastLRUCache<K, V> extends LRUCache<K,V> {
         this.eldestExpirationDate = Long.MAX_VALUE;
         Long expirationDateL;
         long expirationDate;
-        Iterator<Object[]> iterator = cacheMap.values().iterator();
+        Iterator<CacheEntry<V>> iterator = cacheMap.values().iterator();
         // Iterate on all cached values
         while(iterator.hasNext()) {
-            expirationDateL = (Long)iterator.next()[1];
+            expirationDateL = iterator.next().expirationDate();
 
             // No expiration date for this value
             if(expirationDateL==null)
@@ -132,7 +135,7 @@ public class FastLRUCache<K, V> extends LRUCache<K,V> {
         purgeExpiredItems();	
 
         // Look for a value corresponding to the specified key in the cache map
-        Object[] value = cacheMap.get(key);
+        CacheEntry<V> value = cacheMap.get(key);
 
         if(value==null) {
             // No value matching key, better luck next time!
@@ -144,7 +147,7 @@ public class FastLRUCache<K, V> extends LRUCache<K,V> {
         // Since expired items purge is not performed on every call to this method for
         // performance reason, we can end with an expired cached value so we need
         // to check this
-        Long expirationDateL = (Long)value[1];
+        Long expirationDateL = value.expirationDate();
         if(expirationDateL!=null && System.currentTimeMillis()> expirationDateL) {
             // Value has expired, let's remove it
             if(UPDATE_CACHE_COUNTERS)
@@ -157,7 +160,7 @@ public class FastLRUCache<K, V> extends LRUCache<K,V> {
         if(UPDATE_CACHE_COUNTERS)
             nbHits++;	// Increase cache hit counter
 
-        return (V)value[0];
+        return value.value();
     }
 
 
@@ -180,7 +183,7 @@ public class FastLRUCache<K, V> extends LRUCache<K,V> {
             expirationDateL = expirationDate;
         }
 
-        cacheMap.put(key, new Object[]{value, expirationDateL});
+        cacheMap.put(key, new CacheEntry<>(value, expirationDateL));
     }
 
 
@@ -206,7 +209,7 @@ public class FastLRUCache<K, V> extends LRUCache<K,V> {
      */
     @Override
     protected void testCorruption() throws RuntimeException {
-        Object value[];
+        CacheEntry<V> value;
         long expirationDate;
         Long expirationDateL;
 
@@ -215,7 +218,7 @@ public class FastLRUCache<K, V> extends LRUCache<K,V> {
             if(value==null)
                 throw new RuntimeException("cache corrupted: value could not be found for key="+key);
 
-            expirationDateL = (Long)value[1];
+            expirationDateL = value.expirationDate();
             if(expirationDateL==null)
                 continue;
 

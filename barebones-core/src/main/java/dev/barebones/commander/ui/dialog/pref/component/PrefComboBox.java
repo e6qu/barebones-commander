@@ -34,8 +34,8 @@ public abstract class PrefComboBox<T> extends JComboBox<T> implements PrefCompon
 		addItemListener(e -> dialog.componentChanged(PrefComboBox.this));
 	}
 
-	@Override
-	public T getSelectedItem() {
-		return (T) super.getSelectedItem();
+	public T selectedItem() {
+		int selectedIndex = getSelectedIndex();
+		return selectedIndex >= 0 ? getItemAt(selectedIndex) : null;
 	}
 }

@@ -23,6 +23,8 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +144,7 @@ public final class DesktopManager {
     // - Class fields ----------------------------------------------------
     // -------------------------------------------------------------------
     /** All available desktop operations. */
-    private static Map<String, List<DesktopOperation>>[] operations;
+    private static List<Map<String, List<DesktopOperation>>> operations;
     /** All known desktops. */
     private static Vector<DesktopAdapter>                desktops;
     /** Current desktop. */
@@ -177,7 +179,7 @@ public final class DesktopManager {
 
         // - Operations initialization -----------------------------------
         // ---------------------------------------------------------------
-        operations = new Hashtable[3];
+        operations = new ArrayList<>(Collections.nCopies(3, null));
 
         // internal operations registered as the lowest priority system
         // ones ensures that:
@@ -268,13 +270,13 @@ public final class DesktopManager {
      */
     private static void innerRegisterOperation(String type, int priority, DesktopOperation operation) {
         // Makes sure we have a container for operations of the specified priority.
-        if(operations[priority] == null)
-            operations[priority] = new Hashtable<String, List<DesktopOperation>>();
+        if(operations.get(priority) == null)
+            operations.set(priority, new Hashtable<String, List<DesktopOperation>>());
 
-        List<DesktopOperation> container = operations[priority].get(type);
+        List<DesktopOperation> container = operations.get(priority).get(type);
         // Makes sure we have a container for operations of the specified type.
         if (container == null)
-            operations[priority].put(type, container = new Vector<DesktopOperation>());
+            operations.get(priority).put(type, container = new Vector<DesktopOperation>());
 
         // Creates the requested entry.
         container.add(operation);
@@ -291,10 +293,10 @@ public final class DesktopManager {
     // - Operation support -----------------------------------------------
     // -------------------------------------------------------------------
     private static List<DesktopOperation> getOperations(String type, int priority) {
-        if(operations[priority] == null)
+        if(operations.get(priority) == null)
             return null;
 
-        return operations[priority].get(type);
+        return operations.get(priority).get(type);
     }
 
     private static DesktopOperation getAvailableOperation(String type, int priority) {

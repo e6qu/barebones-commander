@@ -591,7 +591,7 @@ public class GSSName {
     //instance variables
     //we use a vector because GSSCredential.getName() must return
     //all the credential names in mechanism format
-    Vector m_mechNames = new Vector(3,2);
+    Vector<GSSNameSpi> m_mechNames = new Vector<>(3,2);
     Oid m_nameType;
     String m_nameStr;
     byte [] m_nameBytes;

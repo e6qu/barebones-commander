@@ -62,8 +62,8 @@ public class DefaultOverlayable extends JPanel implements SwingConstants, Compon
 
     private void initComponents() {
         setLayout(null);
-        _overlayComponents = new Vector();
-        _overlayLocations = new Hashtable();
+        _overlayComponents = new Vector<>();
+        _overlayLocations = new Hashtable<>();
 //        _overlayRelativeComponent = new Hashtable();
     }
 

@@ -28,8 +28,8 @@ import dev.barebones.commander.ui.quicklist.item.QuickListDataList;
  * @author Arik Hadas
  */
 
-public abstract class QuickListWithDataList<T> extends QuickList {	
-	protected QuickListDataList dataList;	
+public abstract class QuickListWithDataList<T> extends QuickList {
+	protected QuickListDataList<T> dataList;
 	private QuickListWithEmptyMsg emptyPopup;
 	
 	public QuickListWithDataList(QuickListContainer container, String header, String emptyPopupHeader) {
@@ -37,6 +37,7 @@ public abstract class QuickListWithDataList<T> extends QuickList {
 
 		// get the TablePopupDataList.
 		dataList = getList();
+		dataList.setOwner(this);
 
 		// add JScrollPane that contains the TablePopupDataList to the popup.
 		JScrollPane scroll = new JScrollPane(dataList,

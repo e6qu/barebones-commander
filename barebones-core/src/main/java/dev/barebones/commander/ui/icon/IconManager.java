@@ -23,7 +23,10 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.image.BufferedImage;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.Icon;
@@ -43,7 +46,7 @@ public class IconManager {
 	private static final Logger LOGGER = LoggerFactory.getLogger(IconManager.class);
 	
     /** Caches for the different icon sets */
-    private final static Map<String, ImageIcon> caches[];
+    private final static List<Map<String, ImageIcon>> caches;
 
     /** Designates the file icon set */
     public final static int FILE_ICON_SET        = 0;
@@ -80,12 +83,12 @@ public class IconManager {
     static {
         // Initialize caches for icon sets that need it.
         // Icons which are displayed once in a while like preferences icons don't need to be cached
-        caches = new Hashtable[ICON_SET_FOLDERS.length];
-        caches[FILE_ICON_SET]       = new Hashtable<String, ImageIcon>();
-        caches[ACTION_ICON_SET]     = new Hashtable<String, ImageIcon>();
-        caches[STATUS_BAR_ICON_SET] = new Hashtable<String, ImageIcon>();
-        caches[COMMON_ICON_SET]     = new Hashtable<String, ImageIcon>();
-        caches[PROGRESS_ICON_SET]   = new Hashtable<String, ImageIcon>();
+        caches = new ArrayList<>(Collections.nCopies(ICON_SET_FOLDERS.length, null));
+        caches.set(FILE_ICON_SET, new Hashtable<String, ImageIcon>());
+        caches.set(ACTION_ICON_SET, new Hashtable<String, ImageIcon>());
+        caches.set(STATUS_BAR_ICON_SET, new Hashtable<String, ImageIcon>());
+        caches.set(COMMON_ICON_SET, new Hashtable<String, ImageIcon>());
+        caches.set(PROGRESS_ICON_SET, new Hashtable<String, ImageIcon>());
     }
 
 
@@ -172,7 +175,7 @@ public class IconManager {
      * <code>null</code> if the image wasn't found or couldn't be loaded
      */
     public static ImageIcon getIcon(int iconSet, String iconName, float scaleFactor) {
-        Map<String, ImageIcon> cache = caches[iconSet];
+        Map<String, ImageIcon> cache = caches.get(iconSet);
         ImageIcon icon;
 
         if(cache==null) {

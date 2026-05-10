@@ -42,7 +42,7 @@ import dev.barebones.commander.commons.util.ui.dialog.DialogOwner;
 public class EncodingSelectBox extends JPanel {
 
     /** Allows the encoding to be selected */
-    protected SaneComboBox comboBox;
+    protected SaneComboBox<String> comboBox;
 
     /** Button that invokes the dialog that allows to customize the list of preferred encodings */
     protected JButton customizeButton;
@@ -75,7 +75,7 @@ public class EncodingSelectBox extends JPanel {
     public EncodingSelectBox(final DialogOwner dialogOwner, String selectedEncoding) {
         super(new BorderLayout());
 
-        comboBox = new SaneComboBox();
+        comboBox = new SaneComboBox<>();
         populateComboBox(selectedEncoding);
 
         comboBox.addActionListener(new ActionListener() {

@@ -532,25 +532,25 @@ public class CommandBarDialog extends CustomizeDialog {
     	}
     }
 	
-	private static class CommandBarButtonListCellRenderer implements ListCellRenderer {
+	private static class CommandBarButtonListCellRenderer implements ListCellRenderer<JButton> {
 		
-		public Component getListCellRendererComponent(JList list, Object value,
+		public Component getListCellRendererComponent(JList<? extends JButton> list, JButton value,
 				int index, boolean isSelected, boolean cellHasFocus) {
 			return value == null ? createBoxFiller() : (CommandBarButtonForDisplay) value;
         }
 	}
 
-	private static class CommandBarAlternativeButtonListRenderer implements ListCellRenderer {
+	private static class CommandBarAlternativeButtonListRenderer implements ListCellRenderer<JButton> {
 
-		public Component getListCellRendererComponent(JList list, Object value,
+		public Component getListCellRendererComponent(JList<? extends JButton> list, JButton value,
 				int index, boolean isSelected, boolean cellHasFocus) {
 			return value == null ? createBoxFiller() : (CommandBarButtonForDisplay) value;
         }
 	}
 
-	private static class AvailableButtonCellListRenderer implements ListCellRenderer {
+	private static class AvailableButtonCellListRenderer implements ListCellRenderer<JButton> {
 
-		public Component getListCellRendererComponent(JList list, Object value,
+		public Component getListCellRendererComponent(JList<? extends JButton> list, JButton value,
 				int index, boolean isSelected, boolean cellHasFocus) {
 			
 			JPanel panel = new JPanel(new BorderLayout());

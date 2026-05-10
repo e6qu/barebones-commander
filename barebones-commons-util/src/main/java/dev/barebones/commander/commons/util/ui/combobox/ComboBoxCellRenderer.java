@@ -28,7 +28,7 @@ import javax.swing.ListCellRenderer;
 /**
  * @author Nicolas Rinaudo
  */
-public class ComboBoxCellRenderer implements ListCellRenderer {
+public class ComboBoxCellRenderer implements ListCellRenderer<Object> {
     private Color textColor;
     private Color backgroundColor;
     private Color selectedTextColor;
@@ -47,7 +47,7 @@ public class ComboBoxCellRenderer implements ListCellRenderer {
     public void setSelectionBackground(Color color) {selectedBackgroundColor = color;}
     public void setFont(Font f) {font = f;}
 
-    public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean hasFocus) {
+    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean hasFocus) {
         if(value!=null)
             label.setText(value.toString());
 

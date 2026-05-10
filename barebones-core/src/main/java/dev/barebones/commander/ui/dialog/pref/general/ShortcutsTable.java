@@ -65,6 +65,7 @@ import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.runtime.OsFamily;
+import dev.barebones.commander.commons.runtime.Tunables;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.action.ActionDescriptor;
 import dev.barebones.commander.ui.action.ActionKeymap;
@@ -171,20 +172,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
      */
     private final TooltipBar tooltipBar;
 
-    /**
-     * Number of mouse clicks required to enter cell's editing state
-     */
-    private static final int NUM_OF_CLICKS_TO_ENTER_EDITING_STATE = 2;
-
-    /**
-     * After the following time (msec) that cell is being in editing state and no pressing was made, the editing state
-     * is canceled
-     */
-    private static final int CELL_EDITING_STATE_PERIOD = 3000;
-
-    /**
-     * Thread that cancel cell's editing state after CELL_EDITING_STATE_PERIOD time
-     */
+    /** Thread that cancels cell editing after the configured idle timeout. */
     private CancelEditingStateThread cancelEditingStateThread;
 
     private final ShortcutsTableCellRenderer cellRenderer;
@@ -282,7 +270,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
     }
 
     /**
-     * Create thread that will cancel the editing state of the given TableCellEditor after CELL_EDITING_STATE_PERIOD
+     * Create thread that will cancel the editing state of the given TableCellEditor after the configured timeout.
      * time in which with no pressing was made.
      */
     public void createCancelEditingStateThread(TableCellEditor cellEditor) {
@@ -422,7 +410,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
                 }
             });
 
-            setClickCountToStart(NUM_OF_CLICKS_TO_ENTER_EDITING_STATE);
+            setClickCountToStart(Tunables.SHORTCUT_EDITING_CLICKS);
 
             createCancelEditingStateThread(this);
         }
@@ -457,7 +445,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
         @Override
         public void run() {
             try {
-                Thread.sleep(CELL_EDITING_STATE_PERIOD);
+                Thread.sleep(Tunables.SHORTCUT_EDITING_TIMEOUT_MS);
             } catch (InterruptedException e) {
             }
 
@@ -708,7 +696,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
                 filteredEditedActionIds.add(actionId);
                 originalActionMap.put(actionId, actionProperties);
                 // and deep copy so original mapping stays untouched
-                editedActionMap.put(actionId, (Map<TableDataColumnEnum, Object>) actionProperties.clone());
+                editedActionMap.put(actionId, new HashMap<>(actionProperties));
             }
             filteredEditedActionMap.putAll(editedActionMap);
         }

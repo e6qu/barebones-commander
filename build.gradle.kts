@@ -39,7 +39,7 @@ subprojects {
         }
     }
     tasks.withType<JavaCompile>().configureEach {
-        options.compilerArgs.addAll(listOf("--release", "25", "-Xlint:deprecation"))
+        options.compilerArgs.addAll(listOf("--release", "25", "-Xlint:deprecation", "-Xlint:unchecked", "-Werror"))
         options.encoding = "UTF-8"
     }
     dependencies {
@@ -80,7 +80,7 @@ subprojects {
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.addAll(listOf("--release", "25", "-Xlint:deprecation"))
+    options.compilerArgs.addAll(listOf("--release", "25", "-Xlint:deprecation", "-Xlint:unchecked", "-Werror"))
     options.encoding = "UTF-8"
 }
 
@@ -108,11 +108,12 @@ dependencies {
 
     compileOnly(libs.jetbrains.annotations)
 
-    // Compile-time deps for the new Bootstrap launcher in
-    // src/main/java/dev/barebones/commander/bootstrap/. Bootstrap.java
-    // discovers every other module's static register() entry point at
-    // runtime via Class.forName, so non-commons-file subprojects only need
-    // to be on the runtime classpath.
+    // Compile-time deps for the Bootstrap launcher in
+    // src/main/java/dev/barebones/commander/bootstrap/. Bootstrap uses
+    // ServiceLoader where modules expose Java services, and otherwise
+    // discovers module static register() entry points at runtime via
+    // Class.forName, so leaf subprojects only need to be on the runtime
+    // classpath.
     implementation(project(":barebones-commons-file"))
     runtimeOnly(project(":barebones-core"))
     runtimeOnly(project(":barebones-command"))
@@ -121,7 +122,6 @@ dependencies {
     runtimeOnly(project(":barebones-commons-io"))
     runtimeOnly(project(":barebones-commons-runtime"))
     runtimeOnly(project(":barebones-core-preload"))
-    runtimeOnly(project(":apache-bzip2"))
     runtimeOnly(project(":barebones-encoding"))
     runtimeOnly(project(":barebones-preferences"))
     runtimeOnly(project(":barebones-process"))

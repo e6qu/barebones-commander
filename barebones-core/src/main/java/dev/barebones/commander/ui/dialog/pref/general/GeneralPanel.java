@@ -166,7 +166,7 @@ class GeneralPanel extends PreferencesPanel implements ItemListener, ActionListe
         dateFormatPanel.setBorder(BorderFactory.createTitledBorder(Translator.get("prefs_dialog.date")));
 
         // Date format combo
-        dateFormatComboBox = new PrefComboBox() {
+        dateFormatComboBox = new PrefComboBox<>() {
 			public boolean hasChanged() {
 				return !getDateFormatString().equals(MuConfigurations.getPreferences().getVariable(MuPreference.DATE_FORMAT));
 			}
@@ -324,7 +324,7 @@ class GeneralPanel extends PreferencesPanel implements ItemListener, ActionListe
     ///////////////////////
     @Override
     protected void commit() {
-    	MuConfigurations.getPreferences().setVariable(MuPreference.LANGUAGE, languageComboBox.getSelectedItem().toLanguageTag());
+        MuConfigurations.getPreferences().setVariable(MuPreference.LANGUAGE, languageComboBox.selectedItem().toLanguageTag());
     	MuConfigurations.getPreferences().setVariable(MuPreference.DATE_FORMAT, getDateFormatString());
     	MuConfigurations.getPreferences().setVariable(MuPreference.DATE_SEPARATOR, dateSeparatorField.getText());
     	MuConfigurations.getPreferences().setVariable(MuPreference.TIME_FORMAT, getTimeFormatString());

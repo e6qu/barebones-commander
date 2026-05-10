@@ -317,13 +317,13 @@ public class XFile {
      *
      * The hash table is used as a cache for previously loaded classes.
      */
-    private Class loadClass(String proto, String suffix, Hashtable ht)
+    private Class<?> loadClass(String proto, String suffix, Hashtable<String, Class<?>> ht)
         throws ClassNotFoundException, IllegalAccessException {
 
         /*
          * Check if there's a cached class for this protocol
          */
-        Class cl = (Class)ht.get(proto);
+        Class<?> cl = ht.get(proto);
         if (cl != null)
             return cl;
 
@@ -361,7 +361,7 @@ public class XFile {
     /*
      * A table of cached XFileAccessors
      */
-    static Hashtable cachedAccessors = new Hashtable();
+    static Hashtable<String, Class<?>> cachedAccessors = new Hashtable<>();
 
     /*
      * Load an XFileAccessor
@@ -369,7 +369,7 @@ public class XFile {
     private XFileAccessor loadAccessor(XFurl url)
         throws ReflectiveOperationException {
 
-        Class cl = loadClass(url.getProtocol(), "XFileAccessor",
+        Class<?> cl = loadClass(url.getProtocol(), "XFileAccessor",
                         cachedAccessors);
         if (cl == null)
             return null;
@@ -450,7 +450,7 @@ public class XFile {
     /*
      * A table of cached XFileExtensionAccessors
      */
-    static Hashtable cachedExtensionAccessors = new Hashtable();
+    static Hashtable<String, Class<?>> cachedExtensionAccessors = new Hashtable<>();
 
     /**
      * Get the XFileExtensionAccessor
@@ -473,10 +473,10 @@ public class XFile {
             else
                 suffix = "XFileExtensionAccessor";
 
-            Class cl = loadClass(url.getProtocol(), suffix,
+            Class<?> cl = loadClass(url.getProtocol(), suffix,
                         cachedExtensionAccessors);
     
-            Constructor con = cl.getConstructor(new Class[]{this.getClass()});
+            Constructor<?> con = cl.getConstructor(new Class[]{this.getClass()});
             return (XFileExtensionAccessor)con.newInstance(new Object[]{this});
     
         } catch (Exception e) {
@@ -908,7 +908,7 @@ public class XFile {
 	}
 
 	// Fill in the Vector
-	Vector v = new Vector();
+	Vector<String> v = new Vector<>();
 	for (int i = 0 ; i < names.length ; i++) {
 	    if ((filter == null) || filter.accept(this, names[i])) {
 		v.addElement(names[i]);

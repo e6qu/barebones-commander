@@ -16,16 +16,20 @@ package dev.barebones.commander.bootstrap;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.ServiceLoader;
+
+import dev.barebones.commander.commons.file.FileFactory;
+import dev.barebones.commander.commons.file.archive.ArchiveFormatProvider;
 
 /**
  * Plain-Java replacement for the Apache Felix container.
  *
  * Calls each module's {@code Activator.register()} (or, for modules that
  * need the property map, {@code Activator.register(Map)}) in dependency
- * order. Activator classes are resolved by FQN via {@link Class#forName}
- * so the root project does not need a compile-time dep on every leaf
- * module — only the runtime classpath needs them, which is what
- * {@code runtimeOnly project(...)} in the root build.gradle provides.
+ * order. Extension points that can be expressed as Java services use
+ * {@link ServiceLoader}; the remaining Activator classes are resolved by FQN
+ * via {@link Class#forName} so the root project does not need a compile-time
+ * dep on every leaf module.
  *
  * Order matters: commons-file's no-op activator first, then translator /
  * preferences / preload, then producers (protocols, formats, viewer),
@@ -67,11 +71,7 @@ public final class Bootstrap {
         invoke("dev.barebones.commander.commons.file.protocol.s3.Activator", "register");
 
         // Archive formats
-        invoke("dev.barebones.commander.commons.file.archive.zip.Activator", "register");
-        invoke("dev.barebones.commander.commons.file.archive.tar.Activator", "register");
-        invoke("dev.barebones.commander.commons.file.archive.gzip.Activator", "register");
-        invoke("dev.barebones.commander.commons.file.archive.bzip2.Activator", "register");
-        invoke("dev.barebones.commander.commons.file.archive.xz.Activator", "register");
+        registerArchiveFormats();
 
         // Text viewer
         invoke("dev.barebones.commander.viewer.text.Activator", "register");
@@ -127,6 +127,12 @@ public final class Bootstrap {
             // module not present
         } catch (ReflectiveOperationException ignored) {
             // best-effort
+        }
+    }
+
+    private static void registerArchiveFormats() {
+        for (ArchiveFormatProvider provider : ServiceLoader.load(ArchiveFormatProvider.class)) {
+            FileFactory.registerArchiveFormat(provider);
         }
     }
 

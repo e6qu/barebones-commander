@@ -67,7 +67,7 @@ public abstract class Completer {
      * @param comp - text component
      * @return true if an auto-completion popup with the updated list should be shown, false otherwise.
      */
-    public boolean updateListData(final JList list, AutocompleterTextComponent comp) {
+    public boolean updateListData(final JList<String> list, AutocompleterTextComponent comp) {
         list.setListData(getUpdatedSuggestions(comp));
 
         if (list.getModel().getSize() == 1) {

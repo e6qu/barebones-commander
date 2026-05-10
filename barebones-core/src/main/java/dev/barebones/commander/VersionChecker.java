@@ -164,8 +164,8 @@ public class VersionChecker {
                 String tagResponseBody = urlReader.apply(GITHUB_TAG_REF_URL);
 
                 // Extract the commit SHA from the tag reference
-                Map<String, Object> tagJson = (Map<String, Object>) JSONValue.parse(tagResponseBody);
-                Map<String, Object> objectData = (Map<String, Object>) tagJson.get("object");
+                Map<?, ?> tagJson = parseObject(tagResponseBody);
+                Map<?, ?> objectData = asObject(tagJson.get("object"));
                 String tagCommitSha = (String) objectData.get("sha");
 
                 if (tagCommitSha == null) {
@@ -207,7 +207,7 @@ public class VersionChecker {
      * parsing. This method expects a single release object from either the /releases/latest or /releases/tags/{tag} endpoint.
      */
     private void parseRelease(String json) {
-        Map<String, Object> release = (Map<String, Object>) JSONValue.parse(json);
+        Map<?, ?> release = parseObject(json);
 
         if (release == null) {
             LOGGER.warn("Could not parse release JSON");
@@ -230,6 +230,14 @@ public class VersionChecker {
             this.releaseDate =
                     publishedAt.substring(0, 4) + publishedAt.substring(5, 7) + publishedAt.substring(8, 10);
         }
+    }
+
+    private static Map<?, ?> parseObject(String json) {
+        return asObject(JSONValue.parse(json));
+    }
+
+    private static Map<?, ?> asObject(Object value) {
+        return value instanceof Map<?, ?> map ? map : null;
     }
 
     // - Remote version information ---------------------------------------------
