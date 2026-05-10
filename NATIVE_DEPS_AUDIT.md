@@ -13,18 +13,16 @@ The remaining native and shell-out surfaces are intentional platform integration
 points. The best follow-up work is not a bulk rewrite; it is a small set of
 targeted PRs:
 
-1. Migrate macOS Keychain from legacy `SecKeychain*` calls to the modern
-   `SecItem*` API while keeping JNA.
-2. Harden platform command execution with timeouts and consistent interrupt
+1. Harden platform command execution with timeouts and consistent interrupt
    handling where the app currently waits on external commands.
-3. Evaluate NFS replacement only if NFS becomes a maintenance hotspot; today
+2. Evaluate NFS replacement only if NFS becomes a maintenance hotspot; today
    the vendored NFS code is pure Java and already isolated.
 
 ## Inventory
 
 | Area | Location | Mechanism | Purpose | Java-native replacement | Recommendation |
 |---|---|---|---|---|---|
-| macOS Keychain | `barebones-secret-store/.../macos/SecurityFramework.java` | JNA to `Security.framework` | Store, lookup, and delete generic-password items in the user keychain | No Java SE API. A modern native replacement is JNA bindings to `SecItem*` with CoreFoundation dictionary marshalling. | Keep JNA, but migrate away from legacy `SecKeychain*` APIs in a focused PR. |
+| macOS Keychain | `barebones-secret-store/.../macos/SecurityFramework.java` | JNA to `Security.framework` `SecItem*` APIs | Store, lookup, and delete generic-password items in the user keychain | No Java SE API. | Done in Phase 26: keep JNA, but use modern `SecItem*` APIs instead of legacy `SecKeychain*` APIs. |
 | Linux Secret Service | `barebones-secret-store/.../linux/Libsecret.java` | JNA to `libsecret-1` and GLib/GIO cancellation symbols | Store, lookup, clear credentials via the user's Secret Service provider | Direct D-Bus via a Java D-Bus client is possible, but would replace a small stable C binding with a larger protocol implementation. | Keep libsecret JNA. The current wrapper is small and has cancellation timeouts. |
 | macOS trash | `barebones-os-macos/.../OSXTrash.java` | JNA Platform `MacFileUtils`; AppleScript fallback for SMB/Finder cases | Move files to Trash, count/open/empty Finder Trash | `java.awt.Desktop.moveToTrash` can move files, but does not cover Finder count/empty/open behavior. | Keep. Consider `Desktop.moveToTrash` as a fallback simplification only after manual macOS testing. |
 | macOS xattrs | `barebones-os-macos/.../XAttrUtils.java`, `OSXDesktopAdapter.java` | JNA Platform xattr binding | Preserve Finder tags and comments on local file copies | No Java SE API for macOS Finder metadata xattrs. | Keep. Scope is local-only and isolated to post-copy metadata preservation. |
@@ -55,13 +53,12 @@ targeted PRs:
 The old `Chmod` shell-out helper was deleted because it had no remaining app
 call sites.
 
-### Phase 26 Candidate: Modernize macOS Keychain Binding
+### Phase 26: Modernize macOS Keychain Binding
 
-The current keychain code uses legacy `SecKeychainAddGenericPassword`,
-`SecKeychainFindGenericPassword`, and `SecKeychainItemDelete`. It works, but the
-modern Apple API family is `SecItem*`. A replacement still needs JNA because
-Java SE has no keychain API. The value is deprecation reduction, not native
-dependency removal.
+The keychain code now uses `SecItemAdd`, `SecItemCopyMatching`,
+`SecItemUpdate`, and `SecItemDelete` with CoreFoundation dictionaries. A
+replacement still needs JNA because Java SE has no keychain API. The value is
+deprecation reduction, not native dependency removal.
 
 ### Phase 27 Candidate: Platform Process Hardening
 

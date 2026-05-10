@@ -45,7 +45,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **23** | done | **Systematic dependency upgrade pass** — audited every `gradle/libs.versions.toml` entry against Maven Central / Gradle Plugin Portal release metadata; removed `jsr305`; documented major/pre-release pins. | this PR |
 | **24** | done | **Native-deps audit** — catalogued every JNA binding, shell-out, and vendored native-adjacent protocol surface; removed the unused `barebones-commons-file` JNA/`libc` wrapper; documented candidate follow-ups. | this PR |
 | **25** | done | **Remove avoidable chmod shell-out** — replaced credentials-file `chmod 0600` with Java NIO POSIX permissions and deleted the old shell-out helper. | this PR |
-| **26** | pending | **Modernize macOS Keychain binding** — migrate legacy `SecKeychain*` JNA calls to `SecItem*` while preserving keychain behavior. | follow-up |
+| **26** | done | **Modernize macOS Keychain binding** — migrated legacy `SecKeychain*` JNA calls to `SecItem*` while preserving keychain behavior. | this PR |
 | **27** | pending | **Platform process hardening** — centralize short-lived desktop helper command execution with timeouts and interrupt handling. | follow-up |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
@@ -399,9 +399,8 @@ all of this.
   byte-compatibility with upstream's deleted XORCipher.
 - `dev.barebones.commander.secret.SecretStore` SPI with three
   implementations:
-  * **macOS Keychain** via JNA → `Security.framework` legacy
-    generic-password API (`SecKeychainAddGenericPassword` /
-    `SecKeychainFindGenericPassword` / `SecKeychainItemDelete`).
+  * **macOS Keychain** via JNA → `Security.framework`
+    generic-password `SecItem*` API.
   * **Linux libsecret** via JNA → `secret_password_store_sync` /
     `secret_password_lookup_sync` / `secret_password_clear_sync`
     against a custom schema (`dev.barebones.commander.Credentials`).
@@ -1130,6 +1129,21 @@ deleted.
 
 **Exit criteria met**: no app call sites remain for the `chmod` helper; the
 credentials-file permission helper has focused tests; CI green.
+
+### Phase 26 — Modernize macOS Keychain binding (done in this PR)
+
+The macOS keychain backend now uses the modern `SecItem*` API family:
+`SecItemAdd`, `SecItemCopyMatching`, `SecItemUpdate`, and `SecItemDelete`.
+CoreFoundation dictionaries are built through JNA Platform's CoreFoundation
+types and all created CF references are released after each call.
+
+Behavior remains the same at the `SecretStore` boundary: each `SecretRef` maps
+to one generic-password item keyed by service and account; storing replaces an
+existing secret; lookup returns empty when the item is absent; delete treats an
+absent item as success.
+
+**Exit criteria met**: no production calls remain to legacy `SecKeychain*`
+functions; UTF-8 secret conversion has focused coverage; CI green.
 
 ## 7. Compatibility with upstream
 

@@ -5,6 +5,7 @@ dependencies {
 
     // JNA for the macOS Security.framework + Linux libsecret bindings.
     implementation(libs.jna)
+    implementation(libs.jna.platform)
 
     testImplementation(libs.testng)
 }

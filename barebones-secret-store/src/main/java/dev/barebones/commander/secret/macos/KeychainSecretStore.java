@@ -8,8 +8,14 @@
  */
 package dev.barebones.commander.secret.macos;
 
+import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
-import com.sun.jna.ptr.IntByReference;
+import com.sun.jna.platform.mac.CoreFoundation;
+import com.sun.jna.platform.mac.CoreFoundation.CFDataRef;
+import com.sun.jna.platform.mac.CoreFoundation.CFIndex;
+import com.sun.jna.platform.mac.CoreFoundation.CFMutableDictionaryRef;
+import com.sun.jna.platform.mac.CoreFoundation.CFStringRef;
+import com.sun.jna.platform.mac.CoreFoundation.CFTypeRef;
 import com.sun.jna.ptr.PointerByReference;
 
 import dev.barebones.commander.secret.SecretRef;
@@ -24,7 +30,7 @@ import java.util.Optional;
 
 /**
  * macOS Keychain-backed {@link SecretStore} via JNA bindings to
- * {@code Security.framework}'s legacy generic-password API.
+ * {@code Security.framework}'s generic-password SecItem API.
  *
  * Each {@link SecretRef} maps to one keychain item identified by the
  * (service, account) pair. On first store the user may see the
@@ -43,33 +49,28 @@ public final class KeychainSecretStore implements SecretStore {
         try {
             // Just touching INSTANCE forces the native load — if we're
             // not on macOS or the framework isn't present this throws.
-            return SecurityFramework.INSTANCE != null;
-        } catch (UnsatisfiedLinkError e) {
+            return SecurityFramework.INSTANCE != null
+                && SecurityFramework.Constants.SEC_CLASS != null;
+        } catch (LinkageError | RuntimeException e) {
             return false;
         }
     }
 
     @Override
     public void store(SecretRef ref, char[] secret) throws IOException {
-        byte[] service = ref.service().getBytes(StandardCharsets.UTF_8);
-        byte[] account = ref.account().getBytes(StandardCharsets.UTF_8);
         byte[] password = toUtf8Bytes(secret);
-        try {
-            // SecKeychainAddGenericPassword returns errSecDuplicateItem
-            // (-25299) when the entry exists; in that case delete +
-            // re-add so the contract "always replaces" holds.
-            int status = SecurityFramework.INSTANCE.SecKeychainAddGenericPassword(
-                null, service.length, service, account.length, account,
-                password.length, password, null);
-            if (status == -25299) {
-                deleteByLookup(service, account);
-                status = SecurityFramework.INSTANCE.SecKeychainAddGenericPassword(
-                    null, service.length, service, account.length, account,
-                    password.length, password, null);
+        try (SecItemQuery addQuery = SecItemQuery.base(ref).withPasswordData(password);
+             SecItemQuery updateQuery = SecItemQuery.passwordData(password)) {
+            int status = SecurityFramework.INSTANCE.SecItemAdd(addQuery.dictionary(), null);
+            if (status == SecurityFramework.DUPLICATE_ITEM) {
+                try (SecItemQuery baseQuery = SecItemQuery.base(ref)) {
+                    status = SecurityFramework.INSTANCE.SecItemUpdate(
+                        baseQuery.dictionary(), updateQuery.dictionary());
+                }
             }
             if (status != SecurityFramework.OK) {
                 throw new IOException(
-                    "SecKeychainAddGenericPassword failed: status=" + status);
+                    "SecItemAdd/SecItemUpdate failed: status=" + status);
             }
         } finally {
             Arrays.fill(password, (byte) 0);
@@ -78,71 +79,38 @@ public final class KeychainSecretStore implements SecretStore {
 
     @Override
     public Optional<char[]> lookup(SecretRef ref) throws IOException {
-        byte[] service = ref.service().getBytes(StandardCharsets.UTF_8);
-        byte[] account = ref.account().getBytes(StandardCharsets.UTF_8);
-        IntByReference passwordLength = new IntByReference();
-        PointerByReference passwordData = new PointerByReference();
-        int status = SecurityFramework.INSTANCE.SecKeychainFindGenericPassword(
-            null, service.length, service, account.length, account,
-            passwordLength, passwordData, null);
-        if (status == SecurityFramework.ITEM_NOT_FOUND) {
-            return Optional.empty();
-        }
-        if (status != SecurityFramework.OK) {
-            throw new IOException(
-                "SecKeychainFindGenericPassword failed: status=" + status);
-        }
-        Pointer p = passwordData.getValue();
-        try {
-            byte[] bytes = p.getByteArray(0, passwordLength.getValue());
+        PointerByReference result = new PointerByReference();
+        try (SecItemQuery query = SecItemQuery.base(ref)
+            .withMatchLimitOne()
+            .withReturnData()) {
+            int status = SecurityFramework.INSTANCE.SecItemCopyMatching(
+                query.dictionary(), result);
+            if (status == SecurityFramework.ITEM_NOT_FOUND) {
+                return Optional.empty();
+            }
+            if (status != SecurityFramework.OK) {
+                throw new IOException("SecItemCopyMatching failed: status=" + status);
+            }
+            CFDataRef data = new CFDataRef(result.getValue());
+            byte[] bytes = data.getBytePtr().getByteArray(0, data.getLength());
             char[] chars = utf8BytesToChars(bytes);
             Arrays.fill(bytes, (byte) 0);
             return Optional.of(chars);
         } finally {
-            SecurityFramework.INSTANCE.SecKeychainItemFreeContent(null, p);
+            Pointer p = result.getValue();
+            if (p != null) {
+                SecurityFramework.release(new CFTypeRef(p));
+            }
         }
     }
 
     @Override
     public void delete(SecretRef ref) throws IOException {
-        byte[] service = ref.service().getBytes(StandardCharsets.UTF_8);
-        byte[] account = ref.account().getBytes(StandardCharsets.UTF_8);
-        deleteByLookup(service, account);
-    }
-
-    private static void deleteByLookup(byte[] service, byte[] account) throws IOException {
-        IntByReference passwordLength = new IntByReference();
-        PointerByReference passwordData = new PointerByReference();
-        PointerByReference itemRef = new PointerByReference();
-        int findStatus = SecurityFramework.INSTANCE.SecKeychainFindGenericPassword(
-            null, service.length, service, account.length, account,
-            passwordLength, passwordData, itemRef);
-        if (findStatus == SecurityFramework.ITEM_NOT_FOUND) {
-            return;
-        }
-        if (findStatus != SecurityFramework.OK) {
-            throw new IOException(
-                "SecKeychainFindGenericPassword (for delete) failed: status=" + findStatus);
-        }
-        try {
-            int deleteStatus = SecurityFramework.INSTANCE.SecKeychainItemDelete(
-                itemRef.getValue());
-            if (deleteStatus != SecurityFramework.OK) {
+        try (SecItemQuery query = SecItemQuery.base(ref)) {
+            int status = SecurityFramework.INSTANCE.SecItemDelete(query.dictionary());
+            if (status != SecurityFramework.OK && status != SecurityFramework.ITEM_NOT_FOUND) {
                 throw new IOException(
-                    "SecKeychainItemDelete failed: status=" + deleteStatus);
-            }
-        } finally {
-            // SecKeychainItemFreeContent frees the password DATA
-            // buffer; CFRelease releases the CFTypeRef itemRef
-            // itself. Both are required — calling only the first
-            // leaks one CFTypeRef per delete.
-            Pointer pwd = passwordData.getValue();
-            if (pwd != null) {
-                SecurityFramework.INSTANCE.SecKeychainItemFreeContent(null, pwd);
-            }
-            Pointer ref = itemRef.getValue();
-            if (ref != null) {
-                SecurityFramework.INSTANCE.CFRelease(ref);
+                    "SecItemDelete failed: status=" + status);
             }
         }
     }
@@ -164,5 +132,93 @@ public final class KeychainSecretStore implements SecretStore {
         char[] out = new char[cb.remaining()];
         cb.get(out);
         return out;
+    }
+
+    static byte[] utf8BytesForTest(char[] chars) {
+        return toUtf8Bytes(chars);
+    }
+
+    static char[] utf8CharsForTest(byte[] bytes) {
+        return utf8BytesToChars(bytes);
+    }
+
+    private static final class SecItemQuery implements AutoCloseable {
+        private final CFMutableDictionaryRef dictionary;
+        private final java.util.List<CFTypeRef> ownedRefs = new java.util.ArrayList<>();
+
+        private SecItemQuery() {
+            dictionary = CoreFoundation.INSTANCE.CFDictionaryCreateMutable(
+                null, new CFIndex(0), null, null);
+            if (dictionary == null || dictionary.getPointer() == null) {
+                throw new IllegalStateException("CFDictionaryCreateMutable returned NULL");
+            }
+        }
+
+        static SecItemQuery base(SecretRef ref) {
+            return new SecItemQuery()
+                .put(SecurityFramework.Constants.SEC_CLASS,
+                    SecurityFramework.Constants.SEC_CLASS_GENERIC_PASSWORD)
+                .putString(SecurityFramework.Constants.ATTR_SERVICE, ref.service())
+                .putString(SecurityFramework.Constants.ATTR_ACCOUNT, ref.account());
+        }
+
+        static SecItemQuery passwordData(byte[] password) {
+            return new SecItemQuery().withPasswordData(password);
+        }
+
+        SecItemQuery withPasswordData(byte[] password) {
+            return putData(SecurityFramework.Constants.VALUE_DATA, password);
+        }
+
+        SecItemQuery withReturnData() {
+            return put(SecurityFramework.Constants.RETURN_DATA,
+                SecurityFramework.Constants.CF_BOOLEAN_TRUE);
+        }
+
+        SecItemQuery withMatchLimitOne() {
+            return put(SecurityFramework.Constants.MATCH_LIMIT,
+                SecurityFramework.Constants.MATCH_LIMIT_ONE);
+        }
+
+        CFMutableDictionaryRef dictionary() {
+            return dictionary;
+        }
+
+        private SecItemQuery put(CFStringRef key, CFTypeRef value) {
+            dictionary.setValue(key, value);
+            return this;
+        }
+
+        private SecItemQuery putString(CFStringRef key, String value) {
+            CFStringRef ref = CFStringRef.createCFString(value);
+            ownedRefs.add(ref);
+            dictionary.setValue(key, ref);
+            return this;
+        }
+
+        private SecItemQuery putData(CFStringRef key, byte[] value) {
+            Pointer data = null;
+            if (value.length > 0) {
+                Memory memory = new Memory(value.length);
+                memory.write(0, value, 0, value.length);
+                data = memory;
+            }
+            CFDataRef ref = CoreFoundation.INSTANCE.CFDataCreate(
+                null, data, new CFIndex(value.length));
+            if (ref == null || ref.getPointer() == null) {
+                throw new IllegalStateException("CFDataCreate returned NULL");
+            }
+            ownedRefs.add(ref);
+            dictionary.setValue(key, ref);
+            return this;
+        }
+
+        @Override
+        public void close() {
+            for (int i = ownedRefs.size() - 1; i >= 0; i--) {
+                SecurityFramework.release(ownedRefs.get(i));
+            }
+            SecurityFramework.release(dictionary);
+        }
     }
 }
