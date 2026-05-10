@@ -80,7 +80,7 @@ public class ValueIteratorTest extends ValueListTest {
         iterator = values.valueIterator();
         for(int i = 0; i < 7; i++) {
             assert iterator.hasNext();
-            assert i + 1.5 == iterator.nextFloatValue();
+            assert Float.compare(i + 1.5f, iterator.nextFloatValue()) == 0;
         }
     }
 
@@ -95,7 +95,7 @@ public class ValueIteratorTest extends ValueListTest {
         iterator = values.valueIterator();
         for(int i = 0; i < 7; i++) {
             assert iterator.hasNext();
-            assert i + 1.5 == iterator.nextDoubleValue();
+            assert Double.compare(i + 1.5d, iterator.nextDoubleValue()) == 0;
         }
     }
 

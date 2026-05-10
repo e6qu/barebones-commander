@@ -48,11 +48,11 @@ subprojects {
         // out long-form. Per-module build.gradle.kts files DO use the catalog.
         "implementation"("org.slf4j:slf4j-api:2.0.17")
         constraints {
-            "implementation"("com.squareup.okio:okio-jvm:3.11.0")
-            "implementation"("org.jetbrains.kotlin:kotlin-stdlib:2.1.20")
-            "implementation"("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20")
-            "implementation"("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.20")
-            "implementation"("org.jetbrains.kotlin:kotlin-stdlib-common:2.1.20")
+            "implementation"("com.squareup.okio:okio-jvm:3.17.0")
+            "implementation"("org.jetbrains.kotlin:kotlin-stdlib:2.3.21")
+            "implementation"("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.3.21")
+            "implementation"("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21")
+            "implementation"("org.jetbrains.kotlin:kotlin-stdlib-common:2.3.21")
         }
     }
     tasks.withType<Test>().configureEach {
@@ -161,16 +161,16 @@ tasks.named<Test>("test") {
     useTestNG()
 }
 
-// CycloneDX SBOM published per release. The plugin writes
+// CycloneDX SBOM published per release. The direct task writes
 // build/reports/bom.json + bom.xml against the runtime classpath of
 // the root project, which is the fat-jar's actual contents.
-tasks.named<org.cyclonedx.gradle.CycloneDxTask>("cyclonedxBom") {
-    setProjectType("application")
-    setIncludeConfigs(listOf("runtimeClasspath"))
-    setSchemaVersion("1.5")
-    setOutputFormat("all")
-    setOutputName("bom")
-    setIncludeBomSerialNumber(true)
+tasks.named<org.cyclonedx.gradle.CyclonedxDirectTask>("cyclonedxDirectBom") {
+    projectType.set(org.cyclonedx.model.Component.Type.APPLICATION)
+    includeConfigs.set(listOf("runtimeClasspath"))
+    schemaVersion.set(org.cyclonedx.Version.VERSION_15)
+    jsonOutput.set(layout.buildDirectory.file("reports/bom.json"))
+    xmlOutput.set(layout.buildDirectory.file("reports/bom.xml"))
+    includeBomSerialNumber.set(true)
 }
 
 // SpotBugs + FindSecBugs across every Java subproject. Reports
@@ -224,6 +224,7 @@ tasks.register<Jar>("fatJar") {
     description = "Builds a single self-contained jar with all runtime deps."
     archiveClassifier.set("all")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    dependsOn(configurations.runtimeClasspath)
     manifest {
         attributes(
             "Main-Class" to "dev.barebones.commander.bootstrap.Main",

@@ -238,11 +238,11 @@ public class ConfigurationSectionTest {
     @Test
     public void testDoubles() {
         for(int i = 0; i < 10; i++) {
-            assert ConfigurationSection.getDoubleValue(i + ".5") == (i + 0.5d);
+            assert Double.compare(ConfigurationSection.getDoubleValue(i + ".5"), i + 0.5d) == 0;
             assert ConfigurationSection.getValue((i + 0.5d)).equals(i + ".5");
         }
 
-        assert ConfigurationSection.getDoubleValue(null) == 0f;
+        assert Double.compare(ConfigurationSection.getDoubleValue(null), 0d) == 0;
     }
 
     /**
@@ -251,11 +251,11 @@ public class ConfigurationSectionTest {
     @Test
     public void testFloats() {
         for(int i = 0; i < 10; i++) {
-            assert ConfigurationSection.getFloatValue(i + ".5") == (i + 0.5f);
+            assert Float.compare(ConfigurationSection.getFloatValue(i + ".5"), i + 0.5f) == 0;
             assert ConfigurationSection.getValue((i + 0.5f)).equals(i + ".5");
         }
 
-        assert ConfigurationSection.getFloatValue(null) == 0f;
+        assert Float.compare(ConfigurationSection.getFloatValue(null), 0f) == 0;
     }
 
     /**

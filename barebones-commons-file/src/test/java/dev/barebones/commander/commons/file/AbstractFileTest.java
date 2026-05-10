@@ -44,6 +44,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -65,6 +66,8 @@ import java.util.stream.Stream;
  * @author Maxence Bernard
  */
 public abstract class AbstractFileTest {
+    private static final Random PSEUDO_UNIQUE_RANDOM = new Random();
+
     /**
      * AbstractFile instances to be deleted if they exist when {@link #tearDown()} is called.
      */
@@ -193,7 +196,7 @@ public abstract class AbstractFileTest {
 
     /**
      * Creates a regular file and fills it with <code>length</code> random bytes, overwriting the file if it exists,
-     * and returns the md5 checksum of the random data that was copied.
+     * and returns the SHA-256 checksum of the random data that was copied.
      * <p>
      * Before returning, this method asserts that the file {@link AbstractFile#exists() exists} and that its
      * {@link AbstractFile#getSize() size} matches the specified length argument.
@@ -201,18 +204,18 @@ public abstract class AbstractFileTest {
      *
      * @param file the file to create or overwrite
      * @param length the number of random bytes to fill the file with
-     * @return the md5 checksum of the data written to the file
+     * @return the SHA-256 checksum of the data written to the file
      * @throws IOException if the file already exists or if an error occurred while writing to it
      * @throws NoSuchAlgorithmException should not happen
      */
     protected String createFile(AbstractFile file, long length) throws IOException, NoSuchAlgorithmException {
-        ChecksumInputStream md5In = new ChecksumInputStream(new BoundedInputStream(new RandomGeneratorInputStream(), length, false), MessageDigest.getInstance("md5"));
-        file.copyStream(md5In, false, length);
+        ChecksumInputStream checksumIn = new ChecksumInputStream(new BoundedInputStream(new RandomGeneratorInputStream(), length, false), MessageDigest.getInstance("SHA-256"));
+        file.copyStream(checksumIn, false, length);
 
         assert file.exists();
         assert length == file.getSize();
 
-        return md5In.getChecksumString();
+        return checksumIn.getChecksumString();
     }
 
     /**
@@ -225,8 +228,7 @@ public abstract class AbstractFileTest {
             Thread.sleep(timeMs);
         }
         catch(InterruptedException e) {
-            // Should not happen, and even if it did, it's no big deal as the test that called this method will most
-            // likely fail
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -237,7 +239,7 @@ public abstract class AbstractFileTest {
      * @return a pseudo unique filename
      */
     protected String getPseudoUniqueFilename(String prefix) {
-        return (prefix==null?"":prefix+"_")+System.currentTimeMillis()+(new Random().nextInt(10000));
+        return (prefix==null?"":prefix+"_")+System.currentTimeMillis()+PSEUDO_UNIQUE_RANDOM.nextInt(10000);
     }
 
     /**
@@ -260,44 +262,44 @@ public abstract class AbstractFileTest {
 
 
     /**
-     * Creates and returns a <code>ChecksumOutputStream</code> that generates an <code>md5</code> checksum as data
+     * Creates and returns a <code>ChecksumOutputStream</code> that generates an <code>SHA-256</code> checksum as data
      * is written to it.
      *
      * @param out the underlying OutputStream used by the DigestOutputStream
-     * @return a ChecksumOutputStream that generates an md5 checksum as data is written to it
+     * @return a ChecksumOutputStream that generates an SHA-256 checksum as data is written to it
      * @throws NoSuchAlgorithmException should not happen
      */
-    public ChecksumOutputStream getMd5OutputStream(OutputStream out) throws NoSuchAlgorithmException {
-        return new ChecksumOutputStream(out, MessageDigest.getInstance("md5"));
+    public ChecksumOutputStream getSha256OutputStream(OutputStream out) throws NoSuchAlgorithmException {
+        return new ChecksumOutputStream(out, MessageDigest.getInstance("SHA-256"));
     }
 
 
     /**
-     * Calculates and returns the md5 checksum of the given <code>InputStream</code>'s contents.
+     * Calculates and returns the SHA-256 checksum of the given <code>InputStream</code>'s contents.
      * The provided stream is read completely (until EOF) but is not closed.
      *
      * @param in the InputStream to digest
-     * @return the md5 checksum of the given InputStream's contents
+     * @return the SHA-256 checksum of the given InputStream's contents
      * @throws IOException should not happen
      * @throws NoSuchAlgorithmException should not happen
      */
-    protected String calculateMd5(InputStream in) throws IOException, NoSuchAlgorithmException {
-        return AbstractFile.calculateChecksum(in, MessageDigest.getInstance("md5"));
+    protected String calculateSha256(InputStream in) throws IOException, NoSuchAlgorithmException {
+        return AbstractFile.calculateChecksum(in, MessageDigest.getInstance("SHA-256"));
     }
 
     /**
-     * Calculates and returns the md5 checksum of the given <code>AbstractFile</code>'s contents.
+     * Calculates and returns the SHA-256 checksum of the given <code>AbstractFile</code>'s contents.
      *
      * @param file the file to digest
-     * @return the md5 checksum of the given InputStream's contents
+     * @return the SHA-256 checksum of the given InputStream's contents
      * @throws IOException should not happen
      * @throws NoSuchAlgorithmException should not happen
      */
-    protected String calculateMd5(AbstractFile file) throws IOException, NoSuchAlgorithmException {
+    protected String calculateSha256(AbstractFile file) throws IOException, NoSuchAlgorithmException {
         InputStream in = file.getInputStream();
 
         try {
-            return calculateMd5(in);
+            return calculateSha256(in);
         }
         finally {
             in.close();
@@ -314,7 +316,7 @@ public abstract class AbstractFileTest {
      * @throws NoSuchAlgorithmException should not happen
      */
     protected void assertInputStreamEquals(InputStream in1, InputStream in2) throws IOException, NoSuchAlgorithmException {
-        assert calculateMd5(in1).equals(calculateMd5(in2));
+        assert calculateSha256(in1).equals(calculateSha256(in2));
     }
 
     /**
@@ -326,23 +328,9 @@ public abstract class AbstractFileTest {
      * @throws NoSuchAlgorithmException should not happen
      */
     protected void assertContentsEquals(AbstractFile file1, AbstractFile file2) throws IOException, NoSuchAlgorithmException {
-        InputStream in1 = null;
-        InputStream in2 = null;
-
-        try {
-            in1 = file1.getInputStream();
-            in2 = file2.getInputStream();
-
+        try (InputStream in1 = file1.getInputStream();
+             InputStream in2 = file2.getInputStream()) {
             assertInputStreamEquals(in1, in2);
-        }
-        finally {
-            if(in1!=null)
-                try { in1.close(); }
-                catch(IOException e) {}
-
-            if(in2!=null)
-                try { in2.close(); }
-                catch(IOException e) {}
         }
     }
 
@@ -677,12 +665,12 @@ public abstract class AbstractFileTest {
 
         // Test the integrity of the data returned by the InputStream on a somewhat large file
 
-        String md5 = createFile(tempFile, 100000);
+        String sha256 = createFile(tempFile, 100000);
 
         in = tempFile.getInputStream();
         assert in != null;
 
-        assert md5.equals(calculateMd5(in));
+        assert sha256.equals(calculateSha256(in));
 
         // Assert that read methods return -1 when EOF has been reached
         assert -1 == in.read();
@@ -747,12 +735,12 @@ public abstract class AbstractFileTest {
 
         // Test the integrity of the data returned by the RandomAccessInputStream on a somewhat large file
 
-        String md5 = createFile(tempFile, 100000);
+        String sha256 = createFile(tempFile, 100000);
 
         rais = tempFile.getRandomAccessInputStream();
         assert rais != null;
 
-        assert md5.equals(calculateMd5(rais));
+        assert sha256.equals(calculateSha256(rais));
 
         // Assert that read methods return -1 when EOF has been reached
         assert -1 == rais.read();
@@ -824,11 +812,11 @@ public abstract class AbstractFileTest {
         assert 0 == tempFile.getSize();
 
         // Test the integrity of the OutputStream after writing a somewhat large amount of random data
-        ChecksumOutputStream md5Out = getMd5OutputStream(tempFile.getOutputStream());
-        writeRandomData(md5Out, 100000, 1000);
-        md5Out.close();
+        ChecksumOutputStream sha256Out = getSha256OutputStream(tempFile.getOutputStream());
+        writeRandomData(sha256Out, 100000, 1000);
+        sha256Out.close();
 
-        assert md5Out.getChecksumString().equals(calculateMd5(tempFile));
+        assert sha256Out.getChecksumString().equals(calculateSha256(tempFile));
     }
 
     /**
@@ -880,11 +868,11 @@ public abstract class AbstractFileTest {
         assert 2 == tempFile.getSize();
 
         // Test the integrity of the OutputStream after writing a somewhat large amount of random data
-        ChecksumOutputStream md5Out = getMd5OutputStream(tempFile.getOutputStream());
-        writeRandomData(md5Out, 100000, 1000);
-        md5Out.close();
+        ChecksumOutputStream sha256Out = getSha256OutputStream(tempFile.getOutputStream());
+        writeRandomData(sha256Out, 100000, 1000);
+        sha256Out.close();
 
-        assert md5Out.getChecksumString().equals(calculateMd5(tempFile));
+        assert sha256Out.getChecksumString().equals(calculateSha256(tempFile));
     }
 
     /**
@@ -927,11 +915,11 @@ public abstract class AbstractFileTest {
         raos.close();
 
         // Test the integrity of the OuputStream after writing a somewhat large amount of random data
-        ChecksumOutputStream md5Out = getMd5OutputStream(tempFile.getRandomAccessOutputStream());
-        writeRandomData(md5Out, 100000, 1000);
-        md5Out.close();
+        ChecksumOutputStream sha256Out = getSha256OutputStream(tempFile.getRandomAccessOutputStream());
+        writeRandomData(sha256Out, 100000, 1000);
+        sha256Out.close();
 
-        assert md5Out.getChecksumString().equals(calculateMd5(tempFile));
+        assert sha256Out.getChecksumString().equals(calculateSha256(tempFile));
         tempFile.delete();
 
         // Test getOffset(), seek(), getLength() and setLength()
@@ -1279,7 +1267,7 @@ public abstract class AbstractFileTest {
         AbstractFile destFile = getTemporaryFile();
         deleteWhenFinished(destFile);       // this file will automatically be deleted if it exists when the test is over
 
-        String sourceChecksum = calculateMd5(tempFile);
+        String sourceChecksum = calculateSha256(tempFile);
 
         // Try and move/rename the file and see if it worked
         boolean success;
@@ -1298,18 +1286,18 @@ public abstract class AbstractFileTest {
             assert destFile.exists();
 
             // Assert that the checksum of source and destination match
-            assert sourceChecksum.equals(calculateMd5(destFile));
+            assert sourceChecksum.equals(calculateSha256(destFile));
 
             // At this point, we know that moveTo/renameTo works, at least for this destination file
 
             // Assert that the destination file is overwritten when it exists
             createFile(tempFile, 100000);
-            sourceChecksum = calculateMd5(tempFile);
+            sourceChecksum = calculateSha256(tempFile);
             moveTo(tempFile, destFile, useRenameTo);
 
             assert !tempFile.exists();
             assert destFile.exists();
-            assert sourceChecksum.equals(calculateMd5(destFile));
+            assert sourceChecksum.equals(calculateSha256(destFile));
 
             // Assert that moveTo/renameTo fails when the source and destination files are the same
             createFile(tempFile, 1);
@@ -1449,7 +1437,7 @@ public abstract class AbstractFileTest {
 
     /**
      * Tests {@link AbstractFile#calculateChecksum(java.security.MessageDigest)} and {@link dev.barebones.commander.commons.io.ByteUtils#toHexString(byte[])}
-     * by computing file digests using different algorithms (MD5, SHA-1, ...) and comparing them against known values.
+     * by computing file digests using different algorithms and comparing them against known values.
      *
      * @throws IOException should not happen
      * @throws NoSuchAlgorithmException should not happen
@@ -1462,9 +1450,6 @@ public abstract class AbstractFileTest {
         tempFile.mkfile();
 
         // Built-in JCE algorithms
-        assert "8350e5a3e24c153df2275c9f80692773".equals(tempFile.calculateChecksum("MD2"));
-        assert "d41d8cd98f00b204e9800998ecf8427e".equals(tempFile.calculateChecksum("MD5"));
-        assert "da39a3ee5e6b4b0d3255bfef95601890afd80709".equals(tempFile.calculateChecksum("SHA-1"));
         assert "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".equals(tempFile.calculateChecksum("SHA-256"));
         assert "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b".equals(tempFile.calculateChecksum("SHA-384"));
         assert "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e".equals(tempFile.calculateChecksum("SHA-512"));
@@ -1476,11 +1461,8 @@ public abstract class AbstractFileTest {
         //assert "31d6cfe0d16ae931b73c59d7e0c089c0".equals(tempFile.calculateChecksum("MD4"));
 
         // Verify the digests of a sample phrase
-        tempFile.copyStream(new ByteArrayInputStream("The quick brown fox jumps over the lazy dog".getBytes()), false, -1);
+        tempFile.copyStream(new ByteArrayInputStream("The quick brown fox jumps over the lazy dog".getBytes(StandardCharsets.UTF_8)), false, -1);
 
-        assert "03d85a0d629d2c442e987525319fc471".equals(tempFile.calculateChecksum("MD2"));
-        assert "9e107d9d372bb6826bd81d3542a419d6".equals(tempFile.calculateChecksum("MD5"));
-        assert "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12".equals(tempFile.calculateChecksum("SHA-1"));
         assert "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592".equals(tempFile.calculateChecksum("SHA-256"));
         assert "ca737f1014a48f4c0b6dd43cb177b0afd9e5169367544c494011e3317dbf9a509cb1e5dc1e85a941bbee3d7f2afbc9b1".equals(tempFile.calculateChecksum("SHA-384"));
         assert "07e547d9586f6a73f73fbac0435ed76951218fb7d0c8d788a309d785436bbb642e93a252a954f23912547d1e8a3b5ed6e1bfd7097821233fa0538f3db854fee6".equals(tempFile.calculateChecksum("SHA-512"));
@@ -1642,11 +1624,11 @@ public abstract class AbstractFileTest {
             OutputStream urlOut = url.openConnection().getOutputStream();
             assert urlOut != null;
 
-            ChecksumOutputStream md5Out = getMd5OutputStream(urlOut);
-            writeRandomData(md5Out, 100000, 1000);
-            md5Out.close();
+            ChecksumOutputStream sha256Out = getSha256OutputStream(urlOut);
+            writeRandomData(sha256Out, 100000, 1000);
+            sha256Out.close();
 
-            assert md5Out.getChecksumString().equals(calculateMd5(tempFile));
+            assert sha256Out.getChecksumString().equals(calculateSha256(tempFile));
         }
 
         // Test path resolution on a directory

@@ -105,7 +105,7 @@ public class ValueListTest {
     protected void testFloatValues(ValueList values) {
         assert values.size() == 7;
         for(int i = 0; i < 7; i++)
-            assert i + 1.5 == values.floatValueAt(i);
+            assert Float.compare(i + 1.5f, values.floatValueAt(i)) == 0;
     }
 
     /**
@@ -115,7 +115,7 @@ public class ValueListTest {
     protected void testDoubleValues(ValueList values) {
         assert values.size() == 7;
         for(int i = 0; i < 7; i++)
-            assert i + 1.5 == values.doubleValueAt(i);
+            assert Double.compare(i + 1.5d, values.doubleValueAt(i)) == 0;
     }
 
     /**

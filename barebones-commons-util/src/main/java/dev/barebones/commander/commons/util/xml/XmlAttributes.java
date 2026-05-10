@@ -17,6 +17,7 @@
 
 package dev.barebones.commander.commons.util.xml;
 
+import java.util.Collections;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -90,6 +91,6 @@ public class XmlAttributes {
      * @return an iterator on the attributes contained by this instance.
      */
     public Iterator<String> names() {
-        return names.iterator();
+        return Collections.unmodifiableList(names).iterator();
     }
 }

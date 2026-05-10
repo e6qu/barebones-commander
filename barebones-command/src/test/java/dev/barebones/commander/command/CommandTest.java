@@ -66,8 +66,9 @@ public class CommandTest {
             files[4] = FileFactory.getFile(System.getProperty("java.home"));
             files[5] = FileFactory.getFile(System.getProperty("java.home") + System.getProperty("file.separator") + "test.txt");
         }
-        // This is assumed never to happen.
-        catch(Exception e) {}
+        catch(Exception e) {
+            throw new AssertionError("Could not initialize command test files", e);
+        }
     }
 
 

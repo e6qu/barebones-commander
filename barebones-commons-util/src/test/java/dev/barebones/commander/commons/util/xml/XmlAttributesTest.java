@@ -117,7 +117,9 @@ public class XmlAttributesTest {
             names.remove();
             throw new AssertionError();
         }
-        catch(Exception e) {}
+        catch(UnsupportedOperationException e) {
+            // Expected: attribute-name iteration is read-only.
+        }
     }
 
     /**
