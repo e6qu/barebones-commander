@@ -249,7 +249,7 @@ public class OSXDesktopAdapter extends DefaultDesktopAdapter {
 
     @Override
     public ActionShortcuts getActionShortcuts() {
-        return new dev.barebones.commander.desktop.macos.ActionShortcuts();
+        return new dev.barebones.commander.desktop.macos.MacOSActionShortcuts();
     }
 
     /**
@@ -502,18 +502,21 @@ public class OSXDesktopAdapter extends DefaultDesktopAdapter {
         try {
             Runtime rt = Runtime.getRuntime();
             Process proc = rt.exec(commands);
+            // Child process inherited the JVM default charset; decoding
+            // its output with anything else would mojibake.
+            java.nio.charset.Charset cs = java.nio.charset.Charset.defaultCharset();
             BufferedReader stdInput = new BufferedReader(new InputStreamReader(
-                    useStdErr ? proc.getErrorStream() : proc.getInputStream()));
+                    useStdErr ? proc.getErrorStream() : proc.getInputStream(), cs));
             int exitCode = Integer.MIN_VALUE;
             boolean processExited;
             if (!(processExited = proc.waitFor(1000, TimeUnit.MILLISECONDS)) || (exitCode = proc.exitValue()) != expectedExitCode) {
                 LOGGER.error("Unexpected result from running: '{}', timed out?: {}, exit code: {}", commands, !processExited, exitCode);
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Stdout output of running the command: {}",
-                            new BufferedReader(new InputStreamReader(proc.getInputStream())).lines().
+                            new BufferedReader(new InputStreamReader(proc.getInputStream(), cs)).lines().
                                     collect(Collectors.joining(System.lineSeparator())));
                     LOGGER.debug("Stderr output of running the command: {}",
-                            new BufferedReader(new InputStreamReader(proc.getErrorStream())).lines().
+                            new BufferedReader(new InputStreamReader(proc.getErrorStream(), cs)).lines().
                                     collect(Collectors.joining(System.lineSeparator())));
                 }
                 return result;
@@ -553,7 +556,10 @@ public class OSXDesktopAdapter extends DefaultDesktopAdapter {
         if (super.setIconProgress(progress)) {
             return true;
         }
-        if (progress >= 0 || progress <= 100) {
+        // Original code used `||` which is always true for any int —
+        // SpotBugs UC_USELESS_CONDITION. The intent is "valid 0..100
+        // range" → `&&`.
+        if (progress >= 0 && progress <= 100) {
             Application.getApplication().setDockIconProgress(progress);
         } else {
             Application.getApplication().setDockIconProgress(-1);

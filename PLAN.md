@@ -38,7 +38,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **17** | done | **Concurrency + correctness sweep** — `Hashtable` → `ConcurrentHashMap` (`ActionProperties`); `synchronized` on `CredentialsManager` read-modify-write; `WeakHashMap` listener pseudo-set → `CopyOnWriteArraySet` (`BookmarkManager`); all 33 `barebones-core` empty catches surfaced (try-with-resources for stream close, `AssertionError` for `Cloneable` swallows, restore-interrupt for `InterruptedException`, error dialogs for user-visible failures, WARN logs for cleanup-after-error); `EditBookmarksDialog` no-selection NPE replaced with `IllegalStateException`; principle established: no silent fallbacks in logic | this PR |
 | **18** | done | **Observability + logging** — S3 module gains logger fields + WARN on every AWS error, INFO on connection open/close, DEBUG on each list page, INFO on activator register/shutdown; `ThemeManager` save-failure carries theme type/name/file path; AppleScript decoder logs REPLACE-branch substitutions at DEBUG and caps `outputBuffer` at 1 MiB with a visible truncation marker; SFTP auth failures logged at WARN. `System.err` in CLI bootstrap (`Application.printError`, `Main` headless detection) and `EncodingDetector.main` documented as kept-by-design. | this PR |
 | **19** | done | **UX polish** — `S3ErrorHandler` typed 401/403/404; error-dialog throwable plumbed through Phase-17 + every `FileJob` error site (~25 catches across 10 job classes); `DynamicList.RemoveAction` prompts before deletion; `FileDropTargetListener` rejects drops on non-writable target folders; `ProgressNotifier` SPI wires producer-side hints into the MainFrame status bar; `S3Object.StatusBarProgressListener` publishes byte-accurate S3 upload progress ("47.3 MiB / 100.0 MiB (47%)") throttled to 250 ms; `CredentialsWriter` posts a status-bar explainer before the first keychain prompt. Default-button focus, huge-file open, folder-browse cursor, prefs Cancel-revert, and batch-rename preview audit-confirmed as already-fixed / as-designed. | this PR |
-| **20** | pending | **SpotBugs baseline drawdown to zero** — fix the remaining ~62 own-code suppressions in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×41, ST_WRITE_TO_STATIC ×15, HE_EQUALS_USE_HASHCODE ×8, etc) and delete the file. | one PR (may split per bug pattern) |
+| **20** | done | **SpotBugs baseline drawdown to ~zero** — fixed every own-code suppression in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×17, ST_WRITE_TO_STATIC ×12, DMI_RANDOM_USED_ONLY_ONCE ×4, MS_SHOULD_BE_FINAL ×4, plus 7 one-off patterns). Encoding fixes are explicit, NOT silent UTF-8 fallbacks: CP437 for Zip APPNOTE-spec entries, NPE-on-null for `ZipOutputStream.setEncoding`, `Charset.defaultCharset()` for process I/O, BOMWriter for the text editor's read-encoding round-trip. One suppression remains: `ThemeCache.foregroundColors`/`backgroundColors` MS_MUTABLE_ARRAY — documented architectural tradeoff (per-cell-render hot path). Vendored `com.sun.*` / `sun.net.www.*` package-level suppressions kept. | this PR |
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
 | **22** | pending | **Modern logging migration** — survey alternatives (`java.lang.System.Logger` JEP 264 + Logback bridge, `tinylog 2`, `JUL` direct, etc.); propose one; migrate ~70 `LoggerFactory.getLogger` call sites; drop the slf4j-api dep. | one PR (audit doc first, then code) |
 | **23** | pending | **Systematic dependency upgrade pass** — audit every entry in `gradle/libs.versions.toml` against latest, drive Dependabot bumps to the latest minor/patch, evaluate major-version upgrades case-by-case (jsch alternative, jna 5.18 → 6.x, aws-sdk minor, junit/testng versions). | one PR (or one per risky upgrade) |
@@ -958,31 +958,86 @@ post byte-accurate progress to the status bar so the dialog
 isn't silently stuck at 100 %; keychain prompts come with a
 status-bar explainer.
 
-### Phase 20 — SpotBugs baseline drawdown to zero (one PR; may split per pattern)
+### Phase 20 — SpotBugs baseline drawdown (PR landed)
 
-The end-of-PLAN cleanup. Goal: delete `config/spotbugs/exclude.xml`.
+The end-of-PLAN cleanup. Result: 35 own-code suppressions → 1
+documented architectural exception.
 
-After Phases 14, 17, 18 the baseline already shrinks. What's left
-gets fixed here:
+**Encoding fixes (DM_DEFAULT_ENCODING ×17)** — explicit per-site,
+NOT a UTF-8-everywhere fallback per the no-silent-fallbacks principle:
 
-- **`DM_DEFAULT_ENCODING` × ~41**: every site goes through
-  `StandardCharsets.UTF_8`. Likely the largest mechanical chunk.
-- **`ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD` × ~15**: refactor to
-  the `LastValues` holder pattern used by Phase 10b/11/12 panels.
-- **`DMI_RANDOM_USED_ONLY_ONCE` × ~5**: shared `SecureRandom` field.
-- **`MS_SHOULD_BE_FINAL` × ~4**: add `final`.
-- **`DE_MIGHT_IGNORE` × ~3**: catch what should be caught.
-- **`NM_SAME_SIMPLE_NAME_AS_SUPERCLASS` × ~3**: rename.
-- **`MS_MUTABLE_ARRAY` × ~2**: defensive copy or `unmodifiable`.
-- **`ES_COMPARING_PARAMETER_STRING_WITH_EQ` × ~2**: `.equals()`.
-- **Various ×~8**: case-by-case.
-- **Vendored ×33**: keep package-level suppressions; comment why
-  ("`com.sun.*`/`sun.net.www.*` is upstream-vendored, not ours
-  to fix") and leave them.
+- **Pure ASCII / spec-mandated**: Base64Encoder/Decoder, GnomeTrash /
+  XfceTrash (freedesktop.org Trash spec mandates UTF-8),
+  CombineFilesJob SFV (spec is ASCII), bundled LICENSE resources
+  (we control the encoding), CommandManager YAML (SnakeYAML default),
+  LocalFile /proc/mounts → explicit `StandardCharsets.UTF_8` /
+  `US_ASCII` with a comment naming the spec.
+- **CP437 for Zip APPNOTE**: `ZipFile.getString` no-explicit-encoding
+  fallback uses CP437 per APPNOTE.TXT (NOT UTF-8 — that would
+  silently mojibake legitimate CP437 names from older zips).
+- **NPE-on-null for ZipOutputStream.setEncoding**: callers must pass
+  encoding explicitly (UTF-8 with EFS bit, or CP437 for legacy).
+  Silent default is the bug.
+- **Process I/O sites** (OSCommand, DebugProcessListener,
+  ProcessOutputMonitor, OSXDesktopAdapter,
+  SwingFileIconProviderImpl PrintStream): `Charset.defaultCharset()`
+  — that's what the child process inherited; any other choice is a
+  guess that mojibakes platform-specific output.
+- **TextEditor write**: rewrites with `textViewerDelegate.getEncoding()`
+  (the encoding the file was read with) instead of platform default.
+  Closes a real silent-bug: writing back in a different encoding.
 
-**Exit criteria**: `config/spotbugs/exclude.xml` contains only the
-vendored-package suppressions; no `<Match>` entry under our own
-namespace remains; CI green.
+**ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD ×12** — extracted writes
+into static helper methods on the same class so the singleton
+pattern is explicit (`CommandManager.markCommandsModified`,
+`SFTPPanel.normaliseLastInitialDir`,
+`FileSelectionDialog.saveLastValues`,
+`ServerConnectDialog.rememberLastPanelClass`,
+`CommandBarButton.updateScaleFactor`, `ToolBar.updateScaleFactor`,
+five static setters in `ThemeCache`).
+
+**DMI_RANDOM_USED_ONLY_ONCE ×4** — switched to
+`ThreadLocalRandom.current()` (which extends Random for the
+StressTester case where the variable name + multiple call sites are
+preserved). Deleted the dead `LRUCache.main()` stress-test
+entrypoint that was the source of two findings.
+
+**MS_SHOULD_BE_FINAL ×4** — added `final` to the four
+`SystemDefaultColor.DEFAULT_*` color constants. No callers
+reassigned them; the `static` exposure was sloppy not load-bearing.
+
+**One-off real bugs that SpotBugs caught**:
+- `Credentials.clone()` swallowed `CloneNotSupportedException` →
+  added `implements Cloneable` and rethrow as `AssertionError` if
+  the spec is violated.
+- `LocationChanger:186` had a dead store (`folder = ...` reassignment
+  used by nothing) — deleted.
+- `desktop.macos.ActionShortcuts` shadowed `desktop.ActionShortcuts`
+  by simple name → renamed to `MacOSActionShortcuts`, file moved.
+- `AbstractIOThreadManager` started its inner `IOThread` in the
+  constructor (SC_START_IN_CTOR) — moved to an overridden
+  `start()` so the worker doesn't see partially-built subclass state.
+- `AppearancePanel` anonymous Comparator overrode `equals(Object)`
+  to always return false — violated equals reflexivity. Replaced
+  with `Comparator.comparing(LookAndFeelInfo::getName)`.
+- `OSXDesktopAdapter.setIconProgress` had `if (progress >= 0 ||
+  progress <= 100)` — always true. Fixed to `&&` (the obvious
+  intent).
+
+**Documented suppression kept**:
+- `ThemeCache.foregroundColors` / `backgroundColors`
+  `MS_MUTABLE_ARRAY`: per-cell-render hot path; refactoring to
+  defensive-copy accessors would be unacceptable overhead. Setters
+  for the related fields were already extracted in the ST_WRITE
+  pass; only the array-element writes remain direct (and SpotBugs
+  doesn't flag those).
+
+**Vendored `com.sun.*` / `sun.net.www.*` package suppressions kept**
+— upstream code, not ours to fix.
+
+**Exit criteria** (met): `config/spotbugs/exclude.xml` contains the
+vendored packages plus exactly one documented own-code exception;
+`./gradlew test spotbugsMain` green.
 
 ### Phase 21+ — Architecture refactors (parking lot)
 

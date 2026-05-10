@@ -56,10 +56,16 @@ class OSCommand {
         Process process = pb.start();
         int exitCode = process.waitFor();
 
-        String output = new String(process.getInputStream().readAllBytes()).replace("\n", "").replace("\r", "");
+        // Child process inherits the JVM's default charset (which itself
+        // mirrors LC_ALL / LANG via -Dfile.encoding); decoding its output
+        // with the same charset is the only encoding choice we can make
+        // without guessing.
+        java.nio.charset.Charset cs = java.nio.charset.Charset.defaultCharset();
+        String output = new String(process.getInputStream().readAllBytes(), cs)
+            .replace("\n", "").replace("\r", "");
 
         if (exitCode != 0) {
-            String error = new String(process.getErrorStream().readAllBytes());
+            String error = new String(process.getErrorStream().readAllBytes(), cs);
             LOGGER.error("Error executing command: {}", commandStr);
             LOGGER.error("Exit code: {}", exitCode);
             LOGGER.error("Output: {}", output);

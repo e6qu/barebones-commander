@@ -161,7 +161,9 @@ public class CombineFilesJob extends AbstractCopyJob {
         InputStream crcIn = null;
         try {
             crcIn = crcFile.getInputStream();
-            BufferedReader crcReader = new BufferedReader(new InputStreamReader(crcIn));
+            // SFV checksum files are spec-mandated ASCII (filename + space + hex CRC).
+            BufferedReader crcReader = new BufferedReader(
+                new InputStreamReader(crcIn, java.nio.charset.StandardCharsets.US_ASCII));
             String crcLine = crcReader.readLine();
             crcLine = crcLine.substring(crcLine.lastIndexOf(' ') + 1).trim();
             String crcDest = destFile.calculateChecksum("CRC32");

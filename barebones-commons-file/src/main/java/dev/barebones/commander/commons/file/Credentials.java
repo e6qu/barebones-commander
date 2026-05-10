@@ -25,7 +25,7 @@ package dev.barebones.commander.commons.file;
  * @see dev.barebones.commander.commons.file.FileURL
  * @author Maxence Bernard
  */
-public final class Credentials {
+public final class Credentials implements Cloneable {
 
     private String login;
     private String password;
@@ -144,8 +144,9 @@ public final class Credentials {
             return super.clone();
         }
         catch(CloneNotSupportedException e) {
-            // Should never happen
-            return null;
+            // Class implements Cloneable so super.clone() cannot throw.
+            // If it does, the JDK contract is violated.
+            throw new AssertionError("Credentials must be Cloneable", e);
         }
     }
 

@@ -174,7 +174,10 @@ public class XfceTrash extends QueuedTrash {
             try {
                 // create info file
                 infoFile = TRASH_INFO_SUBFOLDER.getChild(trashFileName + ".trashinfo");
-                infoWriter = new OutputStreamWriter(infoFile.getOutputStream());
+                // freedesktop.org Trash spec mandates UTF-8 for
+                // .trashinfo files (Trash-spec 1.0, §2).
+                infoWriter = new OutputStreamWriter(
+                    infoFile.getOutputStream(), java.nio.charset.StandardCharsets.UTF_8);
                 infoWriter.write(fileInfoContent);
             } catch (IOException ex) {
                 retVal = false;

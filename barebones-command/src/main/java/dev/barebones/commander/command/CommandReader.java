@@ -104,7 +104,7 @@ public class CommandReader extends DefaultHandler implements CommandsXmlConstant
                     // we made a backward incompatible change when the default 'open with file manager'
                     // on macOS changed to "open -R $f" so if we detect the previous command, we ignore
                     // it and indicate that the commands were modified to update the commands.xml file
-                    CommandManager.wereCommandsModified = true;
+                    CommandManager.markCommandsModified();
                 } else {
                     CommandType type = CommandType.parseCommandType(attributes.getValue(ATTRIBUTE_TYPE));
                     String display = attributes.getValue(ATTRIBUTE_DISPLAY);

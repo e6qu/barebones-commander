@@ -50,13 +50,13 @@ public class SystemDefaultColor extends DefaultColor implements PropertyChangeLi
     // - Fallbacks -----------------------------------------------------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
     /** Foreground color used in case no system default could be identified. */
-    public static Color DEFAULT_FOREGROUND           = Color.BLACK;
+    public static final Color DEFAULT_FOREGROUND           = Color.BLACK;
     /** Background color used in case no system default could be identified. */
-    public static Color DEFAULT_BACKGROUND           = Color.WHITE;
+    public static final Color DEFAULT_BACKGROUND           = Color.WHITE;
     /** Selection foreground color used in case no system default could be identified. */
-    public static Color DEFAULT_SELECTION_FOREGROUND = Color.WHITE;
+    public static final Color DEFAULT_SELECTION_FOREGROUND = Color.WHITE;
     /** Selection background color used in case no system default could be identified. */
-    public static Color DEFAULT_SELECTION_BACKGROUND = Color.BLUE;
+    public static final Color DEFAULT_SELECTION_BACKGROUND = Color.BLUE;
 
 
 

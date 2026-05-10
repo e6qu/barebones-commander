@@ -581,7 +581,12 @@ public class FileFactory {
     private static String getFilenameVariation(String filename) {
         int lastDotPos = filename.lastIndexOf('.');
         int len = filename.length();
-        String nameSuffix = "_"+System.currentTimeMillis()+(new Random().nextInt(10000));
+        // ThreadLocalRandom for genuinely-single-use; SpotBugs
+        // DMI_RANDOM_USED_ONLY_ONCE flags `new Random().nextInt(...)` —
+        // and rightly so, since constructing-then-discarding a Random
+        // also seeds from System.nanoTime collisions.
+        String nameSuffix = "_"+System.currentTimeMillis()
+            +(java.util.concurrent.ThreadLocalRandom.current().nextInt(10000));
 
         if(lastDotPos==-1)
             filename += nameSuffix;

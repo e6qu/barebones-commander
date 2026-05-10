@@ -105,6 +105,17 @@ public class FileSelectionDialog extends FocusDialog implements ActionListener {
      * <br>Note: this field is static so the value is kept after the dialog is OKed.
      */ 
     private static String keywordString = "*";
+
+    /** Static helper so dialog-instance handlers don't write directly
+     *  to the static "last values" pseudo-singleton (SpotBugs
+     *  ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD). */
+    private static void saveLastValues(boolean caseSensitiveV, boolean includeFoldersV,
+                                       int comparisonV, String keywordStringV) {
+        caseSensitive  = caseSensitiveV;
+        includeFolders = includeFoldersV;
+        comparison     = comparisonV;
+        keywordString  = keywordStringV;
+    }
 	
 
     private final static Dimension MINIMUM_DIALOG_DIMENSION = new Dimension(320,0);	
@@ -186,13 +197,12 @@ public class FileSelectionDialog extends FocusDialog implements ActionListener {
         // Action coming from the selection dialog
         if ((source==okButton || source==selectionField)) {
             // Save values for next time this dialog is invoked
-            caseSensitive = caseSensitiveCheckBox.isSelected();
-            includeFolders = includeFoldersCheckBox.isSelected();
-            comparison = comparisonComboBox.getSelectedIndex();
-
+            saveLastValues(caseSensitiveCheckBox.isSelected(),
+                includeFoldersCheckBox.isSelected(),
+                comparisonComboBox.getSelectedIndex(),
+                selectionField.getText());
 
             String testString;
-            keywordString = selectionField.getText();
             if(comparison!=REGEXP) {
                 // Remove '*' characters
                 testString = keywordString.replace("*", "");

@@ -101,8 +101,14 @@ class SwingFileIconProviderImpl extends LocalFileIconProvider implements Cacheab
 
         SYMLINK_OVERLAY_ICON = new ImageIcon(iconURL);
 
-        // Replace stderr with a SilenceablePrintStream that can be 'silenced' when needed
-        System.setErr(new PrintStream(errOut = new SilenceableOutputStream(System.err, false), true));
+        // Replace stderr with a SilenceablePrintStream that can be 'silenced' when needed.
+        // Wrap with the JVM default charset (= terminal encoding the
+        // user sees on the original System.err) — anything else would
+        // mojibake non-UTF-8 console output.
+        System.setErr(new PrintStream(
+            errOut = new SilenceableOutputStream(System.err, false),
+            true,
+            java.nio.charset.Charset.defaultCharset()));
 
         initialized = true;
     }

@@ -183,7 +183,8 @@ public class LocationChanger {
 			    if (!internal) {
 			        if (folder instanceof SearchFile)
 			            ((SearchFile) folder).stop();
-			        folder = FileFactory.getFile(folderURL);
+			        // The SearchUpdaterThread takes the URL not the file, and
+			        // nothing downstream of this branch reads `folder` again.
 			        thread = new SearchUpdaterThread(folderURL, changeLockedTab, mainFrame, folderPanel, locationManager, this);
 			        break;
 			    }

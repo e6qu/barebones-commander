@@ -49,7 +49,9 @@ public abstract class Base64Decoder {
      * @throws java.io.IOException if the given String isn't properly Base64-encoded
      */
     public static byte[] decodeAsBytes(String s, Base64Table table) throws IOException {
-        byte[] b = s.getBytes();
+        // Base64 alphabet is pure ASCII; explicit UTF-8 keeps SpotBugs
+        // (and platforms with non-UTF-8 default encodings) happy.
+        byte[] b = s.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
         if(b.length%4 != 0) {
             // Base64 encoded data must come in a multiple of 4 bytes, throw an IOException if it's not the case

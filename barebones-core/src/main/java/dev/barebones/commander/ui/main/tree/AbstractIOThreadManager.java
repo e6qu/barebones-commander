@@ -56,7 +56,26 @@ public class AbstractIOThreadManager extends Thread {
         super(name);
         this.blockThreshold = blockThreshold;
         ioThread = new IOThread(queue, blockThreshold);
-        ioThread.start();
+        // Do NOT start ioThread here — subclass init may not be
+        // complete and the thread could see partially-constructed
+        // state (SpotBugs SC_START_IN_CTOR). The override of
+        // {@link #start()} below kicks ioThread off in the same
+        // call as the manager thread, so callers don't need extra
+        // ceremony.
+    }
+
+    /**
+     * Starts both the manager thread (via {@link Thread#start()}) and
+     * the inner I/O worker thread. Splitting the I/O start from the
+     * constructor avoids running the worker against a half-built
+     * subclass.
+     */
+    @Override
+    public synchronized void start() {
+        if (!ioThread.isAlive()) {
+            ioThread.start();
+        }
+        super.start();
     }
 
     /**

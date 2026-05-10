@@ -99,8 +99,13 @@ class ProcessOutputMonitor implements Runnable {
             while(monitor && ((read = in.read(buffer, 0, buffer.length)) != -1)) {
                 if(listener != null) {
                     listener.processOutput(buffer, 0, read);
+                    // No encoding specified → decode with the JVM default
+                    // (which is what the child process inherited). Any
+                    // other choice would be a guess that mojibakes
+                    // platform-specific output.
                     if(encoding == null)
-                        listener.processOutput(new String(buffer, 0, read));
+                        listener.processOutput(
+                            new String(buffer, 0, read, java.nio.charset.Charset.defaultCharset()));
                     else
                         listener.processOutput(new String(buffer, 0, read, encoding));
                 }
