@@ -47,6 +47,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **25** | done | **Remove avoidable chmod shell-out** — replaced credentials-file `chmod 0600` with Java NIO POSIX permissions and deleted the old shell-out helper. | this PR |
 | **26** | done | **Modernize macOS Keychain binding** — migrated legacy `SecKeychain*` JNA calls to `SecItem*` while preserving keychain behavior. | this PR |
 | **27** | done | **Platform process hardening** — centralized short-lived desktop helper command execution with timeouts and interrupt handling. | this PR |
+| **28** | done | **Remove dead FreeBSD mount shell-out** — deleted the unsupported `/sbin/mount -p` path and kept Linux mount discovery on `/proc/mounts`. | this PR |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -1160,6 +1161,16 @@ and preserves interrupts.
 
 **Exit criteria met**: direct unbounded waits were removed from the targeted
 desktop helper probes; process timeout behavior has focused coverage; CI green.
+
+### Phase 28 — Remove dead FreeBSD mount shell-out (done in this PR)
+
+`LocalFile` mount discovery now reads `/proc/mounts` directly for the Linux path
+and no longer carries the FreeBSD-only `/sbin/mount -p` process fallback. macOS
+volume discovery continues to use `/Volumes`, so supported macOS/Linux behavior
+is unchanged.
+
+**Exit criteria met**: the unsupported FreeBSD shell-out is gone; local file
+tests and full checks pass; CI green.
 
 ## 7. Compatibility with upstream
 

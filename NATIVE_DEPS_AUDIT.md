@@ -30,7 +30,7 @@ targeted PRs:
 | Linux openers/trash UI | `GnomeDesktopAdapter.java`, `KdeDesktopAdapter.java`, `XfceDesktopAdapter.java`, trash classes | `xdg-open`, `gvfs-open`, `gnome-open`, `kfmclient`, `kioclient`, `thunar`, `nautilus`, `ktrash` | Open files, URLs, terminals, and Trash in the user's desktop environment | `java.awt.Desktop` covers some open/browse cases but not every desktop-specific Trash action. | Keep for now. Consider a later Desktop API fallback pass, not a blind replacement. |
 | Local process runner | `barebones-process/.../LocalProcess.java` and callers | `ProcessBuilder` | User commands, file openers, AppleScript, desktop helpers | This is the Java-native process API. | Keep. It is the correct abstraction for user-configured commands. |
 | Credentials permissions | `CredentialsFilePermissions.java`, `CredentialsManager.java` | Java NIO POSIX permissions | Set credentials file to mode `0600` on Unix-like systems | Already Java-native after Phase 25. | Done: the former `chmod` shell-out helper was deleted. |
-| FreeBSD mount list | `LocalFile.streamMountPoints()` | `/sbin/mount -p` for FreeBSD only | Enumerate local mount points | Linux path already uses `/proc/mounts`; FreeBSD is outside current supported OS targets. | Remove or guard more tightly in a cleanup PR. It is dead for macOS/Linux support. |
+| FreeBSD mount list | `LocalFile` | none | Removed unsupported mount-list fallback | Linux path already uses `/proc/mounts`; FreeBSD is outside current supported OS targets. | Done in Phase 28: deleted the `/sbin/mount -p` shell-out. |
 | SFTP | `barebones-protocol-sftp` | `com.github.mwiede:jsch` pure Java SSH/SFTP | SFTP backend | Apache MINA SSHD is a maintained pure Java alternative. | Defer. JSch fork is current and working; migrate only if a concrete capability or maintenance issue appears. |
 | NFS | `barebones-protocol-nfs`, `sun-net-www` | Vendored pure Java Sun/Yanfs RPC/NFS code | In-process NFSv2/v3 backend | A maintained Java NFS client would be preferable, but credible drop-in options need proof-of-concept testing. | Keep isolated. Do not attempt a large replacement without an integration-test fixture. |
 
@@ -73,6 +73,12 @@ for bounded platform commands and migrated:
 
 User-configured commands should stay on `ProcessRunner`; that is application
 functionality, not an accidental native dependency.
+
+### Phase 28: Remove Dead FreeBSD Mount Shell-Out
+
+`LocalFile` no longer carries the unsupported FreeBSD `/sbin/mount -p` branch.
+Linux mount discovery continues to read `/proc/mounts`; macOS volume discovery
+continues to use `/Volumes`.
 
 ## References
 
