@@ -17,7 +17,9 @@
 
 package dev.barebones.commander.desktop.linux.gnome;
 
-import dev.barebones.commander.process.ProcessRunner;
+import dev.barebones.commander.process.TimedProcessRunner;
+
+import java.util.List;
 
 /**
  * 'Guessed' desktop adapter for GNOME. The availability of this desktop depends on the presence of the
@@ -34,14 +36,14 @@ public class GuessedGnomeDesktopAdapter extends GnomeDesktopAdapter {
     @Override
     public boolean isAvailable() {
         try {
-            ProcessRunner.execute(GVFS_OPEN);
+            TimedProcessRunner.run(List.of(GVFS_OPEN));
             fileOpenerCommand = GVFS_OPEN;
             return true;
         }
         catch(Exception e) {}
 
         try {
-            ProcessRunner.execute(GNOME_OPEN);
+            TimedProcessRunner.run(List.of(GNOME_OPEN));
             fileOpenerCommand = GNOME_OPEN;
             return true;
         }

@@ -17,7 +17,9 @@
 
 package dev.barebones.commander.desktop.linux.gnome;
 
-import dev.barebones.commander.process.ProcessRunner;
+import dev.barebones.commander.process.TimedProcessRunner;
+
+import java.util.List;
 
 /**
  * @author Nicolas Rinaudo
@@ -48,13 +50,13 @@ public class ConfiguredGnomeDesktopAdapter extends GnomeDesktopAdapter {
     @Override
     protected String getFileOpenerCommand() {
         try {
-            ProcessRunner.execute(GVFS_OPEN);
+            TimedProcessRunner.run(List.of(GVFS_OPEN));
             return GVFS_OPEN;
         }
         catch(Exception e) {}
 
         try {
-            ProcessRunner.execute(GNOME_OPEN);
+            TimedProcessRunner.run(List.of(GNOME_OPEN));
             return GNOME_OPEN;
         }
         catch(Exception e) {}

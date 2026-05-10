@@ -46,7 +46,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **24** | done | **Native-deps audit** — catalogued every JNA binding, shell-out, and vendored native-adjacent protocol surface; removed the unused `barebones-commons-file` JNA/`libc` wrapper; documented candidate follow-ups. | this PR |
 | **25** | done | **Remove avoidable chmod shell-out** — replaced credentials-file `chmod 0600` with Java NIO POSIX permissions and deleted the old shell-out helper. | this PR |
 | **26** | done | **Modernize macOS Keychain binding** — migrated legacy `SecKeychain*` JNA calls to `SecItem*` while preserving keychain behavior. | this PR |
-| **27** | pending | **Platform process hardening** — centralize short-lived desktop helper command execution with timeouts and interrupt handling. | follow-up |
+| **27** | done | **Platform process hardening** — centralized short-lived desktop helper command execution with timeouts and interrupt handling. | this PR |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -1144,6 +1144,22 @@ absent item as success.
 
 **Exit criteria met**: no production calls remain to legacy `SecKeychain*`
 functions; UTF-8 secret conversion has focused coverage; CI green.
+
+### Phase 27 — Platform process hardening (done in this PR)
+
+Short-lived platform helper commands now run through `TimedProcessRunner`,
+which captures stdout/stderr concurrently, applies a bounded timeout, tears
+down timed-out processes, and preserves interrupt status by re-interrupting the
+current thread before returning failure to callers.
+
+The Linux GNOME/KDE/Xfce desktop probes, trash openers, KDE config reads, and
+macOS desktop discovery probes were moved onto the timed runner. The existing
+AppleScript path still uses `ProcessRunner` because it streams script input and
+incremental output, but it now uses a bounded `AbstractProcess.waitFor` timeout
+and preserves interrupts.
+
+**Exit criteria met**: direct unbounded waits were removed from the targeted
+desktop helper probes; process timeout behavior has focused coverage; CI green.
 
 ## 7. Compatibility with upstream
 

@@ -20,10 +20,10 @@ package dev.barebones.commander.desktop.macos;
 import java.awt.Component;
 import java.awt.Window;
 import java.awt.event.MouseEvent;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -31,11 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
@@ -69,6 +67,8 @@ import dev.barebones.commander.desktop.DefaultDesktopAdapter;
 import dev.barebones.commander.desktop.DesktopInitialisationException;
 import dev.barebones.commander.desktop.TrashProvider;
 import dev.barebones.commander.os.notifier.AbstractNotifier;
+import dev.barebones.commander.process.TimedProcessResult;
+import dev.barebones.commander.process.TimedProcessRunner;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.dialog.InformationDialog;
 import dev.barebones.commander.ui.icon.FileIcons;
@@ -398,7 +398,7 @@ public class OSXDesktopAdapter extends DefaultDesktopAdapter {
             return cached;
         }
 
-        Pair result = new Pair();
+        Pair<String, String> result = new Pair<>();
         runCommand(new String[]{"mdfind", "kMDItemCFBundleIdentifier", "=", bundleId}, false,0, s -> {
             // a simple sanity check whether it is bundle id
             if (s.endsWith(".app")) {
@@ -499,36 +499,30 @@ public class OSXDesktopAdapter extends DefaultDesktopAdapter {
         }
         boolean result = false;
         try {
-            Runtime rt = Runtime.getRuntime();
-            Process proc = rt.exec(commands);
+            String commandDescription = Arrays.toString(commands);
             // Child process inherited the JVM default charset; decoding
             // its output with anything else would mojibake.
             java.nio.charset.Charset cs = java.nio.charset.Charset.defaultCharset();
-            BufferedReader stdInput = new BufferedReader(new InputStreamReader(
-                    useStdErr ? proc.getErrorStream() : proc.getInputStream(), cs));
-            int exitCode = Integer.MIN_VALUE;
-            boolean processExited;
-            if (!(processExited = proc.waitFor(1000, TimeUnit.MILLISECONDS)) || (exitCode = proc.exitValue()) != expectedExitCode) {
-                LOGGER.error("Unexpected result from running: '{}', timed out?: {}, exit code: {}", commands, !processExited, exitCode);
+            TimedProcessResult processResult = TimedProcessRunner.run(
+                Arrays.asList(commands), Duration.ofSeconds(1), cs);
+            if (!processResult.succeeded(expectedExitCode)) {
+                LOGGER.error("Unexpected result from running: '{}', timed out?: {}, exit code: {}",
+                    commandDescription, processResult.timedOut(), processResult.exitCode());
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Stdout output of running the command: {}",
-                            new BufferedReader(new InputStreamReader(proc.getInputStream(), cs)).lines().
-                                    collect(Collectors.joining(System.lineSeparator())));
-                    LOGGER.debug("Stderr output of running the command: {}",
-                            new BufferedReader(new InputStreamReader(proc.getErrorStream(), cs)).lines().
-                                    collect(Collectors.joining(System.lineSeparator())));
+                    LOGGER.debug("Stdout output of running the command: {}", processResult.stdout());
+                    LOGGER.debug("Stderr output of running the command: {}", processResult.stderr());
                 }
                 return result;
             }
-            String s;
-            while ((s = stdInput.readLine()) != null) {
+            for (String s : (useStdErr ? processResult.stderr() : processResult.stdout()).lines().toList()) {
                 if (line.test(s)) {
                     break;
                 }
             }
             result = true;
         } catch (Exception e) {
-            LOGGER.error("Error executing command: {}. Error msg: {}", commands, e.getMessage(), e);
+            LOGGER.error("Error executing command: {}. Error msg: {}",
+                Arrays.toString(commands), e.getMessage(), e);
         }
         return result;
     }

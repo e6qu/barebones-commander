@@ -17,6 +17,7 @@
 
 package dev.barebones.commander.desktop.linux.kde;
 
+import java.util.Arrays;
 import java.util.List;
 
 import dev.barebones.commander.commons.logging.Logger;
@@ -25,7 +26,8 @@ import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.protocol.local.LocalFile;
 import dev.barebones.commander.desktop.QueuedTrash;
-import dev.barebones.commander.process.ProcessRunner;
+import dev.barebones.commander.process.TimedProcessResult;
+import dev.barebones.commander.process.TimedProcessRunner;
 
 /**
  * This class provides access to the KDE trash. Only local files (or locally mounted files) can be moved to the trash.
@@ -69,10 +71,10 @@ class KdeTrash extends QueuedTrash {
      */
     private static boolean executeAndWait(String command) {
         try {
-            ProcessRunner.execute(command).waitFor();
-            return true;
+            TimedProcessResult result = TimedProcessRunner.runTokenized(command);
+            return result.succeeded(0);
         }
-        catch(Exception e) {    // IOException, InterruptedException
+        catch(Exception e) {
             LOGGER.debug("Caught exception", e);
             return false;
         }
@@ -87,10 +89,10 @@ class KdeTrash extends QueuedTrash {
      */
     private static boolean executeAndWait(String command[]) {
         try {
-            ProcessRunner.execute(command).waitFor();
-            return true;
+            TimedProcessResult result = TimedProcessRunner.run(Arrays.asList(command));
+            return result.succeeded(0);
         }
-        catch(Exception e) {    // IOException, InterruptedException
+        catch(Exception e) {
             LOGGER.debug("Caught exception", e);
             return false;
         }

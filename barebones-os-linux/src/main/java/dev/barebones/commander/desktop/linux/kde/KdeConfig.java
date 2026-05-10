@@ -17,14 +17,14 @@
 
 package dev.barebones.commander.desktop.linux.kde;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
+import dev.barebones.commander.process.TimedProcessResult;
+import dev.barebones.commander.process.TimedProcessRunner;
 
 /**
  * Provides access to the KDE configuration, using the <code>kreadconfig</code> command.
@@ -52,15 +52,22 @@ public class KdeConfig {
         // with an explicit argument list passes `key` as a single argv entry, so
         // shell metacharacters or extra whitespace can never split into a new
         // command or argument.
-        ProcessBuilder pb = new ProcessBuilder(List.of(CONFIG_COMMAND, "--key", key));
-        pb.redirectErrorStream(false);
-        Process process = pb.start();
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-            String line = br.readLine();
+        try {
+            TimedProcessResult result = TimedProcessRunner.run(
+                List.of(CONFIG_COMMAND, "--key", key),
+                TimedProcessRunner.defaultTimeout(),
+                StandardCharsets.UTF_8);
+            String line = result.stdout().lines().findFirst().orElse(null);
 
             LOGGER.debug(CONFIG_COMMAND + " returned '" + line + "' for " + key);
 
+            if (!result.succeeded(0)) {
+                LOGGER.debug(CONFIG_COMMAND + " failed for " + key
+                    + ", timedOut=" + result.timedOut()
+                    + ", exitCode=" + result.exitCode()
+                    + ", stderr=" + result.stderr());
+                return null;
+            }
             if (line == null || (line = line.trim()).isEmpty()) {
                 return null;
             }
