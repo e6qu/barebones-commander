@@ -99,31 +99,19 @@ public class FileConfigurationSourceTest  {
     @Test
     public void testStreams() throws IOException {
         FileConfigurationSource source;
-        Writer                  out;
-        Reader                  in;
 
         // Initialisation.
-        out    = null;
-        in     = null;
         source = new FileConfigurationSource(file, "utf-8");
 
         // Writes the test string to the source's output stream.
-        try {(out = source.getWriter()).write(TEST_VALUE.toCharArray());}
-        finally {
-            if(out != null) {
-                try {out.close();}
-                catch(Exception e) {}
-            }
+        try (Writer out = source.getWriter()) {
+            out.write(TEST_VALUE.toCharArray());
         }
 
         // Reads the content of the source's input stream and makes sure it
         // matches with what we wrote.
-        try {assert TEST_VALUE.equals(read(in = source.getReader()));}
-        finally {
-            if(in != null) {
-                try {in.close();}
-                catch(Exception e) {}
-            }
+        try (Reader in = source.getReader()) {
+            assert TEST_VALUE.equals(read(in));
         }
     }
 }

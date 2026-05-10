@@ -172,7 +172,10 @@ public class FileMonitorTest implements FileMonitorConstants {
         // Waits until the file truly exists (I/O are usually asynchroneous)
         while(!file.exists()) {
             try { Thread.sleep(POLL_PERIOD); }
-            catch(InterruptedException e) {}
+            catch(InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted while waiting for temporary file creation", e);
+            }
         }
 
         // Create the monitor, change listener and start monitoring file changes
@@ -209,7 +212,9 @@ public class FileMonitorTest implements FileMonitorConstants {
                 hasAttributeChanged = (attribute&fileChangeTracker.getChangedAttributes())!=0;
             }
         }
-        catch(InterruptedException e) {}
+        catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         // Resets FileChangeTracker to be ready to detect the next attribute change
         fileChangeTracker.reset();

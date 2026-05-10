@@ -14,6 +14,7 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ public class ZipUnsafeEntrySkipTest {
             for (String name : entryPaths) {
                 ZipEntry entry = new ZipEntry(name);
                 zos.putNextEntry(entry);
-                zos.write(("body of " + name).getBytes());
+                zos.write(("body of " + name).getBytes(StandardCharsets.UTF_8));
                 zos.closeEntry();
             }
         }

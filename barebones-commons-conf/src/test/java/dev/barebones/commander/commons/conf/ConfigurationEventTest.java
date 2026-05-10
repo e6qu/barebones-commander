@@ -147,11 +147,11 @@ public class ConfigurationEventTest {
 
         // Makes sure the value passed to the constructor is properly returned.
         event = new ConfigurationEvent(conf, VARIABLE_NAME, Double.toString(DOUBLE_VALUE));
-        assert DOUBLE_VALUE == event.getDoubleValue();
+        assert Double.compare(DOUBLE_VALUE, event.getDoubleValue()) == 0;
 
         // Makes sure unset values are returned as 0.
         event = new ConfigurationEvent(conf, VARIABLE_NAME, null);
-        assert 0 == event.getDoubleValue();
+        assert Double.compare(0d, event.getDoubleValue()) == 0;
     }
 
     /**
@@ -163,11 +163,11 @@ public class ConfigurationEventTest {
 
         // Makes sure the value passed to the constructor is properly returned.
         event = new ConfigurationEvent(conf, VARIABLE_NAME, Float.toString(FLOAT_VALUE));
-        assert FLOAT_VALUE == event.getFloatValue();
+        assert Float.compare(FLOAT_VALUE, event.getFloatValue()) == 0;
 
         // Makes sure unset values are returned as 0.
         event = new ConfigurationEvent(conf, VARIABLE_NAME, null);
-        assert 0 == event.getFloatValue();
+        assert Float.compare(0f, event.getFloatValue()) == 0;
     }
 
     /**

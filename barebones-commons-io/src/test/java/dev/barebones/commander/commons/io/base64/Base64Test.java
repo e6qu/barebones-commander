@@ -28,6 +28,7 @@ import java.util.Random;
  * @author Maxence Bernard, Nicolas Rinaudo
  */
 public class Base64Test {
+    private static final Random RANDOM = new Random();
 
     /**
      * Tests base64 encoding and decoding on known sequences, ensuring that base 64 encoding and decoding produces
@@ -66,8 +67,6 @@ public class Base64Test {
      */
     @Test
     public void testRandomStringIntegrity() throws IOException {
-        Random random = new Random();
-
         StringBuffer sb;
         String s;
         int slen;
@@ -76,11 +75,11 @@ public class Base64Test {
             // Generates a string with:
             // - a random length of up to 1000 characters
             // - random contents, where each byte's value is randomly chosen between 0 and 255
-            slen = random.nextInt(1000);
+            slen = RANDOM.nextInt(1000);
 
             sb = new StringBuffer();
             for(int j=0; j<slen; j++)
-                sb.append((char)random.nextInt(256));
+                sb.append((char)RANDOM.nextInt(256));
 
             s = sb.toString();
 
