@@ -7,7 +7,9 @@ name: Dependency-Check
 # Runs weekly (Monday 06:00 UTC) so the NVD database stays current,
 # and on workflow_dispatch for ad-hoc audits.  NOT wired to PR builds
 # because the NVD download is slow (5–15 min) and a PR shouldn't
-# fail because an unrelated CVE dropped overnight.
+# fail because an unrelated CVE dropped overnight. Requires the
+# NVD_API_KEY repo secret; unauthenticated NVD API updates can be
+# rate-limited.
 
 on:
   schedule:

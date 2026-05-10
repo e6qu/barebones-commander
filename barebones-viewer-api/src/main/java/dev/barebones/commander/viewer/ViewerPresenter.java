@@ -18,15 +18,14 @@ package dev.barebones.commander.viewer;
 
 import java.io.IOException;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
-import javax.annotation.ParametersAreNonnullByDefault;
 
 import javax.swing.JFrame;
+
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for viewer presenter.
  */
-@ParametersAreNonnullByDefault
 public interface ViewerPresenter {
 
     /**
@@ -35,14 +34,14 @@ public interface ViewerPresenter {
      * @param title
      *            title
      */
-    void extendTitle(String title);
+    void extendTitle(@NotNull String title);
 
     /**
      * Returns presenter's frame.
      *
      * @return frame
      */
-    @Nonnull
+    @NotNull
     JFrame getWindowFrame();
 
     /**
@@ -55,5 +54,5 @@ public interface ViewerPresenter {
      * @throws java.io.IOException
      *             exception if loading fails
      */
-    void goToFile(Function<Integer, Integer> advance, FileViewerService viewerService) throws IOException;
+    void goToFile(@NotNull Function<Integer, Integer> advance, @NotNull FileViewerService viewerService) throws IOException;
 }

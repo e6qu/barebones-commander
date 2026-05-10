@@ -3,23 +3,23 @@
 [![License](http://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 
 `barebones-commander` is a small, security-first dual-pane file manager focused on
-**SFTP/SSH** as the only remote protocol, on **Linux** and **macOS**.
+local files plus **SFTP/SSH**, **NFS**, and **S3-compatible storage**, on
+**Linux** and **macOS**.
 
 It is a **fork of [muCommander](https://github.com/mucommander/mucommander)**, with most
 upstream features removed in favor of a smaller, easier-to-audit codebase.
 
 ## Status
 
-Early — v0.1.0 is in active development. See [`PLAN.md`](PLAN.md) on the
-[`docs/initial-audit-and-fork-plan`](https://github.com/e6qu/barebones-commander/tree/docs/initial-audit-and-fork-plan)
-branch for the phased roadmap.
+Early — v0.1.0 is in active development. See [`PLAN.md`](PLAN.md) for the
+phased roadmap.
 
 ## Scope
 
 | Kept | Removed |
 |---|---|
-| Local file system | FTP, HTTP/HTTPS, SMB, S3, Dropbox, Google Drive, OneDrive, GCS, NFS, oVirt, vSphere, Hadoop, ADB, Windows Registry, Bonjour |
-| **SFTP / SSH** | All cloud and enterprise protocols |
+| Local file system | FTP, HTTP/HTTPS, SMB, Dropbox, Google Drive, OneDrive, GCS, oVirt, vSphere, Hadoop, ADB, Windows Registry, Bonjour |
+| **SFTP / SSH**, **NFS**, **S3-compatible storage** | Out-of-scope cloud and enterprise protocols |
 | Linux + macOS OS adapters | Windows, OpenVMS, macOS-Java-8 |
 | Basic archive formats: zip, tar, gzip, bzip2, xz | RAR, 7z, ISO, RPM, ar, cpio, lst, libguestfs |
 | Text viewer | Image viewer, PDF viewer, hex (binary) viewer |
@@ -30,11 +30,11 @@ and [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) for the audit that motivated this
 
 ## Build
 
-Requires JDK 25+ (LTS). Once OSGi is removed in Phase 2 of the plan, the application
-will run as a single fat JAR.
+Requires JDK 25+ (LTS). The application runs as a plain JVM app; the old
+upstream OSGi runtime has been removed.
 
 ```sh
-./gradlew run        # run from sources (currently still uses upstream OSGi runtime)
+./gradlew run        # run from sources
 ./gradlew tgz        # produce a Linux tarball
 ./gradlew dmg        # produce a macOS DMG  (-PskipDmgSign for unsigned)
 ```

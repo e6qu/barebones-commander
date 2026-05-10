@@ -18,15 +18,14 @@ package dev.barebones.commander.viewer;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 import java.io.IOException;
-import javax.annotation.Nonnull;
-import javax.annotation.ParametersAreNonnullByDefault;
 import javax.swing.JComponent;
 import javax.swing.JMenuBar;
+
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for file viewer.
  */
-@ParametersAreNonnullByDefault
 public interface FileViewer {
 
     /**
@@ -37,7 +36,7 @@ public interface FileViewer {
      * @throws IOException
      *             in case of an I/O problem
      */
-    void open(AbstractFile file) throws IOException;
+    void open(@NotNull AbstractFile file) throws IOException;
 
     /**
      * Closes currently opened file.
@@ -49,7 +48,7 @@ public interface FileViewer {
      *
      * @return UI component instance
      */
-    @Nonnull
+    @NotNull
     JComponent getUI();
 
     /**
@@ -58,7 +57,7 @@ public interface FileViewer {
      * @param presenter
      *            presenter API
      */
-    void setPresenter(ViewerPresenter presenter);
+    void setPresenter(@NotNull ViewerPresenter presenter);
 
     /**
      * Extends provided menu with new menu items specific for this viewer.
@@ -66,7 +65,7 @@ public interface FileViewer {
      * @param menuBar
      *            menu bar
      */
-    void extendMenu(JMenuBar menuBar);
+    void extendMenu(@NotNull JMenuBar menuBar);
 
     /**
      * Enables to customize focus handling

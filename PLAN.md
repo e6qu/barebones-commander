@@ -1,6 +1,6 @@
 # PLAN — `barebones-commander`
 
-A **barebones**, security-first fork of muCommander focused on a small mouse-driven dual-pane file manager with **SFTP/SSH** as the only remote protocol, on **Linux + macOS**.
+A **barebones**, security-first fork of muCommander focused on a small mouse-driven dual-pane file manager with local files plus **SFTP/SSH**, **NFS**, and **S3-compatible storage**, on **Linux + macOS**.
 
 Source: forked from https://github.com/mucommander/mucommander to https://github.com/e6qu/barebones-commander on 2026-05-08. Renamed in-place via PR #2.
 
@@ -40,8 +40,8 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **19** | done | **UX polish** — `S3ErrorHandler` typed 401/403/404; error-dialog throwable plumbed through Phase-17 + every `FileJob` error site (~25 catches across 10 job classes); `DynamicList.RemoveAction` prompts before deletion; `FileDropTargetListener` rejects drops on non-writable target folders; `ProgressNotifier` SPI wires producer-side hints into the MainFrame status bar; `S3Object.StatusBarProgressListener` publishes byte-accurate S3 upload progress ("47.3 MiB / 100.0 MiB (47%)") throttled to 250 ms; `CredentialsWriter` posts a status-bar explainer before the first keychain prompt. Default-button focus, huge-file open, folder-browse cursor, prefs Cancel-revert, and batch-rename preview audit-confirmed as already-fixed / as-designed. | this PR |
 | **20** | done | **SpotBugs baseline drawdown to ~zero** — fixed every own-code suppression in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×17, ST_WRITE_TO_STATIC ×12, DMI_RANDOM_USED_ONLY_ONCE ×4, MS_SHOULD_BE_FINAL ×4, plus 7 one-off patterns). Encoding fixes are explicit, NOT silent UTF-8 fallbacks: CP437 for Zip APPNOTE-spec entries, NPE-on-null for `ZipOutputStream.setEncoding`, `Charset.defaultCharset()` for process I/O, BOMWriter for the text editor's read-encoding round-trip. One suppression remains: `ThemeCache.foregroundColors`/`backgroundColors` MS_MUTABLE_ARRAY — documented architectural tradeoff (per-cell-render hot path). Vendored `com.sun.*` / `sun.net.www.*` package-level suppressions kept. | this PR |
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
-| **22** | pending | **Modern logging migration** — survey alternatives (`java.lang.System.Logger` JEP 264 + Logback bridge, `tinylog 2`, `JUL` direct, etc.); propose one; migrate ~70 `LoggerFactory.getLogger` call sites; drop the slf4j-api dep. | one PR (audit doc first, then code) |
-| **23** | pending | **Systematic dependency upgrade pass** — audit every entry in `gradle/libs.versions.toml` against latest, drive Dependabot bumps to the latest minor/patch, evaluate major-version upgrades case-by-case (jsch alternative, jna 5.18 → 6.x, aws-sdk minor, junit/testng versions). | one PR (or one per risky upgrade) |
+| **22** | done | **Modern logging migration** — internal `barebones-logging` facade backed by JDK logging APIs; `--debug` support; SLF4J/logback removed from production dependencies. | landed in #30 |
+| **23** | done | **Systematic dependency upgrade pass** — audited every `gradle/libs.versions.toml` entry against Maven Central / Gradle Plugin Portal release metadata; removed `jsr305`; documented major/pre-release pins. | this PR |
 | **24** | pending | **Native-deps audit** — catalogue every JNI binding, JNA call, and shell-out (osascript, applescript, libsecret, macOS Security.framework, NFS Sun-RPC vendored code). For each, evaluate: Java-native replacement available? worth the swap? maintenance burden? Output: an audit doc + a list of candidate replacements (e.g. ssh-shell-out → Apache MINA SSHD client; vendored Sun NFS → embedded Java NFS client). | research PR (audit doc), then per-candidate PRs |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
@@ -83,17 +83,17 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | Layer | Choice |
 |---|---|
 | Runtime | **Java 25 LTS** (latest LTS as of 2026-05-09) |
-| Build | Gradle 8.x with **Kotlin DSL** (Phase 7; optional but pays dividends) |
+| Build | Gradle 9.5.x with **Kotlin DSL** |
 | Module system | Plain JAR + classpath (or JPMS if cheap). **No OSGi.** |
 | UI | Swing + FlatLaf 3.x (post-3.0 line) |
 | L&F on macOS | FlatLaf macOS variants (drop VAqua — GPLv3, but stagnant) |
-| Logging | SLF4J + Logback 1.5.x |
+| Logging | Internal `barebones-logging` facade backed by JDK logging APIs |
 | SFTP | `com.github.mwiede:jsch` (latest, ≥ 0.2.21 — fixes Terrapin CVE-2023-48795) |
-| Native interop | JNA 5.14+ (single pinned version; macOS quarantine, trash-to-bin, etc.) |
-| YAML config | SnakeYAML 2.4+ |
+| Native interop | JNA 5.18.x (single pinned version; macOS quarantine, trash-to-bin, etc.) |
+| YAML config | SnakeYAML 2.6+ |
 | Packaging | `jpackage` for DMG (macOS) and DEB / RPM / AppImage (Linux) |
 | CI | GitHub Actions (`ubuntu-latest`, `macos-15` matrix only) |
-| Tests | JUnit 5 (migrate off TestNG over time) |
+| Tests | TestNG for legacy tests; JUnit 5 where modules already use it |
 
 ## 4. Licensing & trademark posture
 
@@ -111,8 +111,6 @@ For the pruned dependency set (SFTP-only barebones build):
 
 | Library | License | GPLv3-compatible? |
 |---|---|---|
-| `slf4j-api` | MIT | ✅ |
-| `logback-classic`, `logback-core` | EPL 1.0 OR LGPL 2.1 | ✅ via LGPL leg |
 | FlatLaf | Apache 2.0 | ✅ |
 | ICU4J | Unicode-DFS-2016 (MIT-like) | ✅ |
 | JNA | Apache 2.0 / LGPL 2.1 dual | ✅ |
@@ -126,12 +124,12 @@ For the pruned dependency set (SFTP-only barebones build):
 | Apache bzip2 (vendored from Ant) | Apache 2.0 | ✅ |
 | `mbassador` | MIT | ✅ |
 | `jcommander` | Apache 2.0 | ✅ |
-| `log4j-core`, `log4j-1.2-api` | Apache 2.0 | ✅ |
 | TestNG / JUnit 5 (test-only) | Apache 2.0 / EPL 2.0 | ✅ |
 
 **Removing** the cloud / SMB / RAR / PDF / image deps **also removes the awkward licenses** — e.g. `junrar`'s effective UnRAR-license (no-modification clause for unrar code), `sevenzipjbinding`'s embedded UnRAR DLL bundle, and the abandoned `jets3t` chain.
 
-`jsr305` (FindBugs annotations, `compileOnly`) has a non-standard license the FSF flags. Action: replace with `org.jetbrains:annotations` (Apache 2.0) — already pulled in transitively.
+Phase 23 replaced the last direct `jsr305` compile-only dependency with
+`org.jetbrains:annotations` (Apache 2.0).
 
 ### 4.3 Trademark
 
@@ -1065,58 +1063,36 @@ graduate to a Phase 21+ PR are up to the user. Candidates:
 
 None of the above runs without explicit "do 21x" from the user.
 
-### Phase 22 — Modern logging migration (one PR; audit-doc first, then code)
+### Phase 22 — Modern logging migration (done in PR #30)
 
-slf4j-api 2.x is fine but it's a 3rd-party shim layered atop one of
-{logback, log4j, jul}. Java 9 shipped {@link java.lang.System.Logger}
-(JEP 264) which is a built-in zero-dep facade; over a decade later
-the ecosystem has matured around it. Worth swapping.
+Phase 22 chose a small internal facade (`barebones-logging`) backed by
+JDK logging APIs. Production code no longer depends on SLF4J or
+Logback. Test runtime keeps `slf4j-nop` only because TestNG uses SLF4J
+internally and otherwise emits provider warnings. The app also has a
+`--debug` switch that raises logging verbosity.
 
-Survey first (audit doc inside the PR description, not committed
-prose):
+**Exit criteria met**: zero production `org.slf4j` imports, no
+Logback config, CI green, startup logging remains visible.
 
-- **`System.Logger`** — JDK builtin, no dep. Verbose API
-  (`log(Level.INFO, () -> "msg")`); slow uptake in libraries.
-- **`tinylog 2`** — single ~150 KB jar, structured logging,
-  great perf. Less ecosystem.
-- **JUL direct** — zero dep, fine for tools, ugly for apps.
-- **slf4j 2 + log4j 2 backend** — keeps the API but swaps logback
-  out (Logback's `JNDILookup` history was the reason slf4j users
-  reconsider); tooling-friendly.
+### Phase 23 — Systematic dependency upgrade pass (done in this PR)
 
-Pick one. Then migrate the ~70 `LoggerFactory.getLogger(X.class)`
-call sites mechanically (a sed; verify each); drop slf4j-api from
-`gradle/libs.versions.toml`; drop logback if applicable.
+Phase 23 audited every `gradle/libs.versions.toml` entry against Maven
+Central or the Gradle Plugin Portal release metadata on 2026-05-10.
+Normal stable-release entries were already current. The only candidates
+not applied are intentionally pinned:
 
-**Exit criteria**: zero `org.slf4j` imports outside vendored
-packages; CI green; manual smoke that startup logs still appear at
-INFO and a `--debug` flag bumps to DEBUG.
+| Catalog key | Current | Latest metadata | Decision |
+|---|---:|---:|---|
+| `testcontainers` | 1.21.4 | 2.0.5 | Keep 1.21.4: `org.testcontainers:localstack` is only published through 1.21.4 in the current metadata; 2.x needs a separate migration. |
+| `junit-bom` | 5.14.4 | 6.1.0-RC1 | Keep 5.14.4: latest metadata is a JUnit 6 release candidate; JUnit 6 is a separate major-version migration. |
+| `kotlin-stdlib` | 2.3.21 | 2.4.0-Beta2 | Keep 2.3.21: latest metadata is beta; 2.3.21 is the latest stable 2.3.x. |
+| `grgit` | 5.3.3 | plugin metadata lists 5.0.0-rc.3 as release | Keep 5.3.3: the Plugin Portal marker metadata is stale/inconsistent, and 5.3.3 is present in the version list. |
 
-### Phase 23 — Systematic dependency upgrade pass (one PR; or one PR per risky upgrade)
+Phase 23 also removed the remaining direct `jsr305` dependency and
+migrated the viewer API annotations to `org.jetbrains:annotations`.
 
-Dependabot opens individual bump PRs for patch/minor releases —
-that's its job. This phase is the **manual** complement: every six
-months, walk `gradle/libs.versions.toml` end to end, check each
-artifact against its upstream's latest published version, and
-either bump or document why we're pinned.
-
-Major-version upgrades that warrant their own PR:
-
-- **JSch** — `com.jcraft:jsch:0.1.55` is end-of-life (2018). Pick
-  an actively maintained fork (`com.github.mwiede:jsch`) or move
-  to **Apache MINA SSHD** (overlaps with Phase 24 candidates).
-- **JNA 5.x → 6.x** — when 6.0 stabilises; Phase-12 / Phase-14
-  bindings need a smoke pass.
-- **AWS SDK v2 minor bumps** — usually mechanical; smoke against
-  LocalStack to catch SPI changes.
-- **Logback** — once Phase 22's choice is settled (may delete
-  Logback entirely).
-- **JUnit / TestNG** — both are split across modules; consolidate
-  to one if Phase 22 doesn't already.
-
-**Exit criteria**: every entry in `libs.versions.toml` is either
-the latest version or has a `# pinned because <reason>` comment;
-CI green on the bumped versions.
+**Exit criteria met**: catalog entries are either current or documented
+pins; direct `jsr305` removed; CI green on the resulting graph.
 
 ### Phase 24 — Native-deps audit (research PR; per-candidate PRs follow)
 
