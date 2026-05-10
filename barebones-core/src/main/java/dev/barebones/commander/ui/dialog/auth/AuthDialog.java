@@ -75,7 +75,7 @@ public class AuthDialog extends FocusDialog implements ActionListener, EditableC
     private JRadioButton userRadioButton;
 
     private JTextField loginField;
-    private EditableComboBox loginComboBox;
+    private EditableComboBox<String> loginComboBox;
 
     private JPasswordField passwordField;
 
@@ -152,7 +152,7 @@ public class AuthDialog extends FocusDialog implements ActionListener, EditableC
         JComponent loginComponent;
         if(nbCredentials>0) {
             // Editable combo box
-            loginComboBox = new EditableComboBox();
+            loginComboBox = new EditableComboBox<>();
             this.loginField = loginComboBox.getTextField();
 
             // Add credentials to the combo box's choices
@@ -361,7 +361,7 @@ public class AuthDialog extends FocusDialog implements ActionListener, EditableC
     // EditableComboBoxListener implementation //
     /////////////////////////////////////////////
 
-    public void comboBoxSelectionChanged(SaneComboBox source) {
+    public void comboBoxSelectionChanged(SaneComboBox<?> source) {
         CredentialsMapping selectedCredentialsMapping = credentialsMappings[loginComboBox.getSelectedIndex()];
         Credentials selectedCredentials = selectedCredentialsMapping.getCredentials();
         loginField.setText(selectedCredentials.getLogin());
@@ -372,11 +372,11 @@ public class AuthDialog extends FocusDialog implements ActionListener, EditableC
             saveCredentialsCheckBox.setSelected(selectedCredentialsMapping.isPersistent());
     }
 
-    public void textFieldValidated(EditableComboBox source) {
+    public void textFieldValidated(EditableComboBox<?> source) {
         setCredentialMapping();
         dispose();
     }
 
-    public void textFieldCancelled(EditableComboBox source) {
+    public void textFieldCancelled(EditableComboBox<?> source) {
     }
 }

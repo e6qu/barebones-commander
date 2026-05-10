@@ -31,6 +31,7 @@ import software.amazon.awssdk.transfer.s3.progress.TransferListener;
 
 import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
+import dev.barebones.commander.commons.runtime.Tunables;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -186,8 +187,8 @@ public class S3Object extends S3File {
     @Override
     public OutputStream getOutputStream() throws IOException {
         // OutputStream contract: caller writes whatever, then close().
-        // Two strategies bounded by SPILL_THRESHOLD:
-        //   - Small writes (≤ SPILL_THRESHOLD) buffer in memory and
+        // Two strategies bounded by Tunables.S3_UPLOAD_SPILL_THRESHOLD_BYTES:
+        //   - Small writes buffer in memory and
         //     PUT in a single request on close().
         //   - Large writes spill to a temp file beyond the threshold
         //     and on close() the file is uploaded via S3TransferManager
@@ -240,8 +241,6 @@ public class S3Object extends S3File {
     private final class SpillingPutOutputStream extends OutputStream {
 
         /** Spill to disk when the in-memory buffer would exceed this. */
-        private static final int SPILL_THRESHOLD = 32 * 1024 * 1024;
-
         private ByteArrayOutputStream memory = new ByteArrayOutputStream();
         private long bytesWritten;
         private Path spillFile;
@@ -273,7 +272,7 @@ public class S3Object extends S3File {
 
         private void ensureCapacityForExtra(int len) throws IOException {
             if (spillStream != null) return;
-            if (bytesWritten + len <= SPILL_THRESHOLD) return;
+            if (bytesWritten + len <= Tunables.S3_UPLOAD_SPILL_THRESHOLD_BYTES) return;
             // Switch to temp-file mode; copy current memory buffer into it.
             spillFile = Files.createTempFile("barebones-s3-upload-", ".bin");
             spillStream = Files.newOutputStream(spillFile);
@@ -376,8 +375,6 @@ public class S3Object extends S3File {
      */
     static final class StatusBarProgressListener implements TransferListener {
 
-        private static final long PUBLISH_INTERVAL_NANOS = 250_000_000L;
-
         private final String prefix;
         private long lastPublishNanos;
 
@@ -391,7 +388,7 @@ public class S3Object extends S3File {
                 long sent = ctx.progressSnapshot().transferredBytes();
                 long now = System.nanoTime();
                 boolean atEnd = sent >= total;
-                if (!atEnd && now - lastPublishNanos < PUBLISH_INTERVAL_NANOS) {
+                if (!atEnd && now - lastPublishNanos < Tunables.S3_PROGRESS_PUBLISH_INTERVAL_NANOS) {
                     return;
                 }
                 lastPublishNanos = now;

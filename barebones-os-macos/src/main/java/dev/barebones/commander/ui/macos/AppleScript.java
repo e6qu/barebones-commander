@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import dev.barebones.commander.commons.logging.Logger;
@@ -101,9 +102,12 @@ public class AppleScript {
         };
 
         OutputStreamWriter pout = null;
+        ScriptOutputListener outputListener = outputBuffer == null
+            ? null
+            : new ScriptOutputListener(outputBuffer, AppleScript.getScriptEncoding());
         try {
             // Execute the osascript command.
-            AbstractProcess process = ProcessRunner.execute(tokens, outputBuffer==null?null:new ScriptOutputListener(outputBuffer, AppleScript.getScriptEncoding()));
+            AbstractProcess process = ProcessRunner.execute(tokens, outputListener);
 
             // Pipe the script to the osascript process.
             pout = new OutputStreamWriter(process.getOutputStream(), getScriptEncoding());
@@ -117,6 +121,9 @@ public class AppleScript {
                 return false;
             }
             int returnCode = process.exitValue();
+            if (outputListener != null) {
+                outputListener.awaitProcessDied(OSASCRIPT_TIMEOUT_MS);
+            }
 
             LOGGER.debug("osascript returned code="+returnCode+", output="+ outputBuffer);
 
@@ -213,10 +220,12 @@ public class AppleScript {
 
         private final StringBuilder outputBuffer;
         private final CharsetDecoder decoder;
+        private final CountDownLatch processDied = new CountDownLatch(1);
         // Buffer for partial multi-byte sequences that span chunk boundaries.
         // UTF-8 codepoints are at most 4 bytes; 8 leaves headroom.
         private final ByteBuffer carryover = ByteBuffer.allocate(8);
         private boolean truncated;
+        private boolean finished;
 
         private ScriptOutputListener(StringBuilder outputBuffer, String outputEncoding) {
             this.outputBuffer = outputBuffer;
@@ -304,7 +313,15 @@ public class AppleScript {
         public void processOutput(String s) {
         }
 
+        void awaitProcessDied(long timeoutMs) throws InterruptedException {
+            processDied.await(timeoutMs, TimeUnit.MILLISECONDS);
+        }
+
         public synchronized void processDied(int returnValue) {
+            if (finished) {
+                return;
+            }
+            finished = true;
             // Flush any state still held by the decoder (e.g. a final
             // partial multi-byte sequence that turned out to be invalid).
             CharBuffer out = CharBuffer.allocate(8);
@@ -325,6 +342,7 @@ public class AppleScript {
             if (len > 0 && outputBuffer.charAt(len - 1) == '\n') {
                 outputBuffer.setLength(len - 1);
             }
+            processDied.countDown();
         }
     }
 

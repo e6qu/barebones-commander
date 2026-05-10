@@ -311,7 +311,7 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
         lnfPanel.setBorder(BorderFactory.createTitledBorder(Translator.get("prefs_dialog.look_and_feel")));
 
         // Creates the look and feel combo box.
-        lookAndFeelComboBox = new PrefComboBox() {
+        lookAndFeelComboBox = new PrefComboBox<>() {
             public boolean hasChanged() {
                 int selectedIndex = getSelectedIndex();
                 if (selectedIndex < 0)
@@ -412,9 +412,9 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
         typeLabel = new JLabel("");
 
         // Creates the theme combo box.
-        themeComboBox = new PrefComboBox() {
+        themeComboBox = new PrefComboBox<>() {
             public boolean hasChanged() {
-                return !ThemeManager.isCurrentTheme((Theme) getSelectedItem());
+                return !ThemeManager.isCurrentTheme(selectedItem());
             }
         };
         themeComboBox.addActionListener(this);
@@ -542,7 +542,7 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
      * @return a combo box that allows to choose a size for a certain type of icon
      */
     private PrefComboBox<String> createIconSizeCombo(final MuPreference preference, float defaultValue) {
-        PrefComboBox<String> iconSizeCombo = new PrefComboBox() {
+        PrefComboBox<String> iconSizeCombo = new PrefComboBox<>() {
             public boolean hasChanged() {
                 return !String.valueOf(ICON_SCALE_FACTORS[getSelectedIndex()]).equals(
                         MuConfigurations.getPreferences().getVariable(preference));
@@ -592,9 +592,9 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
         MuConfigurations.getPreferences().setVariable(MuPreference.TABLE_ICON_SCALE, scaleFactor);
 
         // Sets the current theme.
-        if (!ThemeManager.isCurrentTheme((Theme) themeComboBox.getSelectedItem())) {
-            ThemeManager.setCurrentTheme((Theme) themeComboBox.getSelectedItem());
-            resetThemeButtons((Theme) themeComboBox.getSelectedItem());
+        if (!ThemeManager.isCurrentTheme(themeComboBox.selectedItem())) {
+            ThemeManager.setCurrentTheme(themeComboBox.selectedItem());
+            resetThemeButtons(themeComboBox.selectedItem());
             themeComboBox.repaint();
         }
 
@@ -1116,7 +1116,7 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
     public void actionPerformed(ActionEvent e) {
         Theme theme;
 
-        theme = (Theme) themeComboBox.getSelectedItem();
+        theme = themeComboBox.selectedItem();
 
         // Theme combobox selection changed.
         if (e.getSource() == themeComboBox)

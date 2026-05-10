@@ -341,7 +341,7 @@ class FoldersPanel extends PreferencesPanel implements ItemListener, KeyListener
         MuConfigurations.getPreferences().setVariable(MuPreference.CD_FOLLOWS_SYMLINKS, followSymlinksCheckBox.isSelected());
         MuConfigurations.getPreferences().setVariable(MuPreference.SHOW_TAB_HEADER, showTabHeaderCheckBox.isSelected());
         MuConfigurations.getPreferences().setVariable(MuPreference.QUICK_SEARCH_TIMEOUT, (int) quickSearchTimeoutSpinner.getValue());
-        MuConfigurations.getPreferences().setVariable(MuPreference.FILENAME_LOCALE, localeComboBox.getSelectedItem().toLanguageTag());
+        MuConfigurations.getPreferences().setVariable(MuPreference.FILENAME_LOCALE, localeComboBox.selectedItem().toLanguageTag());
         MuConfigurations.getPreferences().setVariable(MuPreference.SHOW_PARENT_FOLDER, showParentFolderCheckBox.isSelected());
 
         // If one of the show/hide file filters have changed, refresh current folders of current MainFrame

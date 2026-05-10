@@ -79,7 +79,7 @@ public class GSSManager {
 		if (name == null) {
 		    break;
 		} else {
-		    Class cl = Class.forName(name);
+		    Class<?> cl = Class.forName(name);
 		    Object instance = cl.getDeclaredConstructor().newInstance();
 		    if (instance instanceof Provider) {
 			Security.addProvider((Provider)instance);
@@ -109,7 +109,7 @@ public class GSSManager {
          * jgss providers not just ones loaded.
          */
         Provider [] p = java.security.Security.getProviders();
-        Vector aV = new Vector(5, 3);
+        Vector<Oid> aV = new Vector<>(5, 3);
         
         for (int i = 0; i < p.length; i++) {
             String []mechs = MechInfo.getMechsForProvider(p[i]);
@@ -169,7 +169,7 @@ public class GSSManager {
     public static Oid[] getMechsForName(Oid nameType) {
     
         Provider []p = java.security.Security.getProviders();
-        Vector v = new Vector(5,3);
+        Vector<Oid> v = new Vector<>(5,3);
         
         for (int i = 0; i < p.length; i++) {
             MechInfo [] mechs = MechInfo.getInfoForAllMechs(p[i]);
@@ -230,7 +230,7 @@ public class GSSManager {
      * @param v - vector to add to
      * @param oid - the oid to add
      */
-    private static void addUniqueOid(Vector v, Oid anOid) {
+    private static void addUniqueOid(Vector<Oid> v, Oid anOid) {
     
         for (Enumeration e = v.elements(); e.hasMoreElements();) {
             if ( ((Oid)e.nextElement()).equals(anOid))
@@ -666,9 +666,9 @@ class MechInfo {
     private String _V108CA91;    //name of the ctxt class
     private String _V901D6C2;    //name of the credential class
     private Provider _V510CA83;        //provider for this mech
-    private Class _V80013BE;    //class implementing name
-    private Class _V29ED8BF;    //class implementing cred
-    private Class _V30FDA16;    //class implementing ctxt
+    private Class<?> _V80013BE;    //class implementing name
+    private Class<?> _V29ED8BF;    //class implementing cred
+    private Class<?> _V30FDA16;    //class implementing ctxt
     
     //class variables
     private static Properties M_oidAlias;    //oid <-> alias mapping
@@ -717,9 +717,9 @@ class MechTable {
     
 
     //private table storing the mapping
-    private static Hashtable M_table;
+    private static Hashtable<Oid, MechInfo> M_table;
     
     static {
-        M_table = new Hashtable(13);
+        M_table = new Hashtable<>(13);
     }
 } //end of Class MechTable

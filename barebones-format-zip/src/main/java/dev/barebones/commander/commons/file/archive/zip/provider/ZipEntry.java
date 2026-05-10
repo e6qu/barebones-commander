@@ -651,7 +651,7 @@ public class ZipEntry implements Cloneable {
         ZipEntry ze = (ZipEntry)super.clone();
 
         if(extraFields!=null)
-            ze.extraFields = (Vector<ZipExtraField>)extraFields.clone();
+            ze.extraFields = new Vector<>(extraFields);
 
         return ze;
     }

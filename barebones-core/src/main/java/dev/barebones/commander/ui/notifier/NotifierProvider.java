@@ -27,6 +27,7 @@ import javax.swing.SwingUtilities;
 
 import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
+import dev.barebones.commander.commons.runtime.Tunables;
 
 import dev.barebones.commander.core.desktop.DesktopManager;
 import dev.barebones.commander.job.FileJob;
@@ -38,11 +39,6 @@ import dev.barebones.commander.ui.main.WindowManager;
 
 public class NotifierProvider {
     private static final Logger LOGGER = LoggerFactory.getLogger(NotifierProvider.class);
-
-    /**
-     * How often the dock icon should be updated (in ms).
-     */
-    private static final long UPDATE_ICON_INTERVAL = 1000L;
 
     private static AbstractNotifier defaultNotifier;
 
@@ -173,7 +169,7 @@ public class NotifierProvider {
                     List<FileJob> jobs = JobsManager.getInstance().getAllJobs();
                     if (!jobs.isEmpty()) {
                         // Update icon every 1s
-                        if (lastUpdate + UPDATE_ICON_INTERVAL < System.currentTimeMillis()) {
+                        if (lastUpdate + Tunables.NOTIFIER_UPDATE_ICON_INTERVAL_MS < System.currentTimeMillis()) {
                             lastUpdate = System.currentTimeMillis();
                             long sum = 0;
                             int jobsCount = 0;

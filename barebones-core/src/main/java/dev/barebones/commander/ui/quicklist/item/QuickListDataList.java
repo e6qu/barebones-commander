@@ -48,7 +48,7 @@ import dev.barebones.commander.ui.theme.ThemeManager;
  * @author Arik Hadas
  */
 
-public class QuickListDataList<T> extends JList {	
+public class QuickListDataList<T> extends JList<T> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(QuickListDataList.class);
 	
 	private final static int VISIBLE_ROWS_COUNT = 10;
@@ -56,6 +56,8 @@ public class QuickListDataList<T> extends JList {
 	private QuickSearch<T> quickSearch = new QuickListQuickSearch();
 	
 	private Component nextFocusableComponent;
+	private QuickListWithDataList<T> owner;
+	private DataListItemRenderer itemRenderer;
 
 	public QuickListDataList(Component nextFocusableComponent){
 		this.nextFocusableComponent = nextFocusableComponent;
@@ -64,9 +66,13 @@ public class QuickListDataList<T> extends JList {
 
 		addMouseListenerToList();
 
-		DataListItemRenderer itemRenderer = getItemRenderer();
+		itemRenderer = getItemRenderer();
 		ThemeManager.addCurrentThemeListener(itemRenderer);
 		setCellRenderer(itemRenderer);
+	}
+
+	public void setOwner(QuickListWithDataList<T> owner) {
+		this.owner = owner;
 	}
 
 	public QuickListDataList(T[] data) {
@@ -91,7 +97,7 @@ public class QuickListDataList<T> extends JList {
 	 * It does the required steps before the popup is shown.	
 	 */
 	@Override
-	public void setListData(Object[] data) {
+	public void setListData(T[] data) {
 		super.setListData(data);
 
 		int numOfRowsInList = getModel().getSize();
@@ -106,7 +112,13 @@ public class QuickListDataList<T> extends JList {
 		if (index > getModel().getSize() || index < 0)
 			return null;
 
-		return (T) getModel().getElementAt(index);
+		return getModel().getElementAt(index);
+	}
+
+	private void itemSelectedInOwningQuickList() {
+		if (owner != null) {
+			owner.itemSelected(getSelectedValue());
+		}
 	}
 
 	protected void addMouseListenerToList() {
@@ -118,22 +130,20 @@ public class QuickListDataList<T> extends JList {
 				if (e.getClickCount() == 2) {
 					int index = locationToIndex(e.getPoint());
 					setSelectedIndex(index);
-					((QuickListWithDataList)(getParent().getParent().getParent())).itemSelected(getSelectedValue());
+					itemSelectedInOwningQuickList();
 				}
 			}
 		});
 	}
 
 	public void setForegroundColors(Color foreground, Color selectedForeground) {
-		DataListItemRenderer cellRenderer = (DataListItemRenderer) getCellRenderer();
-		cellRenderer.setItemForeground(foreground);
-		cellRenderer.setSelectedItemForeground(selectedForeground);
+		itemRenderer.setItemForeground(foreground);
+		itemRenderer.setSelectedItemForeground(selectedForeground);
 	}
 
 	public void setBackgroundColors(Color background, Color selectedBackground) {
-		DataListItemRenderer cellRenderer = (DataListItemRenderer) getCellRenderer();
-		cellRenderer.setItemBackgound(background);
-		cellRenderer.setSelectedItemBackgound(selectedBackground);
+		itemRenderer.setItemBackgound(background);
+		itemRenderer.setSelectedItemBackgound(selectedBackground);
 	}
 
 	/**
@@ -289,7 +299,7 @@ public class QuickListDataList<T> extends JList {
 						tryToTransferFocusToTheNextComponent();
 					
 					if (keyCode == KeyEvent.VK_ENTER)
-						((QuickListWithDataList)(getParent().getParent().getParent())).itemSelected(getSelectedValue());
+						itemSelectedInOwningQuickList();
 					
 					return;
 				}
@@ -355,7 +365,7 @@ public class QuickListDataList<T> extends JList {
 				break;
 				case KeyEvent.VK_ENTER:
 					tryToTransferFocusToTheNextComponent();
-					((QuickListWithDataList)(getParent().getParent().getParent())).itemSelected(getSelectedValue());
+					itemSelectedInOwningQuickList();
 					stop();
 					break;
 				case KeyEvent.VK_TAB:

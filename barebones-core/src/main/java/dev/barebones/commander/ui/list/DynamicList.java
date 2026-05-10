@@ -50,7 +50,7 @@ import dev.barebones.commander.text.Translator;
  *
  * @author Maxence Bernard
  */
-public class DynamicList<E> extends JList {
+public class DynamicList<E> extends JList<E> {
 
     /** Items displayed in the JList */
     private AlteredVector<E> items;
@@ -72,13 +72,13 @@ public class DynamicList<E> extends JList {
     /**
      * Custom ListModel that handles modifications made to the AlteredVector and reflect them changes in the JList.
      */
-    private class DynamicListModel extends AbstractListModel implements VectorChangeListener {
+    private class DynamicListModel extends AbstractListModel<E> implements VectorChangeListener {
 
         public int getSize() {
             return items.size();
         }
 
-        public Object getElementAt(int i) {
+        public E getElementAt(int i) {
             if(i<0 || i>=items.size())
                 return null;
 

@@ -48,7 +48,7 @@ public abstract class CompletionType {
     private Completer completer;
     protected AutocompleterTextComponent autocompletedtextComp;
     protected DocumentListener documentListener;
-    protected JList list = new JList();
+    protected JList<String> list = new JList<>();
     protected JPopupMenu popup = new JPopupMenu();
     /** Single-shot Swing Timer that fires {@link #showAutocompletionPopup()}
      *  on the EDT after a configurable delay. Replaces the prior
@@ -116,7 +116,7 @@ public abstract class CompletionType {
      * @param list - Auto-completion popup's list.
      * @return true if the list was updated successfully, false otherwise. 
      */
-    protected boolean updateListData(JList list) {
+    protected boolean updateListData(JList<String> list) {
         return completer.updateListData(list, autocompletedtextComp);
     }
 

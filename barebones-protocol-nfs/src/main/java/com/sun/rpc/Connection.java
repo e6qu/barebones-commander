@@ -54,11 +54,11 @@ import java.net.InetAddress;
  */
 public abstract class Connection extends Thread {
 
-    static Hashtable connections = new Hashtable();
+    static Hashtable<String, Connection> connections = new Hashtable<>();
     public String server;
     public int port;
     String proto;
-    Hashtable waiters = new Hashtable();
+    Hashtable<Integer, Integer> waiters = new Hashtable<>();
     static final int IDLETIME = 300 * 1000; // idle connection after 5 min
     int xid;		// transaction id
     Xdr reply;
@@ -92,7 +92,7 @@ public abstract class Connection extends Thread {
      * @returns null	If there is no cached connection
      */
     public static Connection getCache(String server, int port, String proto) {
-        Connection conn = (Connection) connections.get(
+        Connection conn = connections.get(
                 server + ":" + port + ":" + proto);
 
         return conn;

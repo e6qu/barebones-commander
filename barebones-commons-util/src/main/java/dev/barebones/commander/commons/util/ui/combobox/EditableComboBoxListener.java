@@ -35,7 +35,7 @@ public interface EditableComboBoxListener extends ComboBoxListener {
      *
      * @param source the EditableComboBox containing the JTextField on which the event was triggered
      */
-    public void textFieldValidated(EditableComboBox source);
+    public void textFieldValidated(EditableComboBox<?> source);
 
 
     /**
@@ -46,5 +46,5 @@ public interface EditableComboBoxListener extends ComboBoxListener {
      *
      * @param source the EditableComboBox containing the JTextField on which the event was triggered
      */
-    public void textFieldCancelled(EditableComboBox source);
+    public void textFieldCancelled(EditableComboBox<?> source);
 }

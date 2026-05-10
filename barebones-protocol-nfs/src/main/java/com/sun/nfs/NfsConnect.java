@@ -55,7 +55,7 @@ public class NfsConnect {
 
     private static byte[] pubfh2 = new byte[32];  // v2 public filehandle
     private static byte[] pubfh3 = new byte[0];   // v3 public filehandle
-    private static Hashtable cacheNfsConnect = new Hashtable();
+    private static Hashtable<String, NfsConnect> cacheNfsConnect = new Hashtable<>();
 
     static final int NFS_PORT = 2049;
     static final int NFS_PROG = 100003;
@@ -425,7 +425,7 @@ public class NfsConnect {
      * @returns		The object - or null if not cached
      */
     private static NfsConnect cache_get(String server) {
-        return ((NfsConnect)cacheNfsConnect.get(server));
+        return cacheNfsConnect.get(server);
     }
 
     /**

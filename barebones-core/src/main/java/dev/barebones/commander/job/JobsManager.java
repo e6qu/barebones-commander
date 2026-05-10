@@ -29,6 +29,7 @@ import javax.swing.Timer;
 import javax.swing.event.EventListenerList;
 
 import dev.barebones.commander.commons.file.AbstractFile;
+import dev.barebones.commander.commons.runtime.Tunables;
 
 /**
  * A class that monitors jobs progress.
@@ -37,15 +38,6 @@ import dev.barebones.commander.commons.file.AbstractFile;
  */
 public class JobsManager implements FileJobListener {
 	
-    /** Controls how often should current file label be refreshed (in ms) */
-	private final static int CURRENT_FILE_LABEL_REFRESH_RATE = 100;
-	
-	/** Controls how often should progress information be refreshed */
-    private final static int MAIN_REFRESH_RATE = 10;
-    
-    /** Time after which remove finished job from a monitor */
-    private final static int FINISHED_JOB_REMOVE_TIME = 1500;
-
     /** Timer used to monitor jobs progress */
     private Timer progressTimer;
 	
@@ -64,7 +56,7 @@ public class JobsManager implements FileJobListener {
 	 */
 	private JobsManager() {
 		JobProgressTimer timerListener = new JobProgressTimer(); 
-    	progressTimer = new Timer(CURRENT_FILE_LABEL_REFRESH_RATE, timerListener);
+        progressTimer = new Timer(Tunables.JOB_CURRENT_FILE_LABEL_REFRESH_MS, timerListener);
         jobs  = new CopyOnWriteArrayList<>();
 	}
 	
@@ -198,7 +190,7 @@ public class JobsManager implements FileJobListener {
 	 * @param job a job to remove
 	 */
 	public void jobEnded(FileJob job) {
-	    Timer timer = new Timer(FINISHED_JOB_REMOVE_TIME, event -> removeJob(job));
+	    Timer timer = new Timer(Tunables.JOB_FINISHED_REMOVE_MS, event -> removeJob(job));
 	    timer.setRepeats(false);
 	    timer.start();
 	}
@@ -254,7 +246,7 @@ public class JobsManager implements FileJobListener {
 			loopCount++;
 
 			boolean fullUpdate;			
-			if (loopCount >= MAIN_REFRESH_RATE) {
+			if (loopCount >= Tunables.JOB_MAIN_REFRESH_TICKS) {
 				fullUpdate = true;
 				loopCount = 0;
 			} else {

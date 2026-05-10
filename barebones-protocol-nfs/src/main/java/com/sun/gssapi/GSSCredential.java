@@ -570,6 +570,5 @@ public class GSSCredential {
         
 
     /* private instance variables */
-    Vector m_mechCreds = new Vector(3, 3);
+    Vector<GSSCredSpi> m_mechCreds = new Vector<>(3, 3);
 }
-

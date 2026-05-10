@@ -51,7 +51,7 @@ public class KeyboardShortcutChooser extends JPanel implements ItemListener, Com
 	
     private JTextField textField;
     private JCheckBox modifierCheckBoxes[];
-    private SaneComboBox keyComboBox;
+    private SaneComboBox<KeyChoice> keyComboBox;
 
     private KeyStroke currentKeyStroke;
 
@@ -127,7 +127,7 @@ public class KeyboardShortcutChooser extends JPanel implements ItemListener, Com
         }
         
 
-        keyComboBox = new SaneComboBox();
+        keyComboBox = new SaneComboBox<>();
         keyComboBox.addItem(new KeyChoice(0, noneString));
         for (int keyChoice : KEY_CHOICES)
             addKeyChoice(keyChoice);
@@ -229,7 +229,7 @@ public class KeyboardShortcutChooser extends JPanel implements ItemListener, Com
     // ComboBoxListener implementation //
     /////////////////////////////////////
 
-    public void comboBoxSelectionChanged(SaneComboBox source) {
+    public void comboBoxSelectionChanged(SaneComboBox<?> source) {
         if(updatingComboBox)
             return;
 

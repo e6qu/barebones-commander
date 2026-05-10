@@ -18,6 +18,7 @@
 package dev.barebones.commander.ui.main.table;
 
 import dev.barebones.commander.commons.file.AbstractFile;
+import dev.barebones.commander.commons.runtime.Tunables;
 import dev.barebones.commander.ui.main.table.FileTableModel;
 // import dev.barebones.commander.ui.main.table.views.BaseFileTableModel;
 
@@ -30,9 +31,6 @@ import java.util.List;
  * Created on 09/01/14.
  */
 public class CalculateDirectorySizeWorker extends SwingWorker<Long, Long> {
-    /** Refresh rate in milliseconds  */
-    private static final long REFRESH_RATE_MS = 300;
-
     private final FileTableModel fileTableModel;
     private final AbstractFile path;
     private final FileTable table;
@@ -77,7 +75,7 @@ public class CalculateDirectorySizeWorker extends SwingWorker<Long, Long> {
             return;
         }
         long tm = System.currentTimeMillis();
-        if (tm - lastRefreshTime > REFRESH_RATE_MS) {
+        if (tm - lastRefreshTime > Tunables.DIRECTORY_SIZE_REFRESH_MS) {
             lastRefreshTime = tm;
             publish(size);
         }

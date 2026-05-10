@@ -42,7 +42,7 @@ import dev.barebones.commander.commons.file.util.FileSet;
  *
  * @author Maxence Bernard
  */
-public class FileList extends JList {
+public class FileList extends JList<AbstractFile> {
 
     /** Files to display */
     protected FileSet files;
@@ -89,12 +89,12 @@ public class FileList extends JList {
         }
 
         // Use a custom ListModel
-        setModel(new AbstractListModel() {
+        setModel(new AbstractListModel<AbstractFile>() {
             public int getSize() {
                 return files.size();
             }
 
-            public Object getElementAt(int index) {
+            public AbstractFile getElementAt(int index) {
                 return files.elementAt(index);
             }
         });
@@ -106,7 +106,7 @@ public class FileList extends JList {
         setCellRenderer(new DefaultListCellRenderer() {
 
             @Override
-            public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 JLabel label = (JLabel)super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 label.setFont(customFont);
 

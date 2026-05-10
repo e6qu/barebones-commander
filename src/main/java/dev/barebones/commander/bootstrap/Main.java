@@ -28,9 +28,9 @@ import java.util.Map;
  *
  * Parses CLI arguments via JCommander (reusing the existing
  * {@link Configuration} class), assembles a property map, and hands off
- * to {@link Bootstrap#start(Map)} which calls every module's Activator
- * register() in dependency order. The core Activator's register() is
- * the last call and shows the Swing UI.
+ * to {@link Bootstrap#start(Map)} which wires Java service providers and
+ * calls the remaining module Activators in dependency order. The core
+ * Activator's register() is the last call and shows the Swing UI.
  */
 public final class Main {
 

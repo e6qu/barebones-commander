@@ -45,7 +45,6 @@ candidate replacements.
 
 - `barebones-archiver`
 - `barebones-format-{zip,tar,gzip,bzip2,xz}`
-- `apache-bzip2` (vendored Ant bzip2 stream implementation)
 
 ### Viewers
 

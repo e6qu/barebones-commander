@@ -34,7 +34,7 @@ import dev.barebones.commander.ui.autocomplete.completers.Completer;
  * 
  * @author Arik Hadas
  */
-public class AutocompletedEditableCombobox extends EditableComboBox {
+public class AutocompletedEditableCombobox<E> extends EditableComboBox<E> {
 
     /**
      * Creates a new editable combo box and a JTextField to be used as the editor.
@@ -63,7 +63,7 @@ public class AutocompletedEditableCombobox extends EditableComboBox {
      * will be created and used.
      * @param comboBoxModel the ComboBoxModel to use for this combo box
      */
-    public AutocompletedEditableCombobox(JTextField textField, ComboBoxModel comboBoxModel, Completer completer) {
+    public AutocompletedEditableCombobox(JTextField textField, ComboBoxModel<E> comboBoxModel, Completer completer) {
         super(textField, comboBoxModel);
         enableAutoCompletion(completer);
     }
@@ -75,7 +75,7 @@ public class AutocompletedEditableCombobox extends EditableComboBox {
      * will be created and used.
      * @param items items used to populate the initial items list.
      */
-    public AutocompletedEditableCombobox(JTextField textField, Object[] items, Completer completer) {
+    public AutocompletedEditableCombobox(JTextField textField, E[] items, Completer completer) {
         super(textField, items);
         enableAutoCompletion(completer);
     }
@@ -87,7 +87,7 @@ public class AutocompletedEditableCombobox extends EditableComboBox {
      * will be created and used.
      * @param items items used to populate the initial items list.
      */
-    public AutocompletedEditableCombobox(JTextField textField, Vector<Object> items, Completer completer) {
+    public AutocompletedEditableCombobox(JTextField textField, Vector<E> items, Completer completer) {
         super(textField, items);
         enableAutoCompletion(completer);
     }

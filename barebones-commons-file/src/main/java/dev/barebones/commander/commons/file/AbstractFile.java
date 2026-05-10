@@ -951,7 +951,7 @@ public abstract class AbstractFile implements FileAttributes {
 
         do {
             if(abstractFileClass.isAssignableFrom(ancestor.getClass()))
-                return (T) ancestor;
+                return abstractFileClass.cast(ancestor);
 
             lastAncestor = ancestor;
             ancestor = ancestor.getAncestor();

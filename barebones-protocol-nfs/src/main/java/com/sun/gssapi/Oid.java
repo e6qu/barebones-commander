@@ -78,7 +78,7 @@ public class Oid {
      * Creates an oid object from a vector of its integer components.
      * The vector is not copied.
      */
-    private Oid(Vector v) {
+    private Oid(Vector<Integer> v) {
     
         m_v = v;
     }
@@ -96,7 +96,7 @@ public class Oid {
      */
     public Oid(String strOid) throws GSSException {
         
-        m_v = new Vector(8, 3);
+        m_v = new Vector<>(8, 3);
         parseFromStr(strOid);
     }
 
@@ -290,6 +290,6 @@ public class Oid {
     
     
     //Instance variables
-    private Vector m_v;
+    private Vector<Integer> m_v;
     byte [] m_der;
 }

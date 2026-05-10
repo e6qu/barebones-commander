@@ -29,6 +29,6 @@ public interface ComboBoxListener {
      *
      * @param source the SaneComboBox on which the event was triggered
      */
-    public void comboBoxSelectionChanged(SaneComboBox source);
+    public void comboBoxSelectionChanged(SaneComboBox<?> source);
 
 }
