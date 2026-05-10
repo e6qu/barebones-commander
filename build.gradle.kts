@@ -224,6 +224,7 @@ tasks.register<Jar>("fatJar") {
     description = "Builds a single self-contained jar with all runtime deps."
     archiveClassifier.set("all")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    dependsOn(configurations.runtimeClasspath)
     manifest {
         attributes(
             "Main-Class" to "dev.barebones.commander.bootstrap.Main",
