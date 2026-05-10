@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import org.unix4j.Unix4j;
 import org.unix4j.unix.Grep;
 import org.unix4j.unix.grep.GrepOptionSet_Fcilnvx;

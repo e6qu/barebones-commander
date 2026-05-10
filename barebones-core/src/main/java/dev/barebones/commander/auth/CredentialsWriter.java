@@ -21,8 +21,8 @@ import dev.barebones.commander.secret.SecretStoreService;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.main.MainFrame;
 import dev.barebones.commander.ui.main.WindowManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.SwingUtilities;
 

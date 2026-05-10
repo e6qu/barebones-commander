@@ -29,8 +29,8 @@ import dev.barebones.commander.extension.ExtensionManager;
 import dev.barebones.commander.preload.PreloadedJFrame;
 import dev.barebones.commander.ui.main.commandbar.CommandBar;
 import dev.barebones.commander.ui.main.frame.MainFrameBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.LookAndFeel;
 import javax.swing.MenuSelectionManager;
@@ -251,10 +251,10 @@ public class WindowManager implements WindowListener, ConfigurationListener {
         mainFrame.toFront();
     }
 
-    public static void installLookAndFeel(String className) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+    public static void installLookAndFeel(String className) throws ReflectiveOperationException {
         LookAndFeel plaf;
 
-        plaf = (LookAndFeel)Class.forName(className, true, ExtensionManager.getClassLoader()).newInstance();
+        plaf = (LookAndFeel)Class.forName(className, true, ExtensionManager.getClassLoader()).getDeclaredConstructor().newInstance();
         if(plaf.isSupportedLookAndFeel())
             UIManager.installLookAndFeel(plaf.getName(), plaf.getClass().getName());
     }

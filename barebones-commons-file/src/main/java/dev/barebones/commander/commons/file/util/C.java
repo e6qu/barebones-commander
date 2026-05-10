@@ -19,8 +19,8 @@
 package dev.barebones.commander.commons.file.util;
 
 import com.sun.jna.Native;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * This class provides access to a static instance of the {@link CLibrary} interface, allowing to invoke selected
@@ -40,7 +40,7 @@ public class C {
 
     static {
         try {
-            INSTANCE = (CLibrary)Native.loadLibrary("c", CLibrary.class);
+            INSTANCE = Native.load("c", CLibrary.class);
         }
         catch(Throwable e) {
             LOGGER.info("Unable to load C library", e);

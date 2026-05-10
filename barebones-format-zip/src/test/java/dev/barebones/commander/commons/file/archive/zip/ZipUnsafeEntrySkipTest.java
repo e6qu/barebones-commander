@@ -100,7 +100,7 @@ public class ZipUnsafeEntrySkipTest {
             "../escape1",
             "good.txt",
             "/absolute/escape",
-            "..\\windows\\evil",
+            "..\\system\\evil",
             "still/good.txt"
         );
         List<String> names = iterateNames(archive);

@@ -38,8 +38,7 @@ import dev.barebones.commander.ui.dialog.InformationDialog;
 import dev.barebones.commander.ui.main.MainFrame;
 
 /**
- * This action reveals the currently selected file or folder in the native Desktop's file manager (e.g. Finder for
- * macOS, Explorer for Windows, etc...).
+ * This action reveals the currently selected file or folder in the native Desktop's file manager.
  *
  * @author Maxence Bernard
  */

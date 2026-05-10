@@ -36,10 +36,9 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
-import javax.swing.filechooser.FileSystemView;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.bookmark.Bookmark;
 import dev.barebones.commander.bookmark.BookmarkListener;
@@ -88,12 +87,6 @@ public class DrivePopupButton extends PopupButton implements BookmarkListener, C
     /** Current volumes */
     private static AbstractFile volumes[];
 
-    /** static FileSystemView instance, has a (non-null) value only under Windows */
-    private static FileSystemView fileSystemView;
-
-    /** Caches extended drive names, has a (non-null) value only under Windows */
-    private static Map<AbstractFile, String> extendedNameCache;
-
     /** Caches drive icons */
     private static Map<AbstractFile, Icon> iconCache = new Hashtable<AbstractFile, Icon>();
 
@@ -107,11 +100,6 @@ public class DrivePopupButton extends PopupButton implements BookmarkListener, C
     private static Map<String, ProtocolPanelProvider> schemaToPanelProvider = new HashMap<>();
 
     static {
-        if (OsFamily.WINDOWS.isCurrent()) {
-            fileSystemView = FileSystemView.getFileSystemView();
-            extendedNameCache = new Hashtable<AbstractFile, String>();
-        }
-
         try {
             String excludeRegexp = MuConfigurations.getPreferences().getVariable(MuPreference.VOLUME_EXCLUDE_REGEXP);
             if (excludeRegexp != null) {
@@ -182,45 +170,22 @@ public class DrivePopupButton extends PopupButton implements BookmarkListener, C
         // Local file, use volume's name
         case LocalFile.SCHEMA:
             String newLabel = null;
-            // Patch for Windows UNC network paths (weakly characterized by having a host different from 'localhost'):
-            // display 'SMB' which is the underlying protocol
-            if (OsFamily.WINDOWS.isCurrent() && !FileURL.LOCALHOST.equals(currentURL.getHost())) {
-                newLabel = "SMB";
-            } else {
-                // getCanonicalPath() must be avoided under Windows for the following reasons:
-                // a) it is not necessary, Windows doesn't have symlinks
-                // b) it triggers the dreaded 'No disk in drive' error popup dialog.
-                // c) when network drives are present but not mounted (e.g. X:\ mapped onto an SMB share),
-                // getCanonicalPath which is I/O bound will take a looooong time to execute
+            currentPath = currentFolder.getCanonicalPath(false).toLowerCase();
 
-                if (OsFamily.WINDOWS.isCurrent())
-                    currentPath = currentFolder.getAbsolutePath(false).toLowerCase();
-                else
-                    currentPath = currentFolder.getCanonicalPath(false).toLowerCase();
+            int bestLength = -1;
+            int bestIndex = 0;
+            String temp;
+            int len;
+            for (int i = 0; i < volumes.length; i++) {
+                temp = volumes[i].getCanonicalPath(false).toLowerCase();
 
-                int bestLength = -1;
-                int bestIndex = 0;
-                String temp;
-                int len;
-                for (int i = 0; i < volumes.length; i++) {
-                    if (OsFamily.WINDOWS.isCurrent())
-                        temp = volumes[i].getAbsolutePath(false).toLowerCase();
-                    else
-                        temp = volumes[i].getCanonicalPath(false).toLowerCase();
-
-                    len = temp.length();
-                    if (currentPath.startsWith(temp) && len > bestLength) {
-                        bestIndex = i;
-                        bestLength = len;
-                    }
+                len = temp.length();
+                if (currentPath.startsWith(temp) && len > bestLength) {
+                    bestIndex = i;
+                    bestLength = len;
                 }
-                newLabel = volumes[bestIndex].getName();
-
-                // Not used because the call to FileSystemView is slow
-                // if(fileSystemView!=null)
-                // newToolTip = getWindowsExtendedDriveName(volumes[bestIndex]);
-
             }
+            newLabel = volumes[bestIndex].getName();
             setText(newLabel);
             setIcon(FileIcons.getFileIcon(currentFolder));
             break;
@@ -252,25 +217,6 @@ public class DrivePopupButton extends PopupButton implements BookmarkListener, C
             setIcon(FileIcons.getFileIcon(currentFolder));
         }
 
-    }
-
-    /**
-     * Returns the extended name of the given local file, e.g. "Local Disk (C:)" for C:\. The returned value is
-     * interesting only under Windows. This method is I/O bound and very slow so it should not be called from the main
-     * event thread.
-     *
-     * @param localFile
-     *            the file for which to return the extended name
-     * @return the extended name of the given local file
-     */
-    private static String getExtendedDriveName(AbstractFile localFile) {
-        // Note: fileSystemView.getSystemDisplayName(java.io.File) is unfortunately very very slow
-        String name = fileSystemView.getSystemDisplayName((java.io.File) localFile.getUnderlyingFileObject());
-
-        if (name == null || name.equals("")) // This happens for CD/DVD drives when they don't contain any disc
-            return localFile.getName();
-
-        return name;
     }
 
     /**
@@ -312,7 +258,6 @@ public class DrivePopupButton extends PopupButton implements BookmarkListener, C
         MuAction action;
         String volumeName;
 
-        boolean useExtendedDriveNames = fileSystemView != null;
         ArrayList<JMenuItem> itemsV = new ArrayList<JMenuItem>();
 
         for (int i = 0; i < nbVolumes; i++) {
@@ -346,13 +291,6 @@ public class DrivePopupButton extends PopupButton implements BookmarkListener, C
                 item.setIcon(icon);
             }
 
-            if (useExtendedDriveNames) {
-                // Use the last known value (if any) while we update it in a separate thread
-                String previousExtendedName = extendedNameCache.get(volumes[i]);
-                if (previousExtendedName != null)
-                    item.setText(previousExtendedName);
-
-            }
             itemsV.add(item); // JMenu offers no way to retrieve a particular JMenuItem, so we have to keep them
         }
 
@@ -448,11 +386,6 @@ public class DrivePopupButton extends PopupButton implements BookmarkListener, C
         return new ServerConnectAction(label, service.getPanelClass());
     }
 
-    /**
-     * Calls to getExtendedDriveName(String) are very slow, so they are performed in a separate thread so as to not lock
-     * the main even thread. The popup menu gets first displayed with the short drive names, and then refreshed with the
-     * extended names as they are retrieved.
-     */
     private class RefreshDriveNamesAndIcons extends Thread {
 
         private JPopupMenu popupMenu;
@@ -466,20 +399,8 @@ public class DrivePopupButton extends PopupButton implements BookmarkListener, C
 
         @Override
         public void run() {
-            final boolean useExtendedDriveNames = fileSystemView != null;
             for (int i = 0; i < items.size(); i++) {
                 final JMenuItem item = items.get(i);
-
-                String extendedName = null;
-                if (useExtendedDriveNames) {
-                    // Under Windows, show the extended drive name (e.g. "Local Disk (C:)" instead of just "C:") but use
-                    // the simple drive name for the mnemonic (i.e. 'C' instead of 'L').
-                    extendedName = getExtendedDriveName(volumes[i]);
-
-                    // Keep the extended name for later (see above)
-                    extendedNameCache.put(volumes[i], extendedName);
-                }
-                final String extendedNameFinal = extendedName;
 
                 // Set system icon for volumes, only if system icons are available on the current platform
                 final Icon icon = FileIcons.hasProperSystemIcons() ? FileIcons.getSystemFileIcon(volumes[i]) : null;
@@ -488,9 +409,6 @@ public class DrivePopupButton extends PopupButton implements BookmarkListener, C
                 }
 
                 SwingUtilities.invokeLater(() -> {
-                    if (useExtendedDriveNames) {
-                        item.setText(extendedNameFinal);
-                    }
                     if (icon != null) {
                         item.setIcon(icon);
                     }

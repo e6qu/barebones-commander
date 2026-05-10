@@ -150,7 +150,7 @@ public abstract class Connection extends Thread {
         resumeListener();
         sendOne(call);
 
-        waiters.put(new Integer(call.xid), new Integer(timeout));
+        waiters.put(Integer.valueOf(call.xid), Integer.valueOf(timeout));
 
         /*
          * Now sleep until the listener thread posts
@@ -171,7 +171,7 @@ public abstract class Connection extends Thread {
 
             timeout -= (System.currentTimeMillis() - t);
             if (timeout <= 0) {
-                waiters.remove(new Integer(call.xid));
+                waiters.remove(Integer.valueOf(call.xid));
                 throw new InterruptedIOException(); // timed out
             }
         }
@@ -180,7 +180,7 @@ public abstract class Connection extends Thread {
          * My reply has come in.
          */
         xid = 0;
-        waiters.remove(new Integer(call.xid));
+        waiters.remove(Integer.valueOf(call.xid));
         notifyAll(); // wake the listener
 
         return reply;
@@ -238,7 +238,7 @@ public abstract class Connection extends Thread {
                  */
                 synchronized (this) {
                     xid = reply.xdr_int();
-                    if (waiters.containsKey(new Integer(xid)))
+                    if (waiters.containsKey(Integer.valueOf(xid)))
                         notifyAll();
                     else
                         xid = 0;   // ignore it

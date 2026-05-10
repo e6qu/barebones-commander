@@ -80,7 +80,7 @@ public class GSSManager {
 		    break;
 		} else {
 		    Class cl = Class.forName(name);
-		    Object instance = cl.newInstance();
+		    Object instance = cl.getDeclaredConstructor().newInstance();
 		    if (instance instanceof Provider) {
 			Security.addProvider((Provider)instance);
 		    } else {
@@ -440,7 +440,7 @@ class MechInfo {
                 _V29ED8BF = Class.forName(_V901D6C2);
             }
         
-            return ((GSSCredSpi)_V29ED8BF.newInstance());
+            return ((GSSCredSpi)_V29ED8BF.getDeclaredConstructor().newInstance());
             
         } catch (Exception e) {
             throw new GSSException(GSSException.UNAVAILABLE);
@@ -461,7 +461,7 @@ class MechInfo {
                 _V30FDA16 = Class.forName(_V108CA91);
             }
         
-            return ((C018FE95)_V30FDA16.newInstance());
+            return ((C018FE95)_V30FDA16.getDeclaredConstructor().newInstance());
             
         } catch (Exception e) {
             throw new GSSException(GSSException.UNAVAILABLE);
@@ -482,7 +482,7 @@ class MechInfo {
                 _V29ED8BF = Class.forName(_V2395ABD);
             }
         
-            return ((GSSNameSpi)_V29ED8BF.newInstance());
+            return ((GSSNameSpi)_V29ED8BF.getDeclaredConstructor().newInstance());
             
         } catch (Exception e) {
             throw new GSSException(GSSException.UNAVAILABLE);

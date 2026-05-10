@@ -691,15 +691,6 @@ public abstract class Nfs {
         prevWriteIndex = -1;
     }
 
-    /*
-     * Make sure that pending writes are flushed if the app
-     * neglected to call flush().
-     */
-    protected void finalize() throws Throwable {
-        close();
-        super.finalize();
-    }
-
     public String toString() {
 
 	try {

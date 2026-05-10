@@ -275,7 +275,7 @@ class FoldersPanel extends PreferencesPanel implements ItemListener, KeyListener
         showParentFolderCheckBox.addDialogListener(parent);
         northPanel.add(showParentFolderCheckBox);
 
-        if (OsFamily.MAC_OS.isCurrent() || OsFamily.WINDOWS.isCurrent()) {
+        if (OsFamily.MAC_OS.isCurrent()) {
             showSystemFoldersCheckBox = new PrefCheckBox(Translator.get("prefs_dialog.show_system_folders"), () -> MuConfigurations.getPreferences().getVariable(
                     MuPreference.SHOW_SYSTEM_FOLDERS,
                     MuPreferences.DEFAULT_SHOW_SYSTEM_FOLDERS));
@@ -351,7 +351,7 @@ class FoldersPanel extends PreferencesPanel implements ItemListener, KeyListener
             refreshFolders |= MuConfigurations.getPreferences().setVariable(MuPreference.SHOW_DS_STORE_FILES, showDSStoreFilesCheckBox.isSelected());
         }
 
-        if(OsFamily.MAC_OS.isCurrent() || OsFamily.WINDOWS.isCurrent()) {
+        if(OsFamily.MAC_OS.isCurrent()) {
             refreshFolders |= MuConfigurations.getPreferences().setVariable(MuPreference.SHOW_SYSTEM_FOLDERS, showSystemFoldersCheckBox.isSelected());
         }
 

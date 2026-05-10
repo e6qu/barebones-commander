@@ -6,7 +6,6 @@ dependencies {
     api(project(":barebones-commons-util"))
 
     implementation(libs.jna)
-    implementation(libs.jna.platform)
     implementation(libs.commons.collections4)
     implementation(libs.commons.lang3)
 

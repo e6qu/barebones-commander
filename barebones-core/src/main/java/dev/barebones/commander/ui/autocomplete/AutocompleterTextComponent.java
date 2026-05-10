@@ -96,7 +96,7 @@ public abstract class AutocompleterTextComponent {
 	
 	public int getHeight() { return textComponent.getHeight(); }
 	
-	public Rectangle modelToView() throws BadLocationException { return textComponent.getUI().modelToView(textComponent, textComponent.getCaretPosition()); }
+	public Rectangle modelToView() throws BadLocationException { return textComponent.modelToView2D(textComponent.getCaretPosition()).getBounds(); }
 
 	public void moveCarentToEndOfText() { textComponent.setCaretPosition(textComponent.getText().length()); }
 	

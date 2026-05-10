@@ -17,8 +17,8 @@
 
 package dev.barebones.commander.core;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileURL;
@@ -37,8 +37,6 @@ public abstract class ChangeFolderThread extends Thread {
     protected boolean killed;
     /** True if an attempt to kill this thread using Thread#interrupt() has already been made */
     private boolean killedByInterrupt;
-    /** True if an attempt to kill this thread using Thread#stop() has already been made */
-    private boolean killedByStop;
     /** True if it is unsafe to kill this thread */
     protected boolean doNotKill;
 
@@ -75,20 +73,12 @@ public abstract class ChangeFolderThread extends Thread {
      * operation. This thread will however be marked as 'killed' which will sooner or later cause {@link #run()}
      * to stop the thread by simply returning.</p> 
      *
-     * <p>The second time this method is called, the deprecated (and unsafe) {@link #stop()} method is called,
-     * forcing the thread to abort.</p>
-     *
      * <p>Any subsequent calls to this method will have no effect and return <code>false</code>.</p>
      *
      * @return true if an attempt was made to stop this thread.
      */
     public boolean tryKill() {
         synchronized(KILL_LOCK) {
-            if(killedByStop) {
-                LOGGER.debug("Thread already killed by #interrupt() and #stop(), there's nothing we can do, returning");
-                return false;
-            }
-
             if(doNotKill) {
                 LOGGER.debug("Can't kill thread now, it's too late, returning");
                 return false;
@@ -97,8 +87,8 @@ public abstract class ChangeFolderThread extends Thread {
             // This field needs to be set before actually killing the thread, #run() relies on it
             killed = true;
 
-            // Call Thread#interrupt() the first time this method is called to give the thread a chance to stop
-            // gracefully if it is waiting in Thread#sleep() or Thread#wait() or Thread#join() or in an
+            // Call Thread#interrupt() to give the thread a chance to stop gracefully if it is waiting in
+            // Thread#sleep() or Thread#wait() or Thread#join() or in an
             // interruptible operation such as java.nio.channel.InterruptibleChannel. If this is the case,
             // InterruptedException or ClosedByInterruptException will be thrown and thus need to be catched by
             // #run().
@@ -108,20 +98,11 @@ public abstract class ChangeFolderThread extends Thread {
                 // This field needs to be set before actually interrupting the thread, #run() relies on it
                 killedByInterrupt = true;
                 interrupt();
-            }
-            // Call Thread#stop() the first time this method is called
-            else {
-                LOGGER.debug("Killing thread using #stop()");
-
-                killedByStop = true;
-                super.stop();
-                // Execute #cleanup() as it would have been done by #run() had the thread not been stopped.
-                // Note that #run() may end pseudo-gracefully and catch the underlying Exception. In this case
-                // it will also call #cleanup() but the (2nd) call to #cleanup() will be ignored.
-                cleanup(false);
+                return true;
             }
 
-            return true;
+            LOGGER.debug("Thread already interrupted, there's nothing more we can safely do, returning");
+            return false;
         }
     }
 

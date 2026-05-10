@@ -19,6 +19,7 @@ package dev.barebones.commander.ui.viewer;
 import java.awt.Cursor;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -151,7 +152,7 @@ public class FileEditorPresenter extends FilePresenter implements EditorPresente
             fullScreenMenuItem = MenuToolkit.addCheckBoxMenuItem(editorMenu,
                     Translator.get("file_editor.fullscreen"),
                     menuItemMnemonicHelper,
-                    KeyStroke.getKeyStroke(KeyEvent.VK_M, ActionEvent.CTRL_MASK),
+                    KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK),
                     (e) -> {
                         boolean fullScreen = getFrame().isFullScreen();
                         switchFullScreenMode(!fullScreen);

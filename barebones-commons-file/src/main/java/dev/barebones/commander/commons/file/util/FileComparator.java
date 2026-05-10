@@ -20,7 +20,6 @@ package dev.barebones.commander.commons.file.util;
 
 import com.ibm.icu.text.Collator;
 import dev.barebones.commander.commons.file.AbstractFile;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Comparator;
 import java.util.Locale;
@@ -159,6 +158,16 @@ public class FileComparator implements Comparator<AbstractFile> {
         return s;
     }
 
+    private int compareIgnoreCase(String s1, String s2) {
+        if(s1 == s2)
+            return 0;
+        if(s1 == null)
+            return -1;
+        if(s2 == null)
+            return 1;
+        return String.CASE_INSENSITIVE_ORDER.compare(s1, s2);
+    }
+
     /**
      * Compare the specified files by their names, following the contract of {@link Comparator#compare(Object, Object)}.
      *
@@ -173,7 +182,7 @@ public class FileComparator implements Comparator<AbstractFile> {
 
         if (this.mode == Mode.NATURAL) {
             // Special treatment for strings that contain a number, so they are ordered by the number's value, e.g.:
-            // 1 < 1a < 2 < 10, like Mac OS X Finder and Windows Explorer do.
+            // 1 < 1a < 2 < 10, matching common file-manager natural sort behavior.
             //
             // This special order applies only if both strings contain a number and have the same prefix. Otherwise, the general order applies.
             Matcher m1 = FILENAME_WITH_NUMBER_PATTERN.matcher(s1);
@@ -259,13 +268,13 @@ public class FileComparator implements Comparator<AbstractFile> {
             diff = f1.getPermissions().getIntValue() - f2.getPermissions().getIntValue();
             break;
         case EXTENSION:
-            diff = StringUtils.compareIgnoreCase(f1.getExtension(), f2.getExtension());
+            diff = compareIgnoreCase(f1.getExtension(), f2.getExtension());
             break;
         case OWNER:
-            diff = StringUtils.compareIgnoreCase(f1.getOwner(), f2.getOwner());
+            diff = compareIgnoreCase(f1.getOwner(), f2.getOwner());
             break;
         case GROUP:
-            diff = StringUtils.compareIgnoreCase(f1.getGroup(), f2.getGroup());
+            diff = compareIgnoreCase(f1.getGroup(), f2.getGroup());
             break;
         case NAME:
         default:

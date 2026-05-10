@@ -19,8 +19,8 @@ package dev.barebones.commander.ui.main.tree;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * A thread that executes i/o operations. 

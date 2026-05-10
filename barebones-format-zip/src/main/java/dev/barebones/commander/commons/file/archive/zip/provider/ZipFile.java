@@ -21,8 +21,8 @@ package dev.barebones.commander.commons.file.archive.zip.provider;
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.UnsupportedFileOperationException;
 import dev.barebones.commander.commons.io.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.io.*;
 import java.util.Hashtable;

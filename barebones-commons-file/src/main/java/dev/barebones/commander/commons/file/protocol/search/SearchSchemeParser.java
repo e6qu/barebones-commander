@@ -19,8 +19,8 @@ package dev.barebones.commander.commons.file.protocol.search;
 
 import java.net.MalformedURLException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.SchemeParser;

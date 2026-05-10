@@ -47,7 +47,7 @@ import javax.swing.JTextField;
  * fill the interior with the background colour.
  *
  * <p>Uses {@link AbstractFile#getParent()} to walk the hierarchy, so it works
- * uniformly for local paths (Windows, Unix) and remote file systems (SFTP, FTP…).
+ * uniformly for local paths and remote file systems (SFTP, FTP...).
  */
 class BreadcrumbBar extends JTextField implements ThemeListener {
 

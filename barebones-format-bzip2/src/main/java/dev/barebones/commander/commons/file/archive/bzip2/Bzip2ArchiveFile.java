@@ -25,8 +25,8 @@ import dev.barebones.commander.commons.file.archive.ArchiveEntryIterator;
 import dev.barebones.commander.commons.file.archive.SingleArchiveEntryIterator;
 
 import org.apache.tools.bzip2.CBZip2InputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;

@@ -17,19 +17,17 @@
 
 package dev.barebones.commander.commons.runtime;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
- * This class represents a non-versioned family of operating system, like <code>Windows</code> or <code>Linux</code>. 
+ * This class represents a non-versioned family of operating system, like <code>macOS</code> or <code>Linux</code>.
  * The current runtime instance is determined using the value of the <code>os.name</code> system property.
  *
  * @see OsVersion
  * @author Maxence Bernard, Arik Hadas
  */
 public enum OsFamily {
-	/** Windows */
-    WINDOWS("Windows"),
     /** Mac OS X */
     MAC_OS("macOS"),
     /** Linux */
@@ -113,7 +111,7 @@ public enum OsFamily {
                 || this==HP_UX
                 || this== UNKNOWN_OS_FAMILY;
 
-        // Not UNIX-based: WINDOWS, OS/2 and OpenVMS
+        // Not UNIX-based: OS/2 and OpenVMS
     }
 
     /**
@@ -135,10 +133,6 @@ public enum OsFamily {
         // This website holds a collection of system property values under many OSes:
         // http://lopica.sourceforge.net/os.html
 
-        // Windows family
-        if (osNameProp.startsWith("Windows")) {
-            return WINDOWS;
-        }
         // Mac OS X family
         if (osNameProp.startsWith("Mac OS X")) {
             return MAC_OS;

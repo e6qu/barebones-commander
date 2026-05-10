@@ -5,7 +5,6 @@ dependencies {
     api(project(":barebones-command"))
     api(project(":barebones-process"))
     api(project(":barebones-translator"))
-
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)

@@ -77,7 +77,7 @@ public abstract class QuickListWithDataList<T> extends QuickList {
 		}
 		// else, show popup with a "no elements" message.
 		else
-			emptyPopup.show();
+			emptyPopup.showQuickList();
 		
 		return toShow;
 	}

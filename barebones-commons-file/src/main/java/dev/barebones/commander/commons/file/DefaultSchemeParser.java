@@ -21,45 +21,21 @@ package dev.barebones.commander.commons.file;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
-import dev.barebones.commander.commons.file.protocol.FileProtocols;
 import dev.barebones.commander.commons.file.protocol.local.LocalFile;
-import dev.barebones.commander.commons.runtime.OsFamily;
 
 /**
  * This class provides a default {@link SchemeParser} implementation. Certain scheme-specific features of the parser
  * can be turned on or off in the constructor, allowing this parser to be used with most schemes.
  *
- * <p>This parser can not only parse URLs but also local absolute paths and UNC paths. Upon parsing, these paths are
+     * <p>This parser can not only parse URLs but also local absolute paths. Upon parsing, these paths are
  * turned into equivalent, fully qualified URLs.</p>
  *
  * <h3>Local paths</h3>
  * <p>
- * Local absolute paths are turned into corresponding 'file' URLs. Local paths are system-dependent, their form and
- * path separator vary from one OS to the other. Only native paths are supported, i.e. Windows-style paths are supported
- * only when running on Windows (or OS/2), Unix-style paths only on an OS that uses them natively...
- * Here are a couple example of how local paths are parsed and turned into FileURL instances:   
- * <ul>
- *  <li>Under Windows or OS/2, <code>C:\Windows\System32\</code> will be parsed and turned into a FileURL whose path
- * separator is "\" and representation <code>file://localhost/C:\Windows\System32\</code></li>
- *  <li>Under a Unix-style OS (Linux, Mac OS X, Solaris...), <code>C:\Windows\System32\</code> will be parsed and turned
- * into a FileURL whose path separator is "\" and representation <code>file://localhost/C:\Windows\System32\</code></li>
- * </ul>
- * </p>
- *
- * <h3>UNC paths</h3>
- * <p>
- * Windows-style UNC paths such as <code>\\Server\Volume\File</code> are supported on all OSes but the FileURL
- * resulting from the parsing varies will not be the same whether they are created on a Windows environment or
- * on another:
- * <ul>
- *  <li>On Windows (any version), <code>\\Server\Volume\File</code> will be turned into a FileURL whose string
- * representation is <code>file://Server/\Volume\File</code></li>
- *  <li>On any other kind of OS, <code>\\Server\Volume\File</code> will be turned into a FileURL whose string
- * representation is <code>smb://Server/Volume/File</code></li>
- * </ul>
+     * Local absolute paths are turned into corresponding 'file' URLs. macOS/Linux-style absolute paths are supported.
  * </p>
  *
  * @see PathCanonizer
@@ -156,56 +132,19 @@ public class DefaultSchemeParser implements SchemeParser {
         // See http://labs.apache.org/webarch/uri/rfc/rfc3986.html for full specs
 
         try {
-            int pos;
             int schemeDelimPos = url.indexOf("://");
             int urlLen = url.length();
 
             // If the given url contains no scheme, consider that it is a local path and transform it into a file:// URL
             if(schemeDelimPos==-1) {
                 // Treat the URL as local file path if it starts with:
-                // - '/' and OS doesn't use root drives (Unix-style path)
-                // - a drive letter and OS uses root drives (Windows-style) [support both C:\ and C:/ style]
+                // - '/' for Unix-style paths
                 // - a ~ character (refers to the user home folder)
-                if ((!LocalFile.USES_ROOT_DRIVES && url.startsWith("/")) || url.startsWith("~/") || url.equals("~")) {
+                if (url.startsWith("/") || url.startsWith("~/") || url.equals("~")) {
                     handleLocalFilePath(url, fileURL);
 
                     // All done, return
                     return;
-                }
-                else if (LocalFile.USES_ROOT_DRIVES && (url.indexOf(":\\")==1 || url.indexOf(":/")==1)) {
-                    // Turn forward slash-separated paths into their backslash-separated counterparts.
-                    if(url.charAt(2)=='/')
-                        url = url.replace('/', '\\');
-
-                    handleLocalFilePath(url, fileURL);
-
-                    // All done, return
-                    return;
-                }
-
-                // Handle Windows-style UNC network paths ( \\hostname\path ):
-                // - under Windows, transform it into a URL in the file://hostname/path form,
-                //   LocalProtocolProvider will translate it back into an UNC network path
-                // - under other OS, conveniently transform it into smb://hostname/path to be nice with folks
-                //   who've spent too much time using Windows
-                else if(url.startsWith("\\\\") && urlLen>2) {
-                    if(OsFamily.WINDOWS.isCurrent()) {
-                        pos = url.indexOf('\\', 2);
-                        url = LocalFile.SCHEMA+"://"+ 
-                				(pos==-1?url.substring(2):url.substring(2, pos)+"/"+(pos==urlLen-1?"":url.substring(pos+1)));
-
-                        // Update scheme delimiter position
-                        schemeDelimPos = LocalFile.SCHEMA.length();
-                    }
-                    else {
-                        url = FileProtocols.SMB+"://"+url.substring(2).replace('\\', '/');
-
-                        // Update scheme delimiter position
-                        schemeDelimPos = FileProtocols.SMB.length();
-                    }
-
-                    // Update URL's length
-                    urlLen = url.length();
                 }
                 // This doesn't look like a valid path, throw an MalformedURLException
                 else {
@@ -218,7 +157,7 @@ public class DefaultSchemeParser implements SchemeParser {
             String scheme = url.substring(0, schemeDelimPos);
             fileURL.setScheme(scheme);
             // Advance string index
-            pos = schemeDelimPos+3;
+            int pos = schemeDelimPos+3;
 
             int separatorPos = url.indexOf('/', pos);
 

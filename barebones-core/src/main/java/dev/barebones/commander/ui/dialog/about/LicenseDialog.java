@@ -22,8 +22,8 @@ import dev.barebones.commander.commons.util.ui.dialog.FocusDialog;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.theme.Theme;
 import dev.barebones.commander.ui.theme.ThemeManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;

@@ -280,7 +280,7 @@ public class Oid {
                 
             StringTokenizer st = new StringTokenizer(src, " .");
             while (st.hasMoreTokens()) {
-                m_v.addElement(new Integer(st.nextToken()));
+                m_v.addElement(Integer.valueOf(st.nextToken()));
             }
                 
         } catch (Exception e) {

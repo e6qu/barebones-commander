@@ -101,7 +101,7 @@ public class MnemonicHelper {
      * @return whether or not the character is already used in the mnemonics array.
      */
     public boolean isMnemonicUsed(char ch) {
-        return takenMnemonics.indexOf(new Character(ch))!=-1;
+        return takenMnemonics.indexOf(Character.valueOf(ch))!=-1;
     }
 
 

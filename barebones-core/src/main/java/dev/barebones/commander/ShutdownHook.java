@@ -17,8 +17,8 @@
 
 package dev.barebones.commander;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.auth.CredentialsManager;
 import dev.barebones.commander.bookmark.BookmarkManager;
@@ -28,6 +28,7 @@ import dev.barebones.commander.snapshot.MuSnapshot;
 import dev.barebones.commander.ui.action.ActionKeymapIO;
 import dev.barebones.commander.ui.main.commandbar.CommandBarIO;
 import dev.barebones.commander.ui.main.toolbar.ToolBarIO;
+import dev.barebones.commander.ui.notifier.NotifierProvider;
 import dev.barebones.commander.ui.main.tree.TreeIOThreadManager;
 import dev.barebones.commander.ui.theme.ThemeManager;
 
@@ -107,6 +108,12 @@ public class ShutdownHook extends Thread {
         try { ToolBarIO.saveToolBar(); }
         catch(Exception e) {LOGGER.warn("Failed to save toolbar", e); }
 
+        try {
+            if (NotifierProvider.isAvailable()) {
+                NotifierProvider.getNotifier().setEnabled(false);
+            }
+        }
+        catch(Exception e) {LOGGER.warn("Failed to disable system notifications", e); }
 
         // Shutdown tasks should only be performed once
         return shutdownTasksPerformed = true;

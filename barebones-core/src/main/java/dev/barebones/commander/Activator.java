@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.bookmark.file.BookmarkProtocolProvider;
 import dev.barebones.commander.commons.file.AbstractFile;
@@ -138,6 +138,7 @@ public class Activator {
     }
 
     public boolean silent() { return Boolean.parseBoolean(properties.get("mucommander.silent")); }
+    public boolean debug() { return Boolean.parseBoolean(properties.get("mucommander.debug")); }
     public boolean fatalWarnings() { return Boolean.parseBoolean(properties.get("mucommander.fatalWarnings")); }
     public String assoc() { return properties.get("mucommander.assoc"); }
     public String bookmark() { return properties.get("mucommander.bookmark"); }

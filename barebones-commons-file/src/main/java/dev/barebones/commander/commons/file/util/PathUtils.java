@@ -22,8 +22,8 @@ package dev.barebones.commander.commons.file.util;
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.FileURL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -415,7 +415,7 @@ public class PathUtils {
      *
      * <p>
      * It is worth noting that this method relies strictly on the occurences of path separators and nothing else.
-     * Therefore, Windows-like paths that start with a drive letter will always have a minimum depth
+     * Therefore, drive-prefixed paths will always have a minimum depth
      * of 1.<br/>
      * Here are a few examples when the path separator is <code>"\\"</code>:
      * <dl>

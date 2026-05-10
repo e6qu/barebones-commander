@@ -19,6 +19,7 @@ package dev.barebones.commander.ui.viewer;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -77,7 +78,7 @@ public abstract class FilePresenter extends JPanel {
 
         // Catch Apple+W keystrokes under Mac OS X to close the window
         if (OsFamily.MAC_OS.isCurrent()) {
-            getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_W, ActionEvent.META_MASK), CUSTOM_DISPOSE_EVENT);
+            getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.META_DOWN_MASK), CUSTOM_DISPOSE_EVENT);
             getActionMap().put(CUSTOM_DISPOSE_EVENT, new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {

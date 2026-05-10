@@ -25,8 +25,6 @@ import java.util.concurrent.CompletionStage;
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.protocol.local.LocalFile;
-import dev.barebones.commander.commons.file.protocol.local.SpecialWindowsLocation;
-import dev.barebones.commander.commons.file.protocol.local.UNCFile;
 
 /**
  * {@link DesktopOperation} implementation meant for actions that involve local files.
@@ -129,9 +127,7 @@ public abstract class LocalFileOperation implements DesktopOperation {
      *   <li>has a length of 1.</li>
      *   <li>
      *     contains an instance of either <code>java.io.File</code>,
-     *     {@link dev.barebones.commander.commons.file.protocol.local.SpecialWindowsLocation},
-     *     {@link dev.barebones.commander.commons.file.protocol.local.LocalFile},
-     *     {@link dev.barebones.commander.commons.file.protocol.local.UNCFile}, or <code>String</code>.
+     *     {@link LocalFile}, or <code>String</code>.
      *   </li>
      * </ul>
      * </p>
@@ -153,13 +149,9 @@ public abstract class LocalFileOperation implements DesktopOperation {
         if (target[0] instanceof File)
             return FileFactory.getFile(((File) target[0]).getAbsolutePath());
 
-        if (target[0] instanceof SpecialWindowsLocation)
-            return (AbstractFile) target[0];
-
-        // Deals with instances of LocalFile and UNCFile: raw instances or wrapped in another AbstractFile container
+        // Deals with instances of LocalFile: raw instances or wrapped in another AbstractFile container
         // (e.g. archive files)
-        if (target[0] instanceof AbstractFile && (((AbstractFile) target[0]).hasAncestor(LocalFile.class)
-                                               || ((AbstractFile) target[0]).hasAncestor(UNCFile.class)))
+        if (target[0] instanceof AbstractFile && ((AbstractFile) target[0]).hasAncestor(LocalFile.class))
             return (AbstractFile) target[0];
 
         // Deals with instances of String.

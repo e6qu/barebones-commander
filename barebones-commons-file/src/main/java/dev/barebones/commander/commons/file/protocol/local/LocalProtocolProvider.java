@@ -24,34 +24,18 @@ import java.util.Map;
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.protocol.ProtocolProvider;
-import dev.barebones.commander.commons.runtime.OsFamily;
 
 /**
- * This class is the provider for the local filesystem implemented by {@link dev.barebones.commander.commons.file.protocol.local.LocalFile}
- * and network path given in UNC format which is implemented by {@link dev.barebones.commander.commons.file.protocol.local.UNCFile}
+ * This class is the provider for the local filesystem implemented by {@link LocalFile}.
  *
  * @author Maxence Bernard, Arik Hadas
- * @see dev.barebones.commander.commons.file.protocol.local.LocalFile
- * @see dev.barebones.commander.commons.file.protocol.local.UNCFile
+ * @see LocalFile
  */
 public class LocalProtocolProvider implements ProtocolProvider {
 
-	/** Are we running Windows ? */
-    private final static boolean IS_WINDOWS =  OsFamily.WINDOWS.isCurrent();
-	
     public AbstractFile getFile(FileURL url, Map<String, Object> instantiationParams) throws IOException {
-        return isUncFile(url)
-                ?(instantiationParams.isEmpty()?new UNCFile(url):new UNCFile(url ,(java.io.File)instantiationParams.get("createdFile")))
-                :(instantiationParams.isEmpty()?new LocalFile(url):new LocalFile(url, (java.io.File)instantiationParams.get("createdFile")));
-    }
-	
-	/**
-     * Returns <code>true</code> if the specified {@link FileURL} denotes a Windows UNC file.
-     *
-     * @param fileURL the {@link FileURL} to test
-     * @return <code>true</code> if the specified {@link FileURL} denotes a Windows UNC file.
-     */
-    private static boolean isUncFile(FileURL fileURL) {
-        return IS_WINDOWS && !FileURL.LOCALHOST.equals(fileURL.getHost());
+        return instantiationParams.isEmpty()
+                ? new LocalFile(url)
+                : new LocalFile(url, (java.io.File) instantiationParams.get("createdFile"));
     }
 }

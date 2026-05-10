@@ -17,6 +17,7 @@
 
 package dev.barebones.commander.ui.action.impl;
 
+import java.net.URI;
 import java.net.URL;
 import java.util.Map;
 
@@ -53,7 +54,7 @@ public class OpenURLInBrowserAction extends MuAction {
 
         if (url instanceof String) {
             try {
-                InformationDialog.showErrorDialogIfNeeded(getMainFrame().getJFrame(), DesktopManager.browse(new URL((String)url)));
+                InformationDialog.showErrorDialogIfNeeded(getMainFrame().getJFrame(), DesktopManager.browse(URI.create((String)url).toURL()));
             }
             catch(Exception e) {
                 InformationDialog.showErrorDialog(mainFrame.getJFrame());

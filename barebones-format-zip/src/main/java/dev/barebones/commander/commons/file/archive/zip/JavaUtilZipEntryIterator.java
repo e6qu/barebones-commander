@@ -26,8 +26,8 @@ import java.util.zip.ZipInputStream;
 import dev.barebones.commander.commons.file.archive.ArchiveEntry;
 import dev.barebones.commander.commons.file.archive.ArchiveEntryIterator;
 import dev.barebones.commander.commons.file.archive.SafePath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * An <code>ArchiveEntryIterator</code> that iterates through a {@link ZipInputStream}.

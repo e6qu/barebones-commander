@@ -367,15 +367,14 @@ public class XFile {
      * Load an XFileAccessor
      */
     private XFileAccessor loadAccessor(XFurl url)
-        throws ClassNotFoundException, IllegalAccessException,
-            InstantiationException {
+        throws ReflectiveOperationException {
 
         Class cl = loadClass(url.getProtocol(), "XFileAccessor",
                         cachedAccessors);
         if (cl == null)
             return null;
 
-        return (XFileAccessor)cl.newInstance();
+        return (XFileAccessor)cl.getDeclaredConstructor().newInstance();
     }
 
     

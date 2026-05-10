@@ -44,6 +44,7 @@ package com.sun.nfs;
  * @deprecated The more generic XFileExtensionAccessor class
  *             should be used instead.
  */
+@Deprecated
 public class nfsXFileExtensionAccessor
     extends com.sun.nfs.XFileExtensionAccessor {
 

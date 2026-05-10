@@ -20,8 +20,6 @@ package dev.barebones.commander.ui.main;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.swing.SwingUtilities;
 
@@ -30,10 +28,7 @@ import dev.barebones.commander.bookmark.BookmarkManager;
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.protocol.local.LocalFile;
-import dev.barebones.commander.commons.file.protocol.local.UNCFile;
 import dev.barebones.commander.commons.file.protocol.search.SearchFile;
-import dev.barebones.commander.commons.file.util.PathUtils;
-import dev.barebones.commander.commons.runtime.OsFamily;
 import dev.barebones.commander.ui.autocomplete.AutocompleterTextComponent;
 import dev.barebones.commander.ui.autocomplete.CompleterFactory;
 import dev.barebones.commander.ui.autocomplete.TextFieldCompletion;
@@ -67,15 +62,6 @@ public class LocationTextField extends ProgressTextField implements LocationList
 
     /** Used to save the path that was entered by the user after validation of the location textfield */
     private String locationFieldTextSave;
-
-    /** For windows path, regex that finds trailing space characters at the end of a path */
-    private static Pattern windowsTrailingSpacePattern;
-
-    static {
-        if(OsFamily.WINDOWS.isCurrent())
-            windowsTrailingSpacePattern = Pattern.compile("[ ]+[\\\\]*$");
-    }
-
 
     /**
      * Creates a new LocationTextField for use in the given FolderPanel.
@@ -177,15 +163,9 @@ public class LocationTextField extends ProgressTextField implements LocationList
                 // Do not display the URL's scheme & host for local files
                 if (FileURL.LOCALHOST.equals(folderURL.getHost())) {
                     locationText = folderURL.getPath();
-                    // Under for OSes with 'root drives' (Windows, OS/2), remove the leading '/' character
-                    if(LocalFile.hasRootDrives())
-                        locationText = PathUtils.removeLeadingSeparator(locationText, "/");
                 }
-                // For network files with FILE scheme display the URL in UNC format
                 else {
-                    locationText = "\\\\" + folderURL.getHost() + folderURL.getPath().replace('/', '\\');
-                    if(!locationText.endsWith(UNCFile.SEPARATOR))
-                        locationText += UNCFile.SEPARATOR;
+                    locationText = folderURL.toString(false);
                 }
             }
             // Display the full URL for protocols other than 'file'
@@ -227,22 +207,6 @@ public class LocationTextField extends ProgressTextField implements LocationList
      */
     public boolean textFieldValidated() {
         String location = getText();
-
-        // Under Windows, trim the entered path for the following reason.
-        // If a file 'A' (e.g. "C:\temp") exists and 'A ' (e.g. "C:\temp ") is requested, the java.io.File will resolve
-        // (file.exists() will  return true), but this file will be a strange one, listing bogus children files with
-        // weird attributes (in the case of a directory).
-        // Windows (or java.io.File under Windows) is somehow space-tolerant but then unable to deal with
-        // those files properly. So if a path ends with space characters, we remove them to prevent those weirdnesses.
-        // Note that Win32 doesn't allow creating files with trailing spaces (in Explorer, command prompt...), but
-        // those files can still be manually crafted and thus exist on one's hard drive.
-        // Mucommander should in theory be able to access such files without any problem but this hasn't been tested.
-        if(OsFamily.WINDOWS.isCurrent() && location.indexOf(":\\")==1) {
-            // Looks for trailing spaces and if some
-            Matcher matcher = windowsTrailingSpacePattern.matcher(location);
-            if(matcher.find())
-                location = location.substring(0, matcher.start());
-        }
 
         // Save the path that was entered in case the location change fails or is cancelled
         locationFieldTextSave = location;

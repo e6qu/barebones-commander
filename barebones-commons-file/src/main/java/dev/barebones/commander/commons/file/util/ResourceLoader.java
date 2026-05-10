@@ -23,8 +23,8 @@ import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.archive.AbstractArchiveFile;
 import dev.barebones.commander.commons.file.protocol.local.LocalFile;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -432,8 +432,8 @@ public class ResourceLoader {
      * @return returns the path to the JAR file
      */
     private static String getLocalFilePath(URL url) {
-        // Here's an example of such a path under Windows:
-        // /C:/cygwin/home/Administrator/mucommander/tmp/compile/classes/
+        // Here's an example of such a decoded path:
+        // /home/user/barebones-commander/tmp/compile/classes/
 
         // URL-decode the path and normalize it
         return normalizeUrlPath(getDecodedURLPath(url));
@@ -465,10 +465,6 @@ public class ResourceLoader {
         // Remove the leading "file:" (if any)
         if(path.startsWith("file:"))
             path = path.substring(5, path.length());
-
-        // Under platforms that use root drives (Windows and OS/2), strip out the leading '/'
-        if(LocalFile.hasRootDrives() && path.startsWith("/"))
-            path = removeLeadingSlash(path);
 
         // Use the local file separator
         String separator = LocalFile.SEPARATOR;

@@ -113,8 +113,8 @@ class DERParser {
 	    else
 		comp = 2;	
 				
-	    v.addElement(new Integer(comp));
-	    v.addElement(new Integer(tmp - (40 * comp)));
+	    v.addElement(Integer.valueOf(comp));
+	    v.addElement(Integer.valueOf(tmp - (40 * comp)));
 			
 	    //get the rest of the octets
 	    for (int i = 1; i < numOfOctets; i++) {
@@ -129,7 +129,7 @@ class DERParser {
 			break;
 		    i++;
 		}
-		v.addElement(new Integer(comp));
+		v.addElement(Integer.valueOf(comp));
 	    }
 		
 	} catch (IOException e) {

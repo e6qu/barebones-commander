@@ -24,8 +24,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.file.filter.FileFilter;
 import dev.barebones.commander.commons.file.filter.FilenameFilter;
@@ -130,16 +130,14 @@ public class CachedFile extends ProxyFile {
 
     static {
         // Exposes the java.io.FileSystem class which by default has package access, in order to use its
-        // 'getBooleanAttributes' method to speed up access to file attributes under Windows.
+        // 'getBooleanAttributes' method to speed up access to file attributes.
         // This method allows to retrieve the values of the 'exists', 'isDirectory' and 'isHidden' attributes in one
-        // pass, resolving the underlying file only once instead of 3 times. Since resolving a file is a particularly
-        // expensive operation under Windows due to improper use of the Win32 API, this helps speed things up a little.
+        // pass, resolving the underlying file only once instead of 3 times.
         // References:
         //  - http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5036988
         //  - http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6240028
         //
-        // This hack was made for Windows, but is now used for other platforms as well as it is necessarily faster than
-        // retrieving file attributes individually.
+        // This is faster than retrieving file attributes individually.
 
         try {
             // Resolve FileSystem class, 'getBooleanAttributes' method and fields

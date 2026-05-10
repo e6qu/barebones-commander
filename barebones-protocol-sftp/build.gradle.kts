@@ -11,8 +11,11 @@ dependencies {
     api(project(":barebones-protocol-api"))
     api(project(":barebones-translator"))
 
+    compileOnly(project(":barebones-format-zip"))
+
     implementation(libs.jsch.mwiede)
 
     testImplementation(libs.testng)
     testImplementation(files(commonsFileTestOutput))
+    testImplementation(project(":barebones-format-zip"))
 }

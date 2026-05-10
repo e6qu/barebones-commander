@@ -23,8 +23,8 @@ import java.io.OutputStream;
 import javax.swing.KeyStroke;
 
 import dev.barebones.commander.ui.action.ActionId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.RuntimeConstants;
 import dev.barebones.commander.commons.util.xml.XmlAttributes;

@@ -17,23 +17,19 @@
 
 package dev.barebones.commander.ui.dialog.debug;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+import dev.barebones.commander.commons.logging.LogEvent;
+import dev.barebones.commander.commons.logging.LogSink;
 import dev.barebones.commander.conf.MuConfigurations;
 import dev.barebones.commander.conf.MuPreference;
 import dev.barebones.commander.conf.MuPreferences;
 import dev.barebones.commander.utils.MuLogging.LogLevel;
-
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.classic.spi.IThrowableProxy;
-import ch.qos.logback.classic.spi.ThrowableProxyUtil;
-import ch.qos.logback.core.AppenderBase;
-import ch.qos.logback.core.CoreConstants;
-import ch.qos.logback.core.Layout;
-import ch.qos.logback.core.LayoutBase;
 
 /**
  * This <code>java.util.logging</code> <code>Handler</code> collects the last log messages that were published by
@@ -45,16 +41,16 @@ import ch.qos.logback.core.LayoutBase;
  * @see MuPreferences#LOG_BUFFER_SIZE
  * @author Maxence Bernard, Arik Hadas
  */
-public class DebugConsoleAppender extends AppenderBase<ILoggingEvent> {
+public class DebugConsoleAppender implements LogSink {
 
     /** Maximum number of log records to keep in memory */
     private int bufferSize;
 
     /** Contains the last LogRecord instances. */
-    private List<LogbackLoggingEvent> loggingEventsList;
+    private List<JdkLoggingEvent> loggingEventsList;
     
     /** The layout of the logging event representation */
-    private Layout<ILoggingEvent> loggingEventLayout;
+    private CustomLoggingLayout loggingEventLayout;
 
     /**
      * Creates a new <code>DebugConsoleHandler</code>. This constructor is automatically by
@@ -73,52 +69,48 @@ public class DebugConsoleAppender extends AppenderBase<ILoggingEvent> {
      * @return the last records that were collected by this handler.
      */
     public synchronized LoggingEvent[] getLogRecords() {
-        LogbackLoggingEvent[] records = new LogbackLoggingEvent[0];
+        JdkLoggingEvent[] records = new JdkLoggingEvent[0];
         records = loggingEventsList.toArray(records);
 
         return records;
     }
 
 
-    /////////////////////////////
-    // Appender implementation //
-    /////////////////////////////
-
     @Override
-    protected void append(ILoggingEvent record) {
+    public synchronized void publish(LogEvent record) {
         if (loggingEventsList.size() == bufferSize) {
             loggingEventsList.remove(0);
         }
 
-        loggingEventsList.add(new LogbackLoggingEvent(record));
+        loggingEventsList.add(new JdkLoggingEvent(record));
     }
 
     /**
-     * Wraps a {@link ILoggingEvent} and overrides {@link #toString()} to have it return a properly formatted string
+     * Wraps a {@link LogEvent} and overrides {@link #toString()} to have it return a properly formatted string
      * representation of it so that it can be displayed in a {@link javax.swing.JList} or {@link javax.swing.JTable} and
      * pasted to the clipboard.
      * It also implements the LoggingEvent interface so that the logging event can be presented in the debug console.
      */
-    public class LogbackLoggingEvent implements LoggingEvent {
+    public class JdkLoggingEvent implements LoggingEvent {
 
         /** The logging event */
-        private ILoggingEvent loggingEvent;
+        private LogEvent loggingEvent;
 
         /** The log level of the event in mucommander's terms */
         private LogLevel logLevel;
 
-        LogbackLoggingEvent(ILoggingEvent lr) {
+        JdkLoggingEvent(LogEvent lr) {
             this.loggingEvent = lr;
         }
 
         /**
-         * Returns a properly formatted string representation of the {@link ILoggingEvent}.
+         * Returns a properly formatted string representation of the {@link LogEvent}.
          * 
-         * @return a properly formatted string representation of the {@link ILoggingEvent}.
+         * @return a properly formatted string representation of the {@link LogEvent}.
          */
         @Override
         public String toString() {
-            return loggingEventLayout.doLayout(loggingEvent);
+            return loggingEventLayout.format(loggingEvent);
         }
         
         
@@ -139,42 +131,54 @@ public class DebugConsoleAppender extends AppenderBase<ILoggingEvent> {
     }
 
     /**
-     * Returns the log level, in mucommander terms, that match the level of a given logback logging event
+     * Returns the log level, in mucommander terms, that matches the level of a JDK logging event.
      *
-     * @param loggingEvent logback logging event
-     * @return log level, in mucommander terms, that match the level of the given logback logging event
+     * @param loggingEvent JDK logging event
+     * @return log level, in mucommander terms, that matches the level of the given event
      */
-    public static LogLevel getLogLevel(ILoggingEvent loggingEvent) {
-        return LogLevel.valueOf(loggingEvent.getLevel());
+    public static LogLevel getLogLevel(LogEvent loggingEvent) {
+        return switch (loggingEvent.level()) {
+            case OFF -> LogLevel.OFF;
+            case ERROR -> LogLevel.SEVERE;
+            case WARNING -> LogLevel.WARNING;
+            case INFO -> LogLevel.INFO;
+            case DEBUG -> LogLevel.FINE;
+            case TRACE, ALL -> LogLevel.FINEST;
+        };
     }
 
-    private static class CustomLoggingLayout extends LayoutBase<ILoggingEvent> {
+    private static class CustomLoggingLayout {
 
         private final static SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
-        public String doLayout(ILoggingEvent event) {
-            StackTraceElement stackTraceElement = event.getCallerData()[0];
+        public String format(LogEvent event) {
+            StackTraceElement stackTraceElement = event.source();
 
             StringBuilder sbuf = new StringBuilder(128);
             sbuf.append("[");
-            sbuf.append(SIMPLE_DATE_FORMAT.format(new Date(event.getTimeStamp())));
+            sbuf.append(SIMPLE_DATE_FORMAT.format(Date.from(event.timestamp())));
             sbuf.append("] ");
             sbuf.append(getLogLevel(event));
             sbuf.append(" ");
-            sbuf.append(stackTraceElement.getFileName());
-            sbuf.append("#");
-            sbuf.append(stackTraceElement.getMethodName());
-            sbuf.append(",");
-            sbuf.append(stackTraceElement.getLineNumber());
+            if (stackTraceElement != null) {
+                sbuf.append(stackTraceElement.getFileName());
+                sbuf.append("#");
+                sbuf.append(stackTraceElement.getMethodName());
+                sbuf.append(",");
+                sbuf.append(stackTraceElement.getLineNumber());
+            } else {
+                sbuf.append(event.loggerName());
+            }
             sbuf.append(" ");
-            sbuf.append(event.getFormattedMessage());
-            sbuf.append(CoreConstants.LINE_SEPARATOR);
+            sbuf.append(event.message());
+            sbuf.append(System.lineSeparator());
 
-            IThrowableProxy throwableProxy = event.getThrowableProxy();
-            if (throwableProxy != null) {
-                String throwableStr = ThrowableProxyUtil.asString(throwableProxy);
-                sbuf.append(throwableStr);
-                sbuf.append(CoreConstants.LINE_SEPARATOR);
+            Throwable thrown = event.thrown();
+            if (thrown != null) {
+                StringWriter stackTrace = new StringWriter();
+                thrown.printStackTrace(new PrintWriter(stackTrace));
+                sbuf.append(stackTrace);
+                sbuf.append(System.lineSeparator());
             }
             return sbuf.toString();
         }

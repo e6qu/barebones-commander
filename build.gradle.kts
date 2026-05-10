@@ -39,14 +39,20 @@ subprojects {
         }
     }
     tasks.withType<JavaCompile>().configureEach {
-        options.compilerArgs.addAll(listOf("--release", "25"))
+        options.compilerArgs.addAll(listOf("--release", "25", "-Xlint:deprecation"))
         options.encoding = "UTF-8"
     }
     dependencies {
         // Catalog accessors are not available inside the subprojects {} block
         // (Gradle limitation as of 8.x), so dep coordinates here are spelled
         // out long-form. Per-module build.gradle.kts files DO use the catalog.
-        "implementation"("org.slf4j:slf4j-api:2.0.17")
+        if (project.name != "barebones-logging") {
+            "implementation"(project(":barebones-logging"))
+        }
+        // TestNG uses SLF4J internally. Keep a no-op provider on test
+        // runtime classpaths so tests do not emit provider warnings while
+        // production code remains on the JDK-backed logger.
+        "testRuntimeOnly"("org.slf4j:slf4j-nop:2.0.17")
         constraints {
             "implementation"("com.squareup.okio:okio-jvm:3.17.0")
             "implementation"("org.jetbrains.kotlin:kotlin-stdlib:2.3.21")
@@ -60,6 +66,7 @@ subprojects {
         // JUnit 5 (e.g. barebones-protocol-nfs) override with
         // useJUnitPlatform() in their own build.gradle.kts.
         useTestNG()
+        jvmArgs("--enable-native-access=ALL-UNNAMED")
         testLogging {
             events("failed", "standardError")
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
@@ -71,7 +78,7 @@ subprojects {
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.addAll(listOf("--release", "25"))
+    options.compilerArgs.addAll(listOf("--release", "25", "-Xlint:deprecation"))
     options.encoding = "UTF-8"
 }
 
@@ -83,6 +90,14 @@ java {
 
 application {
     mainClass.set("dev.barebones.commander.bootstrap.Main")
+    applicationDefaultJvmArgs = buildList {
+        add("--add-opens=java.base/java.io=ALL-UNNAMED")
+        add("--enable-native-access=ALL-UNNAMED")
+        if (System.getProperty("os.name").lowercase().contains("mac")) {
+            add("--add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED")
+            add("--add-exports=java.desktop/com.apple.laf=ALL-UNNAMED")
+        }
+    }
 }
 
 dependencies {

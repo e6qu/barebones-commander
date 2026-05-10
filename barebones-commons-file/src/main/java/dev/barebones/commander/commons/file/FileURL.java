@@ -28,6 +28,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 
 import dev.barebones.commander.commons.file.compat.CompatURLStreamHandler;
+import dev.barebones.commander.commons.file.compat.CompatURLs;
 import dev.barebones.commander.commons.file.protocol.FileProtocols;
 import dev.barebones.commander.commons.file.protocol.local.LocalFile;
 import dev.barebones.commander.commons.file.protocol.search.SearchFile;
@@ -56,7 +57,7 @@ import dev.barebones.commander.commons.util.StringUtils;
  *  <dt>{@link #getStandardPort() standard port}</dt><dd>the standard port implied when no port is defined in the URL,
  * e.g. 21 for FTP</dd>
  *  <dt>{@link #getPathSeparator() path separator}</dt><dd>the character(s) that separates path fragments, e.g. '/' for
- * most schemes, '\' for local paths under certain OSes like Windows.</dd>
+ * most schemes.</dd>
  *  <dt>{@link #getGuestCredentials() guest credentials}</dt><dd>credentials to authenticate as a guest, e.g. 'GUEST'
  * for SMB, 'anonymous' for FTP.</dd>
  *  <dt>{@link #getRealm() authentication realm}</dt><dd>the base URL throughout which a set of credentials can be used.
@@ -839,7 +840,7 @@ public class FileURL implements Cloneable {
      * @throws MalformedURLException if the java.net.URL could not parse the location of this FileURL
      */
     public URL getJavaNetURL() throws MalformedURLException {
-        return new URL(null, toString(true), new CompatURLStreamHandler());
+        return CompatURLs.create(toString(true), new CompatURLStreamHandler());
     }
 
     /**
@@ -898,8 +899,8 @@ public class FileURL implements Cloneable {
      * @return <code>true</code> if the path of this URL and the given URL are equal
      */
     public boolean pathEquals(FileURL url) {
-    	boolean isCaseSensitiveOS = !(OsFamily.getCurrent().equals(OsFamily.WINDOWS) || OsFamily.getCurrent().equals(OsFamily.OS_2));
-    	
+        boolean isCaseSensitiveOS = !OsFamily.getCurrent().equals(OsFamily.OS_2);
+
         String path1 = isCaseSensitiveOS ? this.getPath() : this.getPath().toLowerCase();
         String path2 = isCaseSensitiveOS ? url.getPath() : url.getPath().toLowerCase();
 

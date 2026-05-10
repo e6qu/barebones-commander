@@ -223,16 +223,4 @@ public class XFileOutputStream extends OutputStream {
         xfa.close();
     }
 
-    
-    /**
-     * Ensures that the <code>close</code> method of this XFile
-     * output stream is called when there are no more references
-     * to this stream. 
-     *
-     * @exception  java.io.IOException  if an I/O error occurs.
-     * @see        com.sun.xfile.XFileInputStream#close()
-     */
-    protected void finalize() throws IOException {
- 	close();
-    }
 }

@@ -41,6 +41,7 @@ import com.sun.xfile.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.io.*;
+import java.net.URI;
 
 /**
  * The XFileAccessor interface is implemented by filesystems that
@@ -74,7 +75,7 @@ public class XFileAccessor implements com.sun.xfile.XFileAccessor {
         this.xf = xf;
 
         try {
-            url = new URL(xf.toString());
+            url = URI.create(xf.toString()).toURL();
             urlConn = url.openConnection();
     
             urlConn.setDoInput(readOnly);

@@ -19,8 +19,8 @@ import dev.barebones.commander.commons.file.protocol.ProtocolProvider;
 import dev.barebones.commander.commons.file.protocol.s3.ui.S3PanelProvider;
 import dev.barebones.commander.protocol.ui.ProtocolPanelRegistry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * Phase-2-style register entry point. Registers the s3 scheme with

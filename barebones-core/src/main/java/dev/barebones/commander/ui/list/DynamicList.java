@@ -18,6 +18,7 @@
 package dev.barebones.commander.ui.list;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 
 import javax.swing.AbstractAction;
@@ -235,18 +236,18 @@ public class DynamicList<E> extends JList {
 
         // Map 'Shift+Up'/'Meta+Up' and 'Shift+Left'/'Meta+Left' to MoveUpAction
         actionClass = moveUpAction.getClass();
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, KeyEvent.SHIFT_MASK), actionClass);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, KeyEvent.META_MASK), actionClass);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.SHIFT_MASK), actionClass);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.META_MASK), actionClass);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.SHIFT_DOWN_MASK), actionClass);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.META_DOWN_MASK), actionClass);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.SHIFT_DOWN_MASK), actionClass);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.META_DOWN_MASK), actionClass);
         actionMap.put(actionClass, moveUpAction);
 
         // Map 'Shift+Down'/'Meta+Down' and 'Shift+Right'/'Meta+Right' to MoveDownAction
         actionClass = moveDownAction.getClass();
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, KeyEvent.SHIFT_MASK), actionClass);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, KeyEvent.META_MASK), actionClass);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.SHIFT_MASK), actionClass);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.META_MASK), actionClass);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.SHIFT_DOWN_MASK), actionClass);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.META_DOWN_MASK), actionClass);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.SHIFT_DOWN_MASK), actionClass);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.META_DOWN_MASK), actionClass);
         actionMap.put(actionClass, moveDownAction);
     }
 

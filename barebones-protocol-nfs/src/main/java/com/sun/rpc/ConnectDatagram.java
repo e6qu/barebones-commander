@@ -117,11 +117,4 @@ public class ConnectDatagram extends Connection {
     void checkConnection() {
     }
 
-    protected void finalize() throws Throwable {
-        if (ds != null) {
-            ds.close();
-            ds = null;
-        }
-        super.finalize();
-    }
 }

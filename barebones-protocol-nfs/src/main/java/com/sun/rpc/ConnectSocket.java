@@ -293,8 +293,4 @@ public class ConnectSocket extends Connection {
         reconnect();
     }
 
-    protected void finalize() throws Throwable {
-        doClose();
-        super.finalize();
-    }
 }

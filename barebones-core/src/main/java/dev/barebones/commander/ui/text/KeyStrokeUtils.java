@@ -18,6 +18,7 @@
 package dev.barebones.commander.ui.text;
 
 import java.awt.event.KeyEvent;
+import java.awt.event.InputEvent;
 
 import javax.swing.KeyStroke;
 
@@ -29,6 +30,11 @@ import dev.barebones.commander.commons.runtime.OsFamily;
  * @author Arik Hadas, Maxence Bernard
  */
 public class KeyStrokeUtils {
+
+    private static final int LEGACY_SHIFT_MASK = 1;
+    private static final int LEGACY_CTRL_MASK = 1 << 1;
+    private static final int LEGACY_META_MASK = 1 << 2;
+    private static final int LEGACY_ALT_MASK = 1 << 3;
 
     private final static String SHIFT_MODIFIER_STRING = KeyEvent.getModifiersExText(KeyEvent.SHIFT_DOWN_MASK);
     private final static String CTRL_MODIFIER_STRING  = KeyEvent.getModifiersExText(KeyEvent.CTRL_DOWN_MASK);
@@ -88,6 +94,7 @@ public class KeyStrokeUtils {
      * @return a String representations of the given modifiers bitwise mask
      */
     public static String getModifiersDisplayableRepresentation(int modifiers) {
+        modifiers = normalizeModifiers(modifiers);
         String modifiersString = "";
 
         if((modifiers&KeyEvent.SHIFT_DOWN_MASK)!=0)
@@ -112,5 +119,18 @@ public class KeyStrokeUtils {
         }
 
         return modifiersString;
+    }
+
+    public static int normalizeModifiers(int modifiers) {
+        int normalized = modifiers;
+        if((modifiers&LEGACY_SHIFT_MASK)!=0)
+            normalized |= InputEvent.SHIFT_DOWN_MASK;
+        if((modifiers&LEGACY_CTRL_MASK)!=0)
+            normalized |= InputEvent.CTRL_DOWN_MASK;
+        if((modifiers&LEGACY_ALT_MASK)!=0)
+            normalized |= InputEvent.ALT_DOWN_MASK;
+        if((modifiers&LEGACY_META_MASK)!=0)
+            normalized |= InputEvent.META_DOWN_MASK;
+        return normalized;
     }
 }

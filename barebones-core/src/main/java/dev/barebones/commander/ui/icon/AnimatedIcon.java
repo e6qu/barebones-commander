@@ -262,16 +262,6 @@ public abstract class AnimatedIcon implements Icon {
         }
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        // Forces the timer to stop when the animation isn't used anymore.
-        timer.stop();
-
-        super.finalize();
-    }
-
-
-
     // - Container tracking --------------------------------------------------------------
     // -----------------------------------------------------------------------------------
     /**
@@ -369,6 +359,8 @@ public abstract class AnimatedIcon implements Icon {
             // Makes sure the animation hasn't been garbage collected.
             if((i = icon.get()) != null)
                 i.nextFrame();
+            else if(event.getSource() instanceof Timer)
+                ((Timer)event.getSource()).stop();
         }
     }
 }

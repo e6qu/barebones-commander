@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.file.archive.AbstractArchiveFile;
 import dev.barebones.commander.commons.file.archive.ArchiveFormatProvider;
@@ -44,7 +44,6 @@ import dev.barebones.commander.commons.file.protocol.search.SearchProtocolProvid
 import dev.barebones.commander.commons.file.util.FilePool;
 import dev.barebones.commander.commons.file.util.PathTokenizer;
 import dev.barebones.commander.commons.file.util.PathUtils;
-import dev.barebones.commander.commons.runtime.OsFamily;
 
 /**
  * FileFactory is an abstract class that provides static methods to get a {@link AbstractFile} instance for
@@ -451,10 +450,6 @@ public class FileFactory {
         }
 
         String filePath = fileURL.getPath();
-        // For local paths under Windows (e.g. "/C:\temp"), remove the leading '/' character
-        if(OsFamily.WINDOWS.isCurrent() && LocalFile.SCHEMA.equals(protocol))
-            filePath = PathUtils.removeLeadingSeparator(filePath, "/");
-
         String pathSeparator = fileURL.getPathSeparator();
 
         PathTokenizer pt = new PathTokenizer(filePath,

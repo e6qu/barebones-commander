@@ -20,8 +20,6 @@ package dev.barebones.commander.ui.main.tabs;
 import dev.barebones.commander.bookmark.BookmarkManager;
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileURL;
-import dev.barebones.commander.commons.file.protocol.local.LocalFile;
-import dev.barebones.commander.commons.file.util.PathUtils;
 import dev.barebones.commander.core.LocalLocationHistory;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.tabs.Tab;
@@ -118,12 +116,7 @@ public abstract class FileTableTab implements Tab {
 	}
 
 	private String getFilenameRepresentation(String filename, boolean local) {
-		// Under for OSes with 'root drives' (Windows, OS/2), remove the leading '/' character
-		if(local && LocalFile.hasRootDrives() && filename != null)
-			return PathUtils.removeLeadingSeparator(filename, "/");
-		// Under other OSes, if the filename is empty return "/"
-		else
-			return filename == null ? "/" : filename;
+		return filename == null ? "/" : filename;
 	}
 
 	/**

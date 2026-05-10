@@ -52,6 +52,7 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Locale;
 
@@ -188,11 +189,8 @@ public class AboutDialog extends FocusDialog implements ActionListener {
 
             // External tools.
             insertHeader(doc, "Tools");
-            insertDetailedUrl(doc, "Ant", "Apache Software License", "http://ant.apache.org");
-            insertDetailedUrl(doc, "AntDoclet", "GPL", "http://antdoclet.neuroning.com/");
-            insertDetailedUrl(doc, "jdeb", "Apache Software License", "http://vafer.org/projects/jdeb/");
-            insertDetailedUrl(doc, "Launch4j", "GPL", "http://launch4j.sourceforge.net");
-            insertDetailedUrl(doc, "NSIS", "zlib/libpng license", "http://nsis.sourceforge.net");
+            insertDetailedUrl(doc, "Gradle", "Apache Software License", "https://gradle.org");
+            insertDetailedUrl(doc, "jpackage", "GPL", "https://openjdk.org");
         } catch (Exception e) {
         }
 
@@ -431,7 +429,7 @@ public class AboutDialog extends FocusDialog implements ActionListener {
             dispose();
         else if (e.getSource() == homeButton) {
             try {
-                DesktopManager.browse(new URL(RuntimeConstants.HOMEPAGE_URL));
+                DesktopManager.browse(URI.create(RuntimeConstants.HOMEPAGE_URL).toURL());
             }
             // Ignores errors here as there really isn't anything we can do.
             catch (IOException ignored) {

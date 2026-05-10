@@ -22,8 +22,8 @@ import java.awt.Dimension;
 import java.awt.Frame;
 import java.util.Arrays;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.dialog.DialogAction;
