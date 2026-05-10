@@ -61,8 +61,8 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 
 import dev.barebones.commander.ui.action.ActionId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.runtime.OsFamily;
 import dev.barebones.commander.text.Translator;
@@ -574,7 +574,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
         /////////////////////////////
 
         public void keyPressed(KeyEvent keyEvent) {
-            LOGGER.trace("keyModifiers={} keyCode={}", keyEvent.getModifiers(), keyEvent.getKeyCode());
+            LOGGER.trace("keyModifiers={} keyCode={}", keyEvent.getModifiersEx(), keyEvent.getKeyCode());
 
             int keyCode = keyEvent.getKeyCode();
             if (Set.of(KeyEvent.VK_SHIFT,

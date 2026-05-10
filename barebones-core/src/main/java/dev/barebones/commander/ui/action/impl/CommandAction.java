@@ -33,8 +33,8 @@ import dev.barebones.commander.ui.dialog.InformationDialog;
 import dev.barebones.commander.ui.dialog.file.ProgressDialog;
 import dev.barebones.commander.ui.main.MainFrame;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * @author Nicolas Rinaudo

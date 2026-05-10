@@ -16,8 +16,8 @@
  */
 package dev.barebones.commander.ui.notifier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;

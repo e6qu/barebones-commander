@@ -23,8 +23,8 @@ import dev.barebones.commander.commons.file.filter.FilenameFilter;
 import dev.barebones.commander.commons.io.FileTransferException;
 import dev.barebones.commander.commons.io.RandomAccessInputStream;
 import dev.barebones.commander.commons.io.RandomAccessOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;

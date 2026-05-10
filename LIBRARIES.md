@@ -54,8 +54,9 @@ The repo is one root Gradle project with ~70 subprojects. They group cleanly int
 | MBassador (`net.engio:mbassador`) | 1.3.0 | In-process event bus |
 | JCommander (`com.beust`) | 1.82 | CLI argument parsing |
 | ICU4J (`com.ibm.icu`) | 78.3 | Collation / locale-aware sorting |
-| JNA (`net.java.dev.jna`) | 5.5.0 + 5.12.1 | Native interop (mac/win OS adapters) |
-| SLF4J + Logback | 1.7.36 / 1.2.13 | Logging |
+| JNA (`net.java.dev.jna`) | 5.18.1 | Native interop for macOS and Linux OS integration |
+| `java.lang.System.Logger` | JDK | Application logging facade |
+| SLF4J API | 1.7.36 | Transitive logging API used by AWS SDK / unix4j |
 | Log4j (`log4j-core`, `log4j-1.2-api`) | 2.25.3 | Logging compat (transitive) |
 | Gson | 2.11.0 | JSON (cloud SDK helpers) |
 | SnakeYAML | 2.3 | Custom-command/config YAML parsing |
@@ -101,7 +102,7 @@ The repo is one root Gradle project with ~70 subprojects. They group cleanly int
 | TwelveMonkeys imageio (`common-io`, `common-lang`, `imageio-core`/`-jpeg`/`-metadata`/`-psd`/`-tiff`/`-webp`) | 3.12.0 | Extra image-format support |
 
 ### Build / packaging
-- Gradle plugins: `com.athaydes.osgi-run` 1.6.0, `org.ajoberstar.grgit` 5.0.0, `edu.sc.seis.launch4j` 2.5.4, `biz.aQute.bnd:7.1.0`, `gradle-macappbundle` (vendored), `apple-actions/import-codesign-certs` (CI), Java `jpackage` (DMG/MSI/RPM/DEB).
+- Gradle plugins: `org.ajoberstar.grgit`, `org.cyclonedx.bom`, `com.github.spotbugs`, and `org.owasp.dependencycheck`; Java `jpackage` builds DMG/RPM/DEB installers.
 
 ### CI / tests
 - GitHub Actions: `nightly.yml`, `stable.yml`, `tests.yaml` (matrix on ubuntu-latest + macos-15)

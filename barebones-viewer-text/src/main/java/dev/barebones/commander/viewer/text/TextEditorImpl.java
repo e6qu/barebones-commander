@@ -57,8 +57,8 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.runtime.OsFamily;
@@ -186,7 +186,7 @@ class TextEditorImpl implements ThemeListener {
              * we just bubble it up to the parent component of the JTextArea.
              */
             public void mouseWheelMoved(MouseWheelEvent e) {
-                boolean isCtrlPressed = (e.getModifiers() & KeyEvent.CTRL_MASK) != 0;
+                boolean isCtrlPressed = (e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
                 if (isCtrlPressed) {
                     Font currentFont = textArea.getFont();
                     int currentFontSize = currentFont.getSize();

@@ -22,8 +22,8 @@ import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.io.StreamUtils;
 import net.minidev.json.JSONValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;

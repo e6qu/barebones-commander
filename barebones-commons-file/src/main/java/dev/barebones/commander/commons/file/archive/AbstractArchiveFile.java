@@ -29,8 +29,8 @@ import dev.barebones.commander.commons.file.UnsupportedFileOperationException;
 import dev.barebones.commander.commons.file.filter.FileFilter;
 import dev.barebones.commander.commons.file.filter.FilenameFilter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.io.IOException;
@@ -269,15 +269,13 @@ public abstract class AbstractArchiveFile extends ProxyFile {
      * Creates and returns an AbstractFile using the provided entry and parent file. This method takes care of
      * creating the proper AbstractArchiveFile instance if the entry is itself an archive.
      * The entry file's path will use the separator of the underlying file, as returned by {@link #getSeparator()}.
-     * That means entries paths of archives located on Windows local filesystems will use '\' as a separator, and
-     * '/' for Unix local archives.
      */
     protected AbstractFile getArchiveEntryFile(ArchiveEntry entry, AbstractFile parentFile) throws IOException {
 
         String entryPath = entry.getPath();
 
         // If the parent file's separator is not '/' (the default entry separator), replace '/' occurrences by
-        // the parent file's separator. For local files Under Windows, this allows entries' path to have '\' separators.
+        // the parent file's separator.
         String fileSeparator = getSeparator();
         if(!fileSeparator.equals("/"))
             entryPath = entryPath.replace("/", fileSeparator);

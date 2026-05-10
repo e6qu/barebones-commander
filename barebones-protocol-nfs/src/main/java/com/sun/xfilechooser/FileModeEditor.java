@@ -93,7 +93,7 @@ public class FileModeEditor extends PropertyEditorSupport
     public void setAsText(String text) throws IllegalArgumentException {
 	for (int i=0; i<fileModeNames.length; i++) {
 	    if (text.equals(fileModeNames[i])) {
-		setValue(new Integer(fileModeValues[i]));
+		setValue(Integer.valueOf(fileModeValues[i]));
 		return;
 	    }
 	}

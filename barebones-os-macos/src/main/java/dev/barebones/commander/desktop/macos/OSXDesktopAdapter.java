@@ -38,13 +38,14 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
 import javax.swing.JLabel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 
 import dev.barebones.commander.commons.runtime.JavaVersion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import com.apple.eawt.Application;
 import com.apple.eawt.FullScreenUtilities;
@@ -137,14 +138,12 @@ public class OSXDesktopAdapter extends DefaultDesktopAdapter {
 
     @Override
     public boolean isLeftMouseButton(MouseEvent e) {
-        int modifiers = e.getModifiers();
-        return (modifiers & MouseEvent.BUTTON1_MASK) != 0 && !e.isControlDown();
+        return SwingUtilities.isLeftMouseButton(e) && !e.isControlDown();
     }
 
     @Override
     public boolean isRightMouseButton(MouseEvent e) {
-        int modifiers = e.getModifiers();
-        return (modifiers & MouseEvent.BUTTON3_MASK) != 0 || ((modifiers & MouseEvent.BUTTON1_MASK) != 0 && e.isControlDown());
+        return SwingUtilities.isRightMouseButton(e) || (SwingUtilities.isLeftMouseButton(e) && e.isControlDown());
     }
 
     @Override

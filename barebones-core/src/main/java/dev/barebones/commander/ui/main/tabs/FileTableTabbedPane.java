@@ -17,8 +17,6 @@
 
 package dev.barebones.commander.ui.main.tabs;
 
-import dev.barebones.commander.commons.file.protocol.local.LocalFile;
-import dev.barebones.commander.commons.file.util.PathUtils;
 import dev.barebones.commander.core.desktop.DesktopManager;
 import dev.barebones.commander.desktop.ActionType;
 import dev.barebones.commander.ui.action.ActionManager;
@@ -154,9 +152,6 @@ public class FileTableTabbedPane extends TabbedPane<FileTableTab> implements Foc
 	    setTabHeader(index, headersFactory.create(tab));
 
 		String locationText = tab.getLocation().getPath();
-		// For OSes with 'root drives' (Windows, OS/2), remove the leading '/' character
-		if(LocalFile.hasRootDrives())
-			locationText = PathUtils.removeLeadingSeparator(locationText, "/");
 		setToolTipTextAt(index, locationText);
 
 		SwingUtilities.invokeLater(this::validate);

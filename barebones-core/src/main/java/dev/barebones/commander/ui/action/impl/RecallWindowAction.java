@@ -28,8 +28,8 @@ import dev.barebones.commander.ui.action.MuAction;
 import dev.barebones.commander.ui.main.MainFrame;
 import dev.barebones.commander.ui.main.WindowManager;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * Brings a {@link MainFrame} window to the front. This action operates on a specific window number specified in the

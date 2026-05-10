@@ -27,8 +27,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.auth.CredentialsManager;
 import dev.barebones.commander.command.Command;
@@ -321,7 +321,11 @@ public class Application {
 
             // - Logging configuration ------------------------------------
             // ------------------------------------------------------------
-            MuLogging.configureLogging();
+            if (activator.debug()) {
+                MuLogging.configureLogging(MuLogging.LogLevel.FINE);
+            } else {
+                MuLogging.configureLogging();
+            }
 
             // - Set the bundle's class loader as the default one
             // ------------------------------------------------------------

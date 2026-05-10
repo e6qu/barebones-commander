@@ -205,7 +205,7 @@ public class ColorPicker extends JButton implements ActionListener, AWTEventList
             int button = mouseEvent.getButton();
             if(button!=MouseEvent.NOBUTTON) {
                 // If left button was clicked (not released)
-                if(button==MouseEvent.BUTTON1 && (mouseEvent.getModifiers()&MouseEvent.MOUSE_CLICKED)!=0) {
+                if(button==MouseEvent.BUTTON1 && mouseEvent.getID()==MouseEvent.MOUSE_CLICKED) {
                     // If this color picker was clicked, cancel the color picking without firing an event
                     if(source!=this)
                         fireColorPicked(color);

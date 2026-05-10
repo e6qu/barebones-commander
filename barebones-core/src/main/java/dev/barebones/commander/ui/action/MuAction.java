@@ -40,8 +40,8 @@ import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.main.table.FileTable;
 import dev.barebones.commander.ui.notifier.NotifierProvider;
 import dev.barebones.commander.ui.text.KeyStrokeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.file.util.ResourceLoader;
 import dev.barebones.commander.ui.icon.IconManager;
@@ -277,7 +277,7 @@ public abstract class MuAction extends AbstractAction {
         String text = KeyEvent.getKeyText(accelerator.getKeyCode());
         int modifiers = accelerator.getModifiers();
         if(modifiers!=0)
-            text = KeyEvent.getKeyModifiersText(modifiers)+"+"+text;
+            text = KeyStrokeUtils.getModifiersDisplayableRepresentation(modifiers)+"+"+text;
 
         return text;
     }

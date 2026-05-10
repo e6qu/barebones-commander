@@ -58,7 +58,7 @@ public class SortableListPanel<E> extends JPanel {
 
         // Create 'Move item up' button
         JButton moveButton = new ArrowButton(dynamicList.getMoveUpAction(), ArrowButton.UP_DIRECTION);
-        // Constrain the button's size which by default is huge under Windows/Java 1.5
+        // Constrain the button's default size.
         moveButton.setPreferredSize(new Dimension(19, 0));
 
         // Make the button non focusable so that it doesn't steal focus from the list
@@ -69,7 +69,7 @@ public class SortableListPanel<E> extends JPanel {
 
         // Create 'Move item down' button
         moveButton = new ArrowButton(dynamicList.getMoveDownAction(), ArrowButton.DOWN_DIRECTION);
-        // Constrain the button's size which by default is huge under Windows/Java 1.5
+        // Constrain the button's default size.
         moveButton.setPreferredSize(new Dimension(19, 0));
 
         // Make the button non focusable so that it doesn't steal focus from the list

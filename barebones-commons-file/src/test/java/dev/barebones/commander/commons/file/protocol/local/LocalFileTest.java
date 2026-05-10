@@ -25,7 +25,6 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.regex.Matcher;
 
 /**
  * An {@link AbstractFileTest} implementation for {@link LocalFile}.
@@ -109,18 +108,6 @@ public class LocalFileTest extends AbstractFileTest {
     }
 
     /**
-     * Tests methods related to root drives (e.g. C:\).
-     */
-    @Test
-    public void testRootDriveMethods() {
-        // The following test simply assert that the method doesn't produce an uncaught exception.
-        LocalFile.hasRootDrives();
-
-        LocalFile localFile = (LocalFile)tempFile.getAncestor(LocalFile.class);
-        localFile.guessRemovableDrive();
-    }
-
-    /**
      * Tests the volumes returned by {@link LocalFile#getVolumes()} by calling {@link #testVolume(AbstractFile)} for
      * each of them.
      *
@@ -135,26 +122,6 @@ public class LocalFileTest extends AbstractFileTest {
 
         for (AbstractFile volume : volumes)
             testVolume(volume, volumes);
-    }
-
-    /**
-     * Tests the regex pattern
-     */
-    @Test
-    public void testDrivePattern() {
-        Matcher matcher = LocalFile.DRIVE_ROOT_PATTERN.matcher("C:\\");
-        assert matcher.matches();
-
-        matcher = LocalFile.DRIVE_ROOT_PATTERN.matcher("C:");
-        assert !matcher.matches();
-
-        matcher = LocalFile.DRIVE_ROOT_PATTERN.matcher("C:\\blah");
-        assert !matcher.matches();
-        matcher.reset();
-        assert matcher.find();
-
-        matcher = LocalFile.DRIVE_ROOT_PATTERN.matcher("/blah/C:\\");
-        assert !matcher.matches();
     }
 
     // @Test

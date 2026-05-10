@@ -19,6 +19,7 @@ package dev.barebones.commander.desktop;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -147,8 +148,8 @@ public abstract class UrlOperation implements DesktopOperation {
 
         // Deals with instances of String.
         if(target[0] instanceof String) {
-            try {return new URL((String)target[0]);}
-            catch(MalformedURLException e) {return null;}
+            try {return URI.create((String)target[0]).toURL();}
+            catch(IllegalArgumentException | MalformedURLException e) {return null;}
         }
 
         // Illegal parameters.

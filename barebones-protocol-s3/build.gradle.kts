@@ -14,8 +14,4 @@ dependencies {
     testImplementation(platform(libs.testcontainers.bom))
     testImplementation(libs.testcontainers)
     testImplementation(libs.testcontainers.localstack)
-    // testcontainers expects an SLF4J implementation at runtime; the
-    // root project pins logback for the app, but module tests don't
-    // pull that automatically.
-    testImplementation("ch.qos.logback:logback-classic:1.5.32")
 }

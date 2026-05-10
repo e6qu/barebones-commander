@@ -32,8 +32,8 @@ import java.util.Map;
 
 import dev.barebones.commander.commons.runtime.OsFamily;
 import dev.barebones.commander.ui.action.ActionId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.desktop.ActionType;
 import dev.barebones.commander.os.notifier.AbstractNotifier;
@@ -208,20 +208,4 @@ public class SystemTrayNotifier extends AbstractNotifier implements ActionListen
         WindowManager.getCurrentMainFrame().toFront();
     }
 
-
-    ////////////////////////
-    // Overridden methods //
-    ////////////////////////
-
-    @Override
-    protected void finalize() throws Throwable {
-        // This ensures that the system tray icon is removed when the application terminates.
-        // Even though this is a bit of a shot in the dark, this may fix a problem reported under Linux where the
-        // tray icon stayed after the application had quit:
-        /// http://www.mucommander.com/forums/viewtopic.php?t=604
-        if(isEnabled())
-            setEnabled(false);
-
-        super.finalize();
-    }
 }

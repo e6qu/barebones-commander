@@ -17,8 +17,8 @@
 
 package dev.barebones.commander.commons.util.cache;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * An abstract LRU cache.

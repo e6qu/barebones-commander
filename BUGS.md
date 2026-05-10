@@ -53,7 +53,7 @@ What grew:
 
 Entry paths are taken straight from `ZipEntry.getName()` /
 `TarEntry.getName()` and turned into `ArchiveEntry`s with no `..`
-normalisation, no leading-`/` rejection, no Windows `\` rejection.
+normalisation, no leading-`/` rejection, no backslash rejection.
 A crafted archive with `../../etc/passwd` writes outside the
 extraction root.
 
@@ -267,8 +267,8 @@ external-process invocations outside vendored Sun-RPC code.
 
 ### 1.26 ~~LOW — `System.err.println` in `Application.java:142,144`~~ **KEPT BY DESIGN**
 `Application.printError` is the CLI bootstrap error reporter — it
-runs before SLF4J/Logback are fully wired and its output needs to
-land on the user's terminal directly. Same for `Main.java:58`
+runs before application logging is fully wired and its output needs
+to land on the user's terminal directly. Same for `Main.java:58`
 ("no graphical environment detected"). Replacing these with
 LOGGER calls would silently lose the message during
 pre-init failures.

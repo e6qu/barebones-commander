@@ -19,12 +19,13 @@ package dev.barebones.commander.desktop.linux.xfce;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.protocol.local.LocalFile;
@@ -151,70 +152,61 @@ public class XfceTrash extends QueuedTrash {
      */
     @Override
     protected boolean moveToTrash(List<AbstractFile> queuedFiles) {
-        int nbFiles = queuedFiles.size();
-        String fileInfoContent;
-        String trashFileName;
-        boolean retVal = true;     // overall return value (if everything went OK or at least one file wasn't moved properly
-        
-        for(int i=0; i<nbFiles; i++) {
-            AbstractFile fileToDelete = queuedFiles.get(i);
-            // generate content of info file and new filename
-            try {
-                fileInfoContent = getFileInfoContent(fileToDelete);
-                trashFileName = getUniqueFilename(fileToDelete);
-            } catch (IOException ex) {
-                LOGGER.debug("Failed to create filename for new trash item: " + fileToDelete.getName(), ex);
-                
-                // continue with other file (do not move file, because info file cannot be properly created
-                continue;
-            }
+        boolean retVal = true;
 
-            AbstractFile infoFile = null;
-            OutputStreamWriter infoWriter = null;
-            try {
-                // create info file
-                infoFile = TRASH_INFO_SUBFOLDER.getChild(trashFileName + ".trashinfo");
-                // freedesktop.org Trash spec mandates UTF-8 for
-                // .trashinfo files (Trash-spec 1.0, §2).
-                infoWriter = new OutputStreamWriter(
-                    infoFile.getOutputStream(), java.nio.charset.StandardCharsets.UTF_8);
-                infoWriter.write(fileInfoContent);
-            } catch (IOException ex) {
-                retVal = false;
-                LOGGER.debug("Failed to create trash info file: " + trashFileName, ex);
-
-                // continue with other file (do not move file, because info file wasn't properly created)
-                continue;
-            }
-            finally {
-                if(infoWriter!=null) {
-                    try {
-                        infoWriter.close();
-                    }
-                    catch(IOException e) {
-                        // Not much else to do
-                    }
-                }
-            }
-            
-            try {
-                // rename original file
-                fileToDelete.renameTo(TRASH_FILES_SUBFOLDER.getChild(trashFileName));
-            } catch (IOException ex) {
-                try {
-                    // remove info file
-                    infoFile.delete();
-
-                } catch (IOException ex1) {
-                    // simply ignore
-                }
-                
-                retVal = false;
-                LOGGER.debug("Failed to move file to trash: " + trashFileName, ex);
-            }
+        for(AbstractFile fileToDelete : queuedFiles) {
+            retVal &= moveFileToTrash(fileToDelete);
         }
 
         return retVal;
+    }
+
+    private boolean moveFileToTrash(AbstractFile fileToDelete) {
+        String trashFileName;
+        try {
+            trashFileName = getUniqueFilename(fileToDelete);
+        }
+        catch (IOException ex) {
+            LOGGER.debug("Failed to create filename for new trash item: " + fileToDelete.getName(), ex);
+            return false;
+        }
+
+        AbstractFile infoFile;
+        try {
+            infoFile = createTrashInfoFile(trashFileName, getFileInfoContent(fileToDelete));
+        }
+        catch (IOException ex) {
+            LOGGER.debug("Failed to create trash info file: " + trashFileName, ex);
+            return false;
+        }
+
+        try {
+            fileToDelete.renameTo(TRASH_FILES_SUBFOLDER.getChild(trashFileName));
+            return true;
+        }
+        catch (IOException ex) {
+            deleteTrashInfoFile(infoFile);
+            LOGGER.debug("Failed to move file to trash: " + trashFileName, ex);
+            return false;
+        }
+    }
+
+    private AbstractFile createTrashInfoFile(String trashFileName, String fileInfoContent) throws IOException {
+        AbstractFile infoFile = TRASH_INFO_SUBFOLDER.getChild(trashFileName + ".trashinfo");
+        // freedesktop.org Trash spec mandates UTF-8 for .trashinfo files (Trash-spec 1.0, §2).
+        try (OutputStreamWriter infoWriter = new OutputStreamWriter(infoFile.getOutputStream(), StandardCharsets.UTF_8)) {
+            infoWriter.write(fileInfoContent);
+        }
+        return infoFile;
+    }
+
+    private void deleteTrashInfoFile(AbstractFile infoFile) {
+        try {
+            infoFile.delete();
+        }
+        catch (IOException ex) {
+            LOGGER.debug("Failed to delete stale trash info file: " + infoFile.getName(), ex);
+        }
     }
 
 	/**

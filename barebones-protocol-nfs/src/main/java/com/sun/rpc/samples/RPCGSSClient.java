@@ -52,6 +52,7 @@ package com.sun.rpc.samples;
  */
  
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import com.sun.rpc.*;
 
 class RPCGSSClient {
@@ -249,7 +250,7 @@ class RPCGSSClient {
 		offset = 0; n = 0; i = 0;
 
 		while (i < (len - 1)) {
-		    while (Character.isSpace((char) argbuf[i])) {
+		    while (Character.isWhitespace((char) argbuf[i])) {
 			i++;
 		    }
 		    offset = i;
@@ -258,7 +259,7 @@ class RPCGSSClient {
 			   //!Character.isSpace((char) argbuf[i]))
 			i++;
 		    }
-		    args[n++] = new String(argbuf, 0, offset, i-offset);
+		    args[n++] = new String(argbuf, offset, i-offset, StandardCharsets.ISO_8859_1);
 		}
 		args[n] = null;
 

@@ -20,9 +20,6 @@ package dev.barebones.commander.ui.button;
 import javax.swing.Action;
 import javax.swing.Icon;
 import javax.swing.JButton;
-import javax.swing.UIManager;
-
-import dev.barebones.commander.commons.runtime.OsFamily;
 
 /**
  * NonFocusableButton is a JButton which is non focusable, i.e. that cannot hold keyboard focus.
@@ -57,9 +54,8 @@ public class NonFocusableButton extends JButton {
 
 
     private void setLookAndFeelProperties() {
-        // Fill the content area under the Windows L&F only, required for the borders to be painted.
-        // Note: filing the content area under Metal L&F looks like absolute crap.
-        setContentAreaFilled(OsFamily.WINDOWS.isCurrent() && "Windows".equals(UIManager.getLookAndFeel().getName()));
+        // Filling the content area under Metal L&F looks poor.
+        setContentAreaFilled(false);
     }
 
 

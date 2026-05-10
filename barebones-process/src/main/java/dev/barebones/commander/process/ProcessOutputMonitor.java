@@ -20,8 +20,8 @@ package dev.barebones.commander.process;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * Used to monitor a process' stdout and stderr streams.

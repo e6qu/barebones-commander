@@ -204,17 +204,4 @@ public class BufferedRandomOutputStream extends RandomAccessOutputStream {
 
         raos.close();
     }
-
-    /**
-     * This method is overridden to release the internal buffer if {@link #close()} has not been called, to avoid any
-     * memory leak.
-     */
-    @Override
-    protected void finalize() throws Throwable {
-        // If this stream hasn't been closed, release the buffer before finalizing the object
-        if(buffer!=null)
-            BufferPool.releaseByteArray(buffer);
-
-        super.finalize();
-    }
 }

@@ -30,14 +30,15 @@ import dev.barebones.commander.ui.dialog.InformationDialog;
 import dev.barebones.commander.ui.dialog.QuestionDialog;
 import dev.barebones.commander.ui.layout.InformationPane;
 import dev.barebones.commander.ui.main.MainFrame;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.JCheckBox;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -128,7 +129,7 @@ public class CheckVersionDialog extends QuestionDialog implements Runnable {
                 title = Translator.get("version_dialog.new_version_title");
 
                 // Checks if the current platform can open a new browser window
-                downloadURL = new URL(version.getDownloadURL());
+                downloadURL = URI.create(version.getDownloadURL()).toURL();
                 downloadOption = DesktopManager.isOperationSupported(DesktopManager.BROWSE, new Object[]{downloadURL});
 
                 // If the platform is not capable of opening a new browser window,

@@ -19,8 +19,8 @@
 package dev.barebones.commander.commons.file.archive;
 
 import dev.barebones.commander.commons.file.util.PathUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 

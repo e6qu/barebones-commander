@@ -22,6 +22,7 @@ import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
@@ -34,8 +35,8 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.util.ui.combobox.ComboBoxListener;
 import dev.barebones.commander.commons.util.ui.combobox.SaneComboBox;
@@ -74,10 +75,10 @@ public class KeyboardShortcutChooser extends JPanel implements ItemListener, Com
     };
 
     private final static int MODIFIER_TABLE[] = {
-        KeyEvent.SHIFT_MASK,
-        KeyEvent.CTRL_MASK,
-        KeyEvent.ALT_MASK,
-        KeyEvent.META_MASK
+        InputEvent.SHIFT_DOWN_MASK,
+        InputEvent.CTRL_DOWN_MASK,
+        InputEvent.ALT_DOWN_MASK,
+        InputEvent.META_DOWN_MASK
     };
 
     private final static Color FOCUSED_TEXT_FIELD_FOREGROUND = Color.BLACK;
@@ -120,7 +121,7 @@ public class KeyboardShortcutChooser extends JPanel implements ItemListener, Com
 
         modifierCheckBoxes = new JCheckBox[MODIFIER_TABLE.length];
         for(int i=0; i< MODIFIER_TABLE.length; i++) {
-            modifierCheckBoxes[i] = new JCheckBox(KeyEvent.getKeyModifiersText(MODIFIER_TABLE[i]));
+            modifierCheckBoxes[i] = new JCheckBox(KeyEvent.getModifiersExText(MODIFIER_TABLE[i]));
             flowPanel.add(modifierCheckBoxes[i]);
             modifierCheckBoxes[i].addItemListener(this);
         }
@@ -185,7 +186,7 @@ public class KeyboardShortcutChooser extends JPanel implements ItemListener, Com
     }
 
     private void updateCheckBoxes() {
-        int modifiers = currentKeyStroke==null?0:currentKeyStroke.getModifiers();
+        int modifiers = currentKeyStroke==null?0:KeyStrokeUtils.normalizeModifiers(currentKeyStroke.getModifiers());
 
         updatingCheckBoxes = true;
 
@@ -257,7 +258,7 @@ public class KeyboardShortcutChooser extends JPanel implements ItemListener, Com
     ////////////////////////////////
 
     public void keyPressed(KeyEvent keyEvent) {
-        LOGGER.trace("keyModifiers="+keyEvent.getModifiers()+" keyCode="+keyEvent.getKeyCode());
+        LOGGER.trace("keyModifiers="+keyEvent.getModifiersEx()+" keyCode="+keyEvent.getKeyCode());
 
         int keyCode = keyEvent.getKeyCode();
         if(keyCode==KeyEvent.VK_SHIFT || keyCode==KeyEvent.VK_CONTROL || keyCode==KeyEvent.VK_ALT || keyCode==KeyEvent.VK_META)

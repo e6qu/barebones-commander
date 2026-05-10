@@ -35,8 +35,8 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTabbedPane;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.command.Command;
 import dev.barebones.commander.commons.file.AbstractFile;
@@ -561,7 +561,7 @@ public final class DesktopManager {
     /**
      * Returns <code>true</code> if the given file is an application file. What an application file actually is
      * is system-dependent and can take various forms.
-     * It can be a simple executable file, as in the case of Windows <code>.exe</code> files, or a directory
+     * It can be a simple executable file or a directory
      * containing an executable and various meta-information files, like Mac OS X's <code>.app</code> files.
      *
      * @param file the file to test

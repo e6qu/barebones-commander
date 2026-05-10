@@ -17,13 +17,12 @@
 
 package dev.barebones.commander.commons.runtime;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 
 /**
- * This class represents a major version of an operating system, like <code>Mac OS X 10.5</code> or
- * <code>Windows XP</code>. The current runtime value is determined using the value of the <code>os.version</code>
+ * This class represents a major version of an operating system, like <code>Mac OS X 10.5</code>. The current runtime value is determined using the value of the <code>os.version</code>
  * system property and the current {@link OsFamily} instance.
  * Being a {@link dev.barebones.commander.commons.runtime.ComparableRuntimeProperty}, OS versions are ordered and can be compared
  * against each other.
@@ -35,24 +34,8 @@ public enum OsVersion implements ComparableRuntimeProperty {
 	/** Unknown OS version */
 	UNKNOWN_VERSION("Unknown"),
 
-	//////////////////////
-	// Windows versions //
-	//////////////////////
-
-	/** Windows 7 */
-	WINDOWS_7("Windows 7"),
-	/** Windows 8 */
-	WINDOWS_8("Windows 8"),
-	/** Windows 8.1 */
-	WINDOWS_8_1("Windows 8.1"),
-	/** Windows 10 */
-	WINDOWS_10("Windows 10"),
-	/** Windows 11 */
-	WINDOWS_11("Windows 11"),
-
-
-	///////////////////////
-	// Mac OS X versions //
+		///////////////////////
+		// Mac OS X versions //
 	///////////////////////
 
 	/** Lion */
@@ -145,25 +128,6 @@ public enum OsVersion implements ComparableRuntimeProperty {
         // This website holds a collection of system property values under many OSes:
         // http://lopica.sourceforge.net/os.html
 
-        if(osFamily==OsFamily.WINDOWS) {
-            if (osNameProp.equals("Windows 7"))
-                return WINDOWS_7;
-
-            if (osNameProp.equals("Windows 8"))
-                return WINDOWS_8;
-
-            if (osNameProp.equals("Windows 8.1"))
-                return WINDOWS_8_1;
-
-            if (osNameProp.equals("Windows 10"))
-                return WINDOWS_10;
-
-            if (osNameProp.equals("Windows 11"))
-                return WINDOWS_11;
-
-            // Newer version we don't know of yet, assume latest supported OS version
-            return WINDOWS_11;
-        }
         // Mac OS X versions
         if (osFamily==OsFamily.MAC_OS) {
             if(osVersionProp.startsWith("26"))

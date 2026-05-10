@@ -27,8 +27,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import dev.barebones.commander.commons.io.security.SecureXml;
 
 import dev.barebones.commander.ui.action.ActionId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 

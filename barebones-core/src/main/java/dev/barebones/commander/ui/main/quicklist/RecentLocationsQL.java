@@ -79,10 +79,7 @@ public class RecentLocationsQL extends QuickListWithIcons<RecentLocationsQL.Rece
         public String toString() {
             switch(url.getScheme()) {
             case LocalFile.SCHEMA:
-                String path = url.getPath();
-                if (LocalFile.USES_ROOT_DRIVES && !path.isEmpty())
-                    path = path.substring(1);
-                return path;
+                return url.getPath();
             default:
                 return url.toString();
             }

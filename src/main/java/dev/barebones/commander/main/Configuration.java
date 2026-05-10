@@ -33,6 +33,8 @@ public class Configuration {
     /** Whether or not to display verbose error messages. */
     @Parameter(names={"-S", "--silent"}, description="Do not print verbose error messages")
     public boolean silent;
+    @Parameter(names={"--debug"}, description="Print debug log messages during startup")
+    public boolean debug;
     @Parameter(names={"-v", "--version"}, description="Print the version and exit", help=true)
     public boolean version;
     @Parameter(names={"-h", "--help"}, description="Print the help text and exit", help=true)
@@ -78,6 +80,7 @@ public class Configuration {
     public Set<Entry<String, String>> entrySet() {
         Set<Entry<String, String>> set = new LinkedHashSet<>();
         set.add(toEntry("mucommander.silent", Boolean.toString(silent)));
+        set.add(toEntry("mucommander.debug", Boolean.toString(debug)));
         set.add(toEntry("mucommander.assoc", assoc));
         set.add(toEntry("mucommander.bookmark", bookmark));
         set.add(toEntry("mucommander.configuration", configuration));

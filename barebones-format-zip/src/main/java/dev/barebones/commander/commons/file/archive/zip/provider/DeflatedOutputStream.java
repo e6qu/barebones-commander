@@ -90,12 +90,12 @@ public class DeflatedOutputStream extends ZipEntryOutputStream {
 
     @Override
     public int getTotalIn() {
-        return deflater.getTotalIn();
+        return Math.toIntExact(deflater.getBytesRead());
     }
 
     @Override
     public int getTotalOut() {
-        return deflater.getTotalOut();
+        return Math.toIntExact(deflater.getBytesWritten());
     }
 
 

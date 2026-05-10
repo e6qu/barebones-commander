@@ -45,22 +45,22 @@ public class PathTokenizerTest {
     }
 
     @Test
-    public void testWindowsRootWithoutTrailingSeparator() {
+    public void testDriveLikeRootWithoutTrailingSeparator() {
         test("C:");
     }
 
     @Test
-    public void testWindowsRootWithTrailingSeparator() {
+    public void testBackslashRootWithTrailingSeparator() {
         test("C:\\");
     }
 
     @Test
-    public void testWindowsWithTrailingSeparator() {
+    public void testBackslashPathWithTrailingSeparator() {
         test("C:\\temp\\");
     }
 
     @Test
-    public void testWindowsWithoutTrailingSeparator() {
+    public void testBackslashPathWithoutTrailingSeparator() {
         test("C:\\temp");
     }
 

@@ -68,7 +68,7 @@ public abstract class QuickList extends JPopupMenu implements FocusListener {
 	 */
 	protected abstract boolean prepareForShowing(QuickListContainer container);
 	
-	public void show() {
+	public void showQuickList() {
         
 		if (prepareForShowing(container)) {
 			// Note: the actual popup menu's size is not known at this stage so we use the component's preferred size

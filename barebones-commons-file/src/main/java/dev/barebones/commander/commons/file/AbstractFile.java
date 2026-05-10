@@ -22,6 +22,7 @@ import dev.barebones.commander.commons.file.archive.AbstractArchiveEntryFile;
 import dev.barebones.commander.commons.file.archive.AbstractArchiveFile;
 import dev.barebones.commander.commons.file.archive.AbstractRWArchiveFile;
 import dev.barebones.commander.commons.file.compat.CompatURLStreamHandler;
+import dev.barebones.commander.commons.file.compat.CompatURLs;
 import dev.barebones.commander.commons.file.filter.FileFilter;
 import dev.barebones.commander.commons.file.filter.FilenameFilter;
 import dev.barebones.commander.commons.io.BufferPool;
@@ -31,8 +32,8 @@ import dev.barebones.commander.commons.io.FileTransferException;
 import dev.barebones.commander.commons.io.RandomAccessInputStream;
 import dev.barebones.commander.commons.io.RandomAccessOutputStream;
 import dev.barebones.commander.commons.io.StreamUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.Icon;
 import java.awt.Dimension;
@@ -113,7 +114,7 @@ public abstract class AbstractFile implements FileAttributes {
      * @throws java.net.MalformedURLException if the java.net.URL could not parse the location of this FileURL
      */
     public URL getJavaNetURL() throws MalformedURLException {
-        return new URL(null, getURL().toString(true), new CompatURLStreamHandler(this));
+        return CompatURLs.create(getURL().toString(true), new CompatURLStreamHandler(this));
     }
 
 
@@ -297,8 +298,8 @@ public abstract class AbstractFile implements FileAttributes {
      * In other words, archive files may not be considered as volumes.
      * <p>
      * The notion of volume may or may not have a meaning depending on the kind of filesystem. On local filesystems,
-     * the notion of volume can be assimilated into that of <i>mount point</i> for UNIX-based OSes, or <i>drive</i>
-     * for the Windows platform. Volumes may also have a meaning for certain network filesystems such as SMB, for which
+     * the notion of volume can be assimilated into that of <i>mount point</i>. Volumes may also have a meaning for
+     * certain network filesystems such as SMB, for which
      * shares can be considered as volumes. Filesystems that don't have a notion of volume should return the
      * {@link #getRoot() root folder}.
      * </p>
@@ -1727,7 +1728,7 @@ public abstract class AbstractFile implements FileAttributes {
      * Returns <code>true</code> if this file is a system file.
      * Note that system file attribute depends on the OS, so we can know it only for local files:
      * - For MAC OS, {@link MacOsSystemFolder} defines the group of system files
-     * - On Windows, files has special attribute that mark them as system files
+     * - Some filesystems have special attributes that mark files as system files
      *
      * @return <code>true</code> if this file is a system file
      */

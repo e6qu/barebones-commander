@@ -1,8 +1,4 @@
 [versions]
-# Logging
-slf4j = "2.0.17"
-logback = "1.5.32"
-
 # UI
 flatlaf = "3.7.1"
 rsyntaxtextarea = "3.6.2"
@@ -53,11 +49,6 @@ spotbugs = "6.5.4"
 dependencycheck = "12.2.2"
 
 [libraries]
-slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
-
-logback-core = { group = "ch.qos.logback", name = "logback-core", version.ref = "logback" }
-logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
-
 flatlaf = { group = "com.formdev", name = "flatlaf", version.ref = "flatlaf" }
 rsyntaxtextarea = { group = "com.fifesoft", name = "rsyntaxtextarea", version.ref = "rsyntaxtextarea" }
 

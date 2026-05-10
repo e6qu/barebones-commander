@@ -25,8 +25,8 @@ import dev.barebones.commander.commons.file.archive.ArchiveEntry;
 import dev.barebones.commander.commons.file.archive.ArchiveEntryIterator;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -94,7 +94,7 @@ public class TarArchiveFile extends AbstractROArchiveFile {
         TarArchiveEntry tarEntry;
         String targetPath = entry.getPath();
         // Iterate through the archive until we've found the entry
-         while ((tarEntry = tin.getNextTarEntry()) != null) {
+         while ((tarEntry = tin.getNextEntry()) != null) {
              if (tarEntry.getName().equals(targetPath)) {
                  // That's the one, return it
                  return tin;

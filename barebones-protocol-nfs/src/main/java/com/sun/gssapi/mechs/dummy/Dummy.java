@@ -55,7 +55,7 @@ public final class Dummy extends Provider {
 	
 	public Dummy() {
 
-		super("JGSS Dummy Provider 1", 1.0, info);
+		super("JGSS Dummy Provider 1", "1.0", info);
 
 
 		//list mechs supported

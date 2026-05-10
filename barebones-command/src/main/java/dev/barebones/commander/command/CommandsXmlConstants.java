@@ -45,7 +45,6 @@ package dev.barebones.commander.command;
  * @see CommandReader
  * @author Nicolas Rinaudo
  */
-@Deprecated
 interface CommandsXmlConstants {
     // - XML elements ----------------------------------------------------------
     // -------------------------------------------------------------------------

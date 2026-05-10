@@ -18,6 +18,7 @@
 
 package dev.barebones.commander.commons.file.archive.zip.provider;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Hashtable;
 import java.util.Vector;
 import java.util.zip.ZipException;
@@ -56,7 +57,7 @@ public class ExtraFieldUtils {
      */
     public static void register(Class<? extends ZipExtraField> c) {
         try {
-            ZipExtraField ze = c.newInstance();
+            ZipExtraField ze = c.getDeclaredConstructor().newInstance();
             implementations.put(ze.getHeaderId(), c);
         } catch (ClassCastException cc) {
             throw new RuntimeException(c + " doesn\'t implement ZipExtraField");
@@ -64,6 +65,10 @@ public class ExtraFieldUtils {
             throw new RuntimeException(c + " is not a concrete class");
         } catch (IllegalAccessException ie) {
             throw new RuntimeException(c + "\'s no-arg constructor is not public");
+        } catch (NoSuchMethodException ie) {
+            throw new RuntimeException(c + " has no no-arg constructor");
+        } catch (InvocationTargetException ie) {
+            throw new RuntimeException(c + "\'s no-arg constructor threw an exception", ie.getCause());
         }
     }
 
@@ -79,7 +84,17 @@ public class ExtraFieldUtils {
         throws InstantiationException, IllegalAccessException {
         Class<? extends ZipExtraField> c = implementations.get(headerId);
         if (c != null) {
-            return c.newInstance();
+            try {
+                return c.getDeclaredConstructor().newInstance();
+            } catch (NoSuchMethodException e) {
+                InstantiationException instantiationException = new InstantiationException(c + " has no no-arg constructor");
+                instantiationException.initCause(e);
+                throw instantiationException;
+            } catch (InvocationTargetException e) {
+                InstantiationException instantiationException = new InstantiationException(c + "\'s no-arg constructor threw an exception");
+                instantiationException.initCause(e.getCause());
+                throw instantiationException;
+            }
         }
         UnrecognizedExtraField u = new UnrecognizedExtraField();
         u.setHeaderId(headerId);

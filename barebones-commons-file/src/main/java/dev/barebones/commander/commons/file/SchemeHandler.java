@@ -25,7 +25,7 @@ package dev.barebones.commander.commons.file;
  *  <dt>{@link #getStandardPort() standard port}</dt><dd>the standard port implied when no port is defined in the URL,
  * e.g. 21 for FTP</dd>
  *  <dt>{@link #getPathSeparator() path separator}</dt><dd>the character(s) that separates path fragments, e.g. '/' for
- * most schemes, '\' for local paths under certain OSes like Windows.</dd>
+ * most schemes.</dd>
  *  <dt>{@link #getGuestCredentials() guest credentials}</dt><dd>credentials to authenticate as a guest, e.g. 'GUEST'
  * for SMB, 'anonymous' for FTP.</dd>
  *  <dt>{@link #getRealm(FileURL) authentication realm}</dt><dd>the base URL throughout which a set of credentials can

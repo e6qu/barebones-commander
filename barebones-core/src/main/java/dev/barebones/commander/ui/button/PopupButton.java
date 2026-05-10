@@ -30,8 +30,8 @@ import javax.swing.event.PopupMenuListener;
 
 import dev.barebones.commander.core.desktop.DesktopManager;
 import dev.barebones.commander.ui.action.impl.MuteProxyAction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * PopupButton is a compound component that combines a JButton with a JPopupMenu.
@@ -153,7 +153,7 @@ public abstract class PopupButton extends NonFocusableButton {
         });
 
         // Popup up the menu underneath under this button. This has to be executed by the event thread, otherwise some
-        // weird repaint issue will arise under Windows at least (Note: this method can be executed by a thread other
+        // repaint issues can arise (Note: this method can be executed by a thread other
         // than the event thread).
         SwingUtilities.invokeLater(() -> {
             Dimension popupMenuSize = popupMenu.getPreferredSize();
@@ -169,7 +169,7 @@ public abstract class PopupButton extends NonFocusableButton {
 
         // Note: focus MUST NOT be requested on the popup menu because:
         // a/ it's not necessary, focus is automatically transferred to the popup menu
-        // b/ it creates a weird bug under Windows which prevents enter key from selecting any menu item
+        // b/ it creates a focus bug which prevents enter key from selecting any menu item
     }
 
 

@@ -35,7 +35,7 @@ public class MuProvider extends Provider {
     private static boolean initialized;
 
     private MuProvider() {
-        super("muCommander", 1.0, "muCommander's additional MessageDigest implementations.");
+        super("muCommander", "1.0", "muCommander's additional MessageDigest implementations.");
     }
 
     /**

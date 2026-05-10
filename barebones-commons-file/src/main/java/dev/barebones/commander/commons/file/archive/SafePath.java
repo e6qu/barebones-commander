@@ -17,14 +17,13 @@ import java.io.IOException;
  *
  * <ul>
  *   <li><b>Absolute paths</b> — leading {@code /} or {@code \},
- *       Windows drive prefixes ({@code C:}, {@code A:}). A naive
+ *       drive prefixes ({@code C:}, {@code A:}). A naive
  *       extractor doing {@code root.resolve(entryName)} would
  *       silently escape the extraction root for absolute paths.</li>
  *   <li><b>Parent escapes</b> — any {@code ..} path segment.</li>
- *   <li><b>Backslashes</b> — Windows path separators are normalised
- *       in archive specs to forward slashes; a backslash in an
- *       entry name on Windows would create a directory boundary
- *       the validator never sees.</li>
+ *   <li><b>Backslashes</b> — archive specs use forward slashes for
+ *       directory boundaries, so backslashes are rejected instead of
+ *       being treated as filename characters.</li>
  *   <li><b>NUL bytes</b> — would terminate a C-string in a
  *       downstream native call.</li>
  *   <li><b>Empty / null</b> names.</li>
@@ -57,7 +56,7 @@ public final class SafePath {
         }
         if (entryName.indexOf('\\') >= 0) {
             throw new UnsafeEntryNameException(entryName,
-                "entry name contains backslash (Windows separator); archive specs use '/'");
+                "entry name contains backslash; archive specs use '/'");
         }
         if (entryName.charAt(0) == '/') {
             throw new UnsafeEntryNameException(entryName,
@@ -69,7 +68,7 @@ public final class SafePath {
                 && entryName.charAt(1) == ':'
                 && isAsciiLetter(entryName.charAt(0))) {
             throw new UnsafeEntryNameException(entryName,
-                "entry name has a Windows drive prefix");
+                "entry name has a drive prefix");
         }
         // Reject any '..' path segment.
         for (String seg : entryName.split("/")) {

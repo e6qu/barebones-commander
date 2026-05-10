@@ -19,8 +19,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.net.URI;
 import java.util.Objects;
@@ -115,7 +115,7 @@ public final class S3Connection implements AutoCloseable {
             creds = StaticCredentialsProvider.create(
                 AwsBasicCredentials.create(accessKey, secretKey));
         } else {
-            creds = DefaultCredentialsProvider.create();
+            creds = DefaultCredentialsProvider.builder().build();
         }
 
         S3Configuration s3Config = S3Configuration.builder()
@@ -129,15 +129,13 @@ public final class S3Connection implements AutoCloseable {
             .serviceConfiguration(s3Config)
             .build();
 
-        // S3AsyncClient (Java/Netty-based) is used by S3TransferManager
-        // to drive multipart uploads of large objects. Using the
-        // CRT-based client would be faster but adds a heavyweight
-        // native dep we don't yet need.
-        S3AsyncClient asyncClient = S3AsyncClient.builder()
+        // The CRT-backed async client drives multipart transfers without
+        // Netty's Java 25 terminal Unsafe allocation warnings.
+        S3AsyncClient asyncClient = S3AsyncClient.crtBuilder()
             .region(Region.of(regionName))
             .credentialsProvider(creds)
             .endpointOverride(endpoint)
-            .serviceConfiguration(s3Config)
+            .forcePathStyle(pathStyleAccess)
             .build();
 
         S3TransferManager transferManager = S3TransferManager.builder()

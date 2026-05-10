@@ -52,35 +52,17 @@ import javax.swing.filechooser.FileSystemView;
  * that is set would be the XFileSystemView.
  */
 public abstract class XFileSystemView extends FileSystemView {
-    static FileSystemView windowsXFileSystemView = null;
     static FileSystemView unixXFileSystemView = null;
-    static FileSystemView genericXFileSystemView = null;
     
     /**
-     * Depending on type of operating system  (e.g. unix, windows, or generic)
-     * it would return the file system view.
+     * Returns the Unix file system view used by the supported desktop platforms.
      * @return FileSystemView the operating system file system view
      */
     public static FileSystemView getFileSystemView() {
-	if(File.separatorChar == '\\') {
-	    if(windowsXFileSystemView == null) {
-		windowsXFileSystemView = new WindowsXFileSystemView();
-	    }
-	    return windowsXFileSystemView;
-	}
-
-	if(File.separatorChar == '/') {
-	    if(unixXFileSystemView == null) {
-		unixXFileSystemView = new UnixXFileSystemView();
-	    }
-	    return unixXFileSystemView;
-	}
-
-	if(genericXFileSystemView == null) {
-	    genericXFileSystemView = new GenericXFileSystemView();
-	}
-	
-	return genericXFileSystemView;
+        if(unixXFileSystemView == null) {
+            unixXFileSystemView = new UnixXFileSystemView();
+        }
+        return unixXFileSystemView;
     }
 
     /** 
@@ -112,7 +94,7 @@ public abstract class XFileSystemView extends FileSystemView {
      * @return File[] array of files in the directory
      */
     public File[] getFiles(File dir, boolean useFileHiding) {
-        Vector files = new Vector();
+        Vector<BeanXFile> files = new Vector<>();
 
         // add all files in dir
         String[] names = dir.list();
@@ -260,143 +242,3 @@ class UnixXFileSystemView extends XFileSystemView {
     }
 
 }
-
-
-/**
- * FileSystemView that handles some specific windows concepts.
- */
-class WindowsXFileSystemView extends XFileSystemView {
-    /* For I18N */
-    private static ResourceBundle rb =
-	ResourceBundle.getBundle("com.sun.xfilechooser.EditorResource"/*NOI18N*/); 
-
-    /**
-     * creates a new folder with a default folder name.
-     */
-    public File createNewFolder(File containingDir) throws IOException {
-	if (containingDir == null) {
-	    throw new IOException("Containing directory is null:");
-	}
-	BeanXFile newFolder = null;
-
-	// Using NT's default folder name
-	newFolder = (BeanXFile) createFileObject(containingDir, rb.getString("New Folder"));
-	int i = 2;
-	while (newFolder.exists() && (i < 100)) {
-	    newFolder = (BeanXFile) createFileObject(containingDir, rb.getString("New Folder") + "(" + i + ")");
-	    i++;
-	}
-
-	if (newFolder.exists())
-	    throw new IOException("Directory already exists:" + newFolder.getAbsolutePath());
-
-	newFolder.mkdirs();
-
-	return newFolder;
-    }
-
-    /**
-     * Returns whether a file is hidden or not. On Windows 
-     * there is currently no way to get this information from
-     * io.File, therefore always return false.
-     */
-    public boolean isHiddenFile(File f) {
-	return false;
-    }
-
-    /**
-     * Returns all root partitians on this system. On Windows, this
-     * will be the A: through Z: drives.
-     */
-    public File[] getRoots() {
-	Vector rootsVector = new Vector();
-	
-	/* Create the A: drive whether it is mounted or not */
-	XWindowsFloppy floppy = new XWindowsFloppy();
-	rootsVector.addElement(floppy);
-	
-	/*
-	 * Run through all possible mount points and check
-	 * for their existance.
-	 */
-	for (char c = 'C'; c <= 'Z'; c++) {
-	    char device[] = {c, ':', '\\'};
-	    String deviceName = new String(device);
-	    BeanXFile deviceFile = new BeanXFile(deviceName);
-	    if (deviceFile != null && deviceFile.exists()) {
-		rootsVector.addElement(deviceFile);
-	    }
-	}
-
-	BeanXFile[] roots = new BeanXFile[rootsVector.size()];
-	rootsVector.copyInto((Object[]) roots);
-	return roots;
-    }
-
-    /**
-     * Fake the floppy drive. There is no way to know whether
-     * it is mounted or not, and doing a file.isDirectory or
-     * file.exists() causes Windows to pop up the "Insert Floppy"
-     * dialog. We therefore assume that A: is the floppy drive,
-     * and force it to always return true for isDirectory()
-     */
-    class XWindowsFloppy extends BeanXFile {
-	public XWindowsFloppy() {
-	    super("A" + ":" + "\\");
-	}
-
-	public boolean isDirectory() {
-	    return true;
-	}
-    }
-
-}
-
-
-/**
- * Fallthrough FileSystemView in case we can't determine the OS.
- */
-class GenericXFileSystemView extends XFileSystemView {
-    /* For I18N */
-    private static ResourceBundle rb =
-	ResourceBundle.getBundle("com.sun.xfilechooser.EditorResource"/*NOI18N*/); 
-
-    /**
-     * creates a new folder with a default folder name.
-     */
-    public File createNewFolder(File containingDir) throws IOException {
-	if (containingDir == null) {
-	    throw new IOException("Containing directory is null:");
-	}
-	BeanXFile newFolder = null;
-
-	newFolder = (BeanXFile) createFileObject(containingDir, rb.getString("NewFolder"));
-
-	if (newFolder.exists())
-	    throw new IOException("Directory already exists:" + newFolder.getAbsolutePath());
-
-	newFolder.mkdirs();
-
-	return newFolder;
-    }
-
-    /**
-     * Returns whether a file is hidden or not. Since we don't
-     * know the OS type, always return false
-     */
-    public boolean isHiddenFile(File f) {
-	return false;
-    }
-
-    /**
-     * Returns all root partitians on this system. Since we
-     * don't know what OS type this is, return a null file
-     * list.
-     */
-    public File[] getRoots() {
-	BeanXFile[] roots = new BeanXFile[0];
-	return roots;
-    }
-
-}
-

@@ -59,11 +59,11 @@ public class SafePathTest {
         assertThrows(SafePath.UnsafeEntryNameException.class,
             () -> SafePath.validate("foo\\bar"));
         assertThrows(SafePath.UnsafeEntryNameException.class,
-            () -> SafePath.validate("..\\..\\windows\\system32"));
+            () -> SafePath.validate("..\\..\\system\\file"));
     }
 
     @Test
-    public void windowsDrivePrefixRejected() {
+    public void drivePrefixRejected() {
         assertThrows(SafePath.UnsafeEntryNameException.class,
             () -> SafePath.validate("C:foo"));
         assertThrows(SafePath.UnsafeEntryNameException.class,

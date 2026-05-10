@@ -312,6 +312,6 @@ public class FileIcons {
      * default file manager
      */
     public static boolean hasProperSystemIcons() {
-        return OsFamily.MAC_OS.isCurrent() || OsFamily.WINDOWS.isCurrent();
+        return OsFamily.MAC_OS.isCurrent();
     }
 }

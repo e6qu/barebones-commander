@@ -87,7 +87,7 @@ public class MuPreferences implements MuPreferencesAPI {
     /** System notifications are enabled by default on platforms where a notifier is available and works well enough.
      * In particular, the system tray notifier is available under Linux, but it doesn't work well so it is not
      * enabled by default. */
-    public static final boolean DEFAULT_ENABLE_SYSTEM_NOTIFICATIONS = OsFamily.MAC_OS.isCurrent() || OsFamily.WINDOWS.isCurrent();
+    public static final boolean DEFAULT_ENABLE_SYSTEM_NOTIFICATIONS = OsFamily.MAC_OS.isCurrent();
     /** List of encodings that are displayed in encoding selection components. */
     public static final String  PREFERRED_ENCODINGS               = "preferred_encodings";
     /** Controls whether the default file drag and drop action is set to 'COPY' */
@@ -106,7 +106,7 @@ public class MuPreferences implements MuPreferencesAPI {
     /** Log level. */
     public static final String  LOG_LEVEL                         = LOG_SECTION + '.' + "level";
     /** Default log level. */
-    public static final String  DEFAULT_LOG_LEVEL                 = "WARNING";
+    public static final String  DEFAULT_LOG_LEVEL                 = "INFO";
     /** Log buffer size, in number of messages. */
     public static final String  LOG_BUFFER_SIZE                   = LOG_SECTION + '.' + "buffer_size";
     /** Default log buffer size. Should be set to a low value to minimize memory usage, yet high enough to have most of

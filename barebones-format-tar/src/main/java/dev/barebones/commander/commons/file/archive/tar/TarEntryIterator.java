@@ -24,8 +24,8 @@ import dev.barebones.commander.commons.file.archive.ArchiveEntryIterator;
 import dev.barebones.commander.commons.file.archive.SafePath;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.io.IOException;
 
@@ -103,7 +103,7 @@ class TarEntryIterator implements ArchiveEntryIterator {
         // Loop so a single unsafe entry doesn't terminate iteration —
         // we skip + log it and try the next.
         while (true) {
-            TarArchiveEntry entry = tin.getNextTarEntry();
+            TarArchiveEntry entry = tin.getNextEntry();
             if (entry == null) {
                 return null;
             }

@@ -20,8 +20,6 @@ dependencies {
     compileOnly(libs.flatlaf)
     compileOnly(libs.jetbrains.annotations)
 
-    implementation(libs.logback.core)
-    implementation(libs.logback.classic)
     implementation(libs.commons.collections4)
     implementation(libs.json.smart)
 

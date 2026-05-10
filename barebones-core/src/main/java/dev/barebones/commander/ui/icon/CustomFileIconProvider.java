@@ -97,13 +97,12 @@ public class CustomFileIconProvider implements FileIconProvider {
      * </ul>
      */
     final static String ICON_EXTENSIONS[][] = {
-        {"archive_unsupported.png", "7z", "ace", "arj", "bin", "bz", "cab", "dmg", "hqx", "ipk", "lha", "lzh", "lzx", "msi", "mpkg", "pak", "pkg", "pq6", "rar", "rk", "rz", "sea", "sit", "sitx", "sqx", "z", "zoo"},	// Unsupported archive formats (no native support), see http://en.wikipedia.org/wiki/Archive_formats
+        {"archive_unsupported.png", "7z", "ace", "arj", "bin", "bz", "cab", "dmg", "hqx", "ipk", "lha", "lzh", "lzx", "mpkg", "pak", "pkg", "pq6", "rar", "rk", "rz", "sea", "sit", "sitx", "sqx", "z", "zoo"},	// Unsupported archive formats (no native support), see http://en.wikipedia.org/wiki/Archive_formats
         {"audio.png", "aac", "aif", "aiff", "aifc", "amr", "ape", "au", "cda", "mp3", "mpa", "mp2", "mpc", "m3u", "m4a", "m4b", "m4p", "nap", "ogg", "pls", "ra", "ram", "wav", "wave", "flac", "wma", "mid", "midi", "smf", "mod", "mtm", "xm", "s3m", "mka"},	// Audio formats, see http://en.wikipedia.org/wiki/Audio_file_format
         {"cd_image.png", "iso", "nrg"},	// CD/DVD image
         {"certificate.png", "cer", "crt", "key"},	// Certificate file
         {"configuration.png", "cnf", "conf", "config", "inf", "ini", "pif", "prefs", "prf"},	// Configuration file
         {"database.png", "myi", "myd", "frm", "sql", "sqc", "sqr", "mdb", "mde", "mdn", "mdt", "accdb", "accde", "accdr", "accdt"},	// Database file
-        {"executable_windows.png", "bat", "com", "exe"},	// Windows executables
         {"feed.png", "rdf", "rss"},	// RSS/RDF feed
         {"font.png", "fnt", "fon", "otf"},	// Non-TrueType font
         {"font_truetype.png", "ttc", "ttf"},	// TrueType font
@@ -118,7 +117,6 @@ public class CustomFileIconProvider implements FileIconProvider {
         {"ms_word.png", "doc", "wbk", "wiz", "wpg", "wpk", "wpm", "wpt", "wrs", "wwl", "docx", "dotx", "docm", "dotm"},	// Microsoft Word
         {"ms_powerpoint.png", "pcb", "pot", "ppa", "ppi", "pps", "ppt", "pwz", "pptx", "potx", "ppsx", "pptm", "potm", "ppsm"},	// Microsoft Office (Powerpoint)
         {"ms_visualstudio.png",	"atp", "dbp", "hxc", "ncb", "pch", "pdb", "sln", "suo", "srf", "vaf", "vam", "vbg", "vbp", "vbproj", "vcproj", "vdp", "vdproj", "vip", "vmx", "vsdir", "vsmacros",	"vsmproj", "vup"},	// Microsoft Visual Studio
-        {"ms_windows_shortcut.png", "lnk"},	// MS Windows .lnk shortcut files
         {"pdf.png", "pdf"},		// Adobe Acrobat / PDF
         {"source.png", "asm", "asp", "bas", "bcp", "cbl", "cob", "f", "fpp", "inc", "js", "lsp", "m4", "pas", "pl", "py", "src", "vb", "vbe", "vbs", "x"},	// Languages for which there is no special icon (generic source icon)
         {"source.png", "awk", "csh", "esh", "sh", "ksh", "ws", "wsf"},	// Shell scripts

@@ -110,7 +110,7 @@ public class SplashScreen extends JWindow {
         JLabel splash = new JLabel(imageIcon);
         setContentPane(splash);
 
-        // Set size manually instead of using pack(), because of a bug under 1.3.1/Win32 which
+        // Set size manually instead of using pack(), because of an old JDK bug which
         // eats a 1-pixel row of the image
         // pack();
         int width = imageIcon.getIconWidth();

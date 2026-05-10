@@ -38,8 +38,8 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.auth.CredentialsMapping;
 import dev.barebones.commander.commons.file.AbstractFile;
@@ -425,7 +425,7 @@ public class FolderPanel implements FocusListener, QuickListContainer, ActiveTab
      */
     public void showQuickList(int index) {
         try {
-            fileTablePopups.get()[index].show();
+            fileTablePopups.get()[index].showQuickList();
         } catch (Exception e) {
             LOGGER.error("Unable to show QuickList", e);
             throw new RuntimeException(e);

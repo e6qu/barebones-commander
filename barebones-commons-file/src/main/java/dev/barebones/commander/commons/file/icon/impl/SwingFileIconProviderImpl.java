@@ -31,8 +31,8 @@ import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileSystemView;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.icon.CacheableFileIconProvider;
@@ -130,7 +130,7 @@ class SwingFileIconProviderImpl extends LocalFileIconProvider implements Cacheab
                 //  - dump the stack trace to System.err => bad! bad! bad!
                 //
                 // A way to workaround this odd behavior would be to test if the file exists when it is requested,
-                // but a/ this is an expensive operation (especially under Windows) and b/ it wouldn't guarantee that
+                // but a/ this is an expensive operation and b/ it wouldn't guarantee that
                 // the file effectively exists when the icon is requested.
                 // So the workaround here is to catch exceptions and 'silence' System.err output during the call.
 

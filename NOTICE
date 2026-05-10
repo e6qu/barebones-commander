@@ -21,12 +21,11 @@ the barebones-commander contributors as copyright holders.
 
 Third-party libraries used (subset; see LIBRARIES.md for the full inventory):
 
-  SLF4J                       — MIT License
-  Logback (classic, core)     — EPL-1.0 / LGPL-2.1 (dual)
   Apache Felix (OSGi)         — Apache License 2.0   [removed in Phase 2]
   FlatLaf                     — Apache License 2.0
   ICU4J                       — Unicode-DFS-2016
   JNA                         — Apache License 2.0 / LGPL-2.1 (dual)
+  SLF4J API (transitive)      — MIT License
   SnakeYAML                   — Apache License 2.0
   Bouncy Castle               — MIT-style
   Apache Commons Compress     — Apache License 2.0

@@ -20,8 +20,8 @@ package dev.barebones.commander.core;
 import java.util.List;
 import java.util.Vector;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileFactory;
@@ -73,14 +73,11 @@ public class LocalLocationHistory {
 		if (historyIndex<0 || !folderURL.equals(history.get(historyIndex), false, false))
 			addToHistory(folderURL);
 
-		// Save last recallable folder on startup, only if :
-		//  - it is a directory on a local filesytem
-		//  - it doesn't look like a removable media drive (cd/dvd/floppy), especially in order to prevent
-		// Java from triggering that dreaded 'Drive not ready' popup.
+		// Save last recallable folder on startup, only if it is a directory on a local filesystem.
 		LOGGER.trace("folder="+folderURL);
 		if(folderURL.getScheme().equals(LocalFile.SCHEMA)) {
 			AbstractFile folder = FileFactory.getFile(folderURL);
-			if (folder.isDirectory() && (folder instanceof LocalFile) && !((LocalFile)folder.getRoot()).guessRemovableDrive()) {
+			if (folder.isDirectory() && folder instanceof LocalFile) {
 				this.lastRecallableFolder = folder.getAbsolutePath();
 				LOGGER.trace("lastRecallableFolder= "+lastRecallableFolder);
 			}
@@ -196,9 +193,7 @@ public class LocalLocationHistory {
 	 * the application is started.
 	 *
 	 * <p>The returned folder will NOT be a folder on a remote filesystem
-	 * which would be likely not to be reachable next time the app is started, or a removable media drive
-	 * (cd/dvd/floppy) under Windows, which would trigger a nasty 'drive not ready' popup dialog if the drive
-	 * is not available or the media has changed.
+	 * which would be likely not to be reachable next time the app is started.
 	 */
 	public String getLastRecallableFolder() {
 		return this.lastRecallableFolder;

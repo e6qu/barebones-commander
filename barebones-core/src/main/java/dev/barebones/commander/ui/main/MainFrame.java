@@ -78,8 +78,8 @@ import dev.barebones.commander.ui.main.tabs.ConfFileTableTab;
 import dev.barebones.commander.ui.main.toolbar.ToolBar;
 import dev.barebones.commander.ui.notifier.NotifierProvider;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 /**
  * This is the main frame, which contains all other UI components visible on a mucommander window.

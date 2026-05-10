@@ -30,8 +30,8 @@ import dev.barebones.commander.job.impl.TempExecJob;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.dialog.InformationDialog;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.ui.action.ActionProperties;
 import dev.barebones.commander.ui.action.impl.ShowRecentExecutedFilesQLAction;
 import dev.barebones.commander.ui.dialog.file.ProgressDialog;

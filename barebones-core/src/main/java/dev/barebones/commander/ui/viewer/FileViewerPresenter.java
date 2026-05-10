@@ -20,6 +20,7 @@ import java.awt.Cursor;
 import java.awt.Frame;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -203,7 +204,7 @@ public class FileViewerPresenter extends FilePresenter implements ViewerPresente
             fullScreenMenuItem = MenuToolkit.addCheckBoxMenuItem(viewerMenu,
                     Translator.get("file_viewer.fullscreen"),
                     menuItemMnemonicHelper,
-                    KeyStroke.getKeyStroke(KeyEvent.VK_M, ActionEvent.CTRL_MASK),
+                    KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK),
                     (e) -> {
                         boolean fullScreen = getFrame().isFullScreen();
                         switchFullScreenMode(!fullScreen);

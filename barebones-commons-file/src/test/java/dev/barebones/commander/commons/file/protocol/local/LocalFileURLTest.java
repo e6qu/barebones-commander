@@ -21,7 +21,6 @@ import dev.barebones.commander.commons.file.AuthenticationType;
 import dev.barebones.commander.commons.file.Credentials;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.FileURLTestCase;
-import dev.barebones.commander.commons.runtime.OsFamily;
 import org.testng.annotations.Test;
 
 import java.net.MalformedURLException;
@@ -45,99 +44,29 @@ public class LocalFileURLTest extends FileURLTestCase {
     @Test
     public void testLocalPathParsing() throws MalformedURLException {
         FileURL url;
-        // For OSes that use backslash as a path separator and have a notion of 'root drives' like Windows (C:\ D:\ ...).
-        if("\\".equals(getPathSeparator())) {
-            assert "\\".equals(getPathSeparator());
+        url = FileURL.getFileURL("/path");
+        assert "file".equals(url.getScheme());
+        assert "localhost".equals(url.getHost());
+        assert "/path".equals(url.getPath());
+        assert "path".equals(url.getFilename());
 
-            url = FileURL.getFileURL("C:\\");
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/C:\\".equals(url.getPath());
+        url = FileURL.getFileURL("/path/to");
+        assert "file".equals(url.getScheme());
+        assert "localhost".equals(url.getHost());
+        assert "/path/to".equals(url.getPath());
+        assert "to".equals(url.getFilename());
 
-            url = FileURL.getFileURL("C:\\dir\\file");
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/C:\\dir\\file".equals(url.getPath());
-            assert "file".equals(url.getFilename());
+        url = url.getParent();
+        assert "file".equals(url.getScheme());
+        assert "localhost".equals(url.getHost());
+        assert "/path/".equals(url.getPath());
+        assert "path".equals(url.getFilename());
 
-            url = url.getParent();
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/C:\\dir\\".equals(url.getPath());
-            assert "dir".equals(url.getFilename());
-
-            url = FileURL.getFileURL("C:\\direc/tory");
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/C:\\direc/tory".equals(url.getPath());
-            assert "direc/tory".equals(url.getFilename());
-
-            // Test forward-separated paths which are also supported
-
-            url = FileURL.getFileURL("C:/");
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/C:\\".equals(url.getPath());
-
-            url = FileURL.getFileURL("C:/dir/file");
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/C:\\dir\\file".equals(url.getPath());
-            assert "file".equals(url.getFilename());
-
-            url = url.getParent();
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/C:\\dir\\".equals(url.getPath());
-            assert "dir".equals(url.getFilename());
-
-            url = FileURL.getFileURL("C:/direc\\tory");
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/C:\\direc\\tory".equals(url.getPath());
-            assert "tory".equals(url.getFilename());
-        }
-        // For OSes that use forward slash as a path separator
-        else {
-            url = FileURL.getFileURL("/path");
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/path".equals(url.getPath());
-            assert "path".equals(url.getFilename());
-
-            url = FileURL.getFileURL("/path/to");
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/path/to".equals(url.getPath());
-            assert "to".equals(url.getFilename());
-
-            url = url.getParent();
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/path/".equals(url.getPath());
-            assert "path".equals(url.getFilename());
-
-            url = FileURL.getFileURL("/direc\\tory");
-            assert "file".equals(url.getScheme());
-            assert "localhost".equals(url.getHost());
-            assert "/direc\\tory".equals(url.getPath());
-            assert "direc\\tory".equals(url.getFilename());
-        }
-    }
-
-    /**
-     * Tests the resolution of Windows UNC paths (e.g. \\host\\share). This test is system-dependant.
-     *
-     * @throws MalformedURLException should not happen
-     */
-    @Test
-    public void testUNCParsing() throws MalformedURLException {
-        FileURL url = FileURL.getFileURL("\\\\host\\share");
-
-        // UNC path will be transformed into either a 'file' or a 'smb' URL, depending on the current OS
-        assert (OsFamily.WINDOWS.isCurrent()?"file":"smb").equals(url.getScheme());
-        assert "host".equals(url.getHost());
-        assert "/share".equals(url.getPath());
+        url = FileURL.getFileURL("/direc\\tory");
+        assert "file".equals(url.getScheme());
+        assert "localhost".equals(url.getHost());
+        assert "/direc\\tory".equals(url.getPath());
+        assert "direc\\tory".equals(url.getFilename());
     }
 
     ////////////////////////////////////

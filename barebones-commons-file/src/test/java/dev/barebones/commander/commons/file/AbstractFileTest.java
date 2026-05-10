@@ -448,7 +448,7 @@ public abstract class AbstractFileTest {
         assert volume != null;
         assert volume.equals(volume.getVolume());
 
-        // Volumes may not always exist -- for instance, removable drives under Windows.
+        // Volumes may not always exist -- for instance, removable drives.
         if(volume.exists()) {
             // If the volume exists, it must be a directory
             assert volume.isDirectory();
