@@ -13,13 +13,11 @@ The remaining native and shell-out surfaces are intentional platform integration
 points. The best follow-up work is not a bulk rewrite; it is a small set of
 targeted PRs:
 
-1. Replace the credentials-file `chmod` shell-out with Java NIO POSIX
-   permissions.
-2. Migrate macOS Keychain from legacy `SecKeychain*` calls to the modern
+1. Migrate macOS Keychain from legacy `SecKeychain*` calls to the modern
    `SecItem*` API while keeping JNA.
-3. Harden platform command execution with timeouts and consistent interrupt
+2. Harden platform command execution with timeouts and consistent interrupt
    handling where the app currently waits on external commands.
-4. Evaluate NFS replacement only if NFS becomes a maintenance hotspot; today
+3. Evaluate NFS replacement only if NFS becomes a maintenance hotspot; today
    the vendored NFS code is pure Java and already isolated.
 
 ## Inventory
@@ -35,7 +33,7 @@ targeted PRs:
 | Linux desktop settings | `GSettings.java`, `GConfTool.java`, `KdeConfig.java` | `gsettings`, `gconftool`, `kreadconfig` | Read multi-click interval / desktop config values | Direct D-Bus or dconf/KConfig libraries would add platform-specific complexity. | Keep shell-outs, but add timeouts and restore interrupt status consistently. |
 | Linux openers/trash UI | `GnomeDesktopAdapter.java`, `KdeDesktopAdapter.java`, `XfceDesktopAdapter.java`, trash classes | `xdg-open`, `gvfs-open`, `gnome-open`, `kfmclient`, `kioclient`, `thunar`, `nautilus`, `ktrash` | Open files, URLs, terminals, and Trash in the user's desktop environment | `java.awt.Desktop` covers some open/browse cases but not every desktop-specific Trash action. | Keep for now. Consider a later Desktop API fallback pass, not a blind replacement. |
 | Local process runner | `barebones-process/.../LocalProcess.java` and callers | `ProcessBuilder` | User commands, file openers, AppleScript, desktop helpers | This is the Java-native process API. | Keep. It is the correct abstraction for user-configured commands. |
-| Credentials chmod | `Chmod.java`, `CredentialsManager.java` | `chmod` shell-out | Set credentials file to mode `0600` on Unix-like systems | `java.nio.file.Files.setPosixFilePermissions` covers the current internal use. | Replace in the next code PR; this is low risk and removes an avoidable shell-out. |
+| Credentials permissions | `CredentialsFilePermissions.java`, `CredentialsManager.java` | Java NIO POSIX permissions | Set credentials file to mode `0600` on Unix-like systems | Already Java-native after Phase 25. | Done: the former `chmod` shell-out helper was deleted. |
 | FreeBSD mount list | `LocalFile.streamMountPoints()` | `/sbin/mount -p` for FreeBSD only | Enumerate local mount points | Linux path already uses `/proc/mounts`; FreeBSD is outside current supported OS targets. | Remove or guard more tightly in a cleanup PR. It is dead for macOS/Linux support. |
 | SFTP | `barebones-protocol-sftp` | `com.github.mwiede:jsch` pure Java SSH/SFTP | SFTP backend | Apache MINA SSHD is a maintained pure Java alternative. | Defer. JSch fork is current and working; migrate only if a concrete capability or maintenance issue appears. |
 | NFS | `barebones-protocol-nfs`, `sun-net-www` | Vendored pure Java Sun/Yanfs RPC/NFS code | In-process NFSv2/v3 backend | A maintained Java NFS client would be preferable, but credible drop-in options need proof-of-concept testing. | Keep isolated. Do not attempt a large replacement without an integration-test fixture. |
@@ -50,12 +48,12 @@ targeted PRs:
 
 ## Follow-up Candidates
 
-### Phase 25 Candidate: Remove `chmod` Shell-Out
+### Phase 25: Remove `chmod` Shell-Out
 
 `CredentialsManager` only needs to set the credentials file to `0600`.
-`Files.setPosixFilePermissions` can do that directly on macOS and Linux. This
-should be a narrow PR with tests for the mode-to-permission mapping and a manual
-verification note for both OS families.
+`Files.setPosixFilePermissions` now does that directly on macOS and Linux.
+The old `Chmod` shell-out helper was deleted because it had no remaining app
+call sites.
 
 ### Phase 26 Candidate: Modernize macOS Keychain Binding
 
