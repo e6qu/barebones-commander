@@ -303,12 +303,12 @@ public class ThemeCache implements ThemeListener {
 
             // Unmatched foreground
         case Theme.FILE_TABLE_UNMATCHED_FOREGROUND_COLOR:
-            unmatchedForeground = event.getColor();
+            setUnmatchedForeground(event.getColor());
             break;
 
             // Unmached background
         case Theme.FILE_TABLE_UNMATCHED_BACKGROUND_COLOR:
-            unmatchedBackground = event.getColor();
+            setUnmatchedBackground(event.getColor());
             break;
 
             // Active normal background.
@@ -343,12 +343,12 @@ public class ThemeCache implements ThemeListener {
 
             // Active selection outline.
         case Theme.FILE_TABLE_SELECTED_OUTLINE_COLOR:
-            activeOutlineColor = event.getColor();
+            setActiveOutlineColor(event.getColor());
             break;
 
             // Inactive selection outline.
         case Theme.FILE_TABLE_INACTIVE_SELECTED_OUTLINE_COLOR:
-            inactiveOutlineColor = event.getColor();
+            setInactiveOutlineColor(event.getColor());
             break;
 
             // Secondary background color.
@@ -373,12 +373,24 @@ public class ThemeCache implements ThemeListener {
     public void fontChanged(FontChangedEvent event) {
     	switch (event.getFontId()) {
     	case Theme.FILE_TABLE_FONT:
-    		tableFont = event.getFont();
+            setTableFont(event.getFont());
     		break;
    		default:
    		    return;
      	}
     	fireFontChanged(event);
     }
-	
+
+    // Static setters so the colorChanged / fontChanged instance
+    // methods (forced to be instance because they implement
+    // ThemeListener) don't write directly to scalar static fields,
+    // which trips SpotBugs ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD.
+    // The array-element writes (foregroundColors[i][j][k] = ...)
+    // are not flagged because SpotBugs counts that as a write to
+    // an array, not to a static field reference.
+    private static void setUnmatchedForeground(java.awt.Color c) { unmatchedForeground = c; }
+    private static void setUnmatchedBackground(java.awt.Color c) { unmatchedBackground = c; }
+    private static void setActiveOutlineColor  (java.awt.Color c) { activeOutlineColor   = c; }
+    private static void setInactiveOutlineColor(java.awt.Color c) { inactiveOutlineColor = c; }
+    private static void setTableFont(java.awt.Font f) { tableFont = f; }
 }

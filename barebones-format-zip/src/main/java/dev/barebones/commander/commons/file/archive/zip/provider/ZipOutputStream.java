@@ -141,22 +141,26 @@ public class ZipOutputStream extends OutputStream implements ZipConstants {
     }
 
     /**
-     * The encoding to use for filenames and the file comment.
+     * The encoding to use for filenames and the file comment. Defaults
+     * to {@link #UTF_8} (set the EFS general-purpose-bit-flag bit 11
+     * automatically when used). For legacy non-EFS archives, pass
+     * {@code "CP437"}.
      *
-     * <p>For a list of possible values see <a
-     * href="http://java.sun.com/j2se/1.5.0/docs/guide/intl/encoding.doc.html">http://java.sun.com/j2se/1.5.0/docs/guide/intl/encoding.doc.html</a>.
-     * Defaults to the platform's default character encoding.</p>
-     *
-     * @param encoding the encoding value
+     * @param encoding the encoding name; must not be null
+     * @throws NullPointerException if {@code encoding} is null
      */
     public void setEncoding(String encoding) {
+        if (encoding == null) {
+            throw new NullPointerException("encoding must not be null; "
+                + "pass \"UTF-8\" (modern EFS) or \"CP437\" (legacy)");
+        }
         this.encoding = encoding;
     }
 
     /**
      * The encoding to use for filenames and the file comment.
      *
-     * @return null if using the platform's default character encoding.
+     * @return non-null encoding name; defaults to {@link #UTF_8}.
      */
     public String getEncoding() {
         return encoding;
@@ -624,14 +628,19 @@ public class ZipOutputStream extends OutputStream implements ZipConstants {
      * @throws ZipException on error
      */
     protected static byte[] getBytes(String name, String encoding) throws ZipException {
+        // Encoding choice is not ours to guess. The caller picked
+        // null deliberately (bypass) or by accident (bug); either way
+        // we must not silently substitute, since downstream readers
+        // will interpret bytes per the archive's bit-11 flag.
+        // CP437 is the spec default for non-EFS archives.
         if (encoding == null) {
-            return name.getBytes();
-        } else {
-            try {
-                return name.getBytes(encoding);
-            } catch (UnsupportedEncodingException uee) {
-                throw new ZipException(uee.getMessage());
-            }
+            throw new NullPointerException("encoding must not be null; pass \"UTF-8\" "
+                + "and set the EFS bit, or \"CP437\" for legacy non-EFS archives");
+        }
+        try {
+            return name.getBytes(encoding);
+        } catch (UnsupportedEncodingException uee) {
+            throw new ZipException(uee.getMessage());
         }
     }
 

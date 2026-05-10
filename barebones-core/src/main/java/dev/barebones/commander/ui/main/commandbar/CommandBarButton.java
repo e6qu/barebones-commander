@@ -115,12 +115,18 @@ public class CommandBarButton extends NonFocusableButton implements Configuratio
     public void configurationChanged(ConfigurationEvent event) {
         String var = event.getVariable();
 
-        // Reload butons icon if the icon scale factor has changed
+        // Reload buttons icon if the icon scale factor has changed
         if (var.equals(MuPreferences.COMMAND_BAR_ICON_SCALE)) {
-            scaleFactor = event.getFloatValue();
+            updateScaleFactor(event.getFloatValue());
 
             // Change the button's icon but NOT the action's icon which has to remain in its original non-scaled size
             setIcon(IconManager.getScaledIcon(((MuAction) getAction()).getIcon(), scaleFactor));
         }
+    }
+
+    /** Static helper so the static-field write doesn't sit inside an
+     *  instance event handler (SpotBugs ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD). */
+    private static void updateScaleFactor(float newScale) {
+        scaleFactor = newScale;
     }
 }

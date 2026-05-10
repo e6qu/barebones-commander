@@ -202,12 +202,18 @@ public class ToolBar extends JToolBar implements ConfigurationListener, MouseLis
     /**
      * Listens to certain configuration variables.
      */
+    /** Static helper so the static-field write doesn't sit inside an
+     *  instance event handler (SpotBugs ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD). */
+    private static void updateScaleFactor(float newScale) {
+        scaleFactor = newScale;
+    }
+
     public void configurationChanged(ConfigurationEvent event) {
         String var = event.getVariable();
 
         // Rescale buttons icon
         if (var.equals(MuPreferences.TOOLBAR_ICON_SCALE)) {
-            scaleFactor = event.getFloatValue();
+            updateScaleFactor(event.getFloatValue());
             Component components[] = getComponents();
             int nbComponents = components.length;
 

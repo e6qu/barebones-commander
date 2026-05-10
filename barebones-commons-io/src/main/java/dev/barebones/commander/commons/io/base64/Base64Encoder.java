@@ -81,7 +81,9 @@ public abstract class Base64Encoder {
             out64.write(b, off, len);
             out64.writePadding();
 
-            return new String(bout.toByteArray());
+            // Base64 alphabet is pure ASCII; explicit UTF-8 keeps SpotBugs
+            // (and platforms with non-UTF-8 default encodings) happy.
+            return new String(bout.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
         }
         catch(IOException e) {
             // Should never happen

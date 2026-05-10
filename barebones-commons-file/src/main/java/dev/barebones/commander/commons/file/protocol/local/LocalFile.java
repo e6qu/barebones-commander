@@ -373,7 +373,8 @@ public class LocalFile extends ProtocolFile {
      * @param volumes the <code>Vector</code> to add mount points to
      */
     private static void addMountEntries(Set<AbstractFile> volumes) {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(streamMountPoints()))) {
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(streamMountPoints(), java.nio.charset.StandardCharsets.UTF_8))) {
             String line;
             // read each line in file and parse it
             while ((line = br.readLine()) != null) {

@@ -645,15 +645,11 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
         lookAndFeels = UIManager.getInstalledLookAndFeels();
 
         // Sorts them.
-        Arrays.sort(lookAndFeels, new Comparator<UIManager.LookAndFeelInfo>() {
-            public int compare(UIManager.LookAndFeelInfo a, UIManager.LookAndFeelInfo b) {
-                return a.getName().compareTo(b.getName());
-            }
-
-            public boolean equals(Object a) {
-                return false;
-            }
-        });
+        // Comparator interface inherits Object.equals; overriding it to
+        // always-false breaks the equals contract (reflexivity) and
+        // SpotBugs flags it. Default identity-equals is fine for an
+        // anonymous Comparator that's never compared to anything.
+        Arrays.sort(lookAndFeels, Comparator.comparing(UIManager.LookAndFeelInfo::getName));
     }
 
     /**

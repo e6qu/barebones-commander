@@ -18,6 +18,7 @@
 
 package dev.barebones.commander.commons.file.archive.zip.provider;
 
+import java.nio.charset.StandardCharsets;
 import java.util.zip.CRC32;
 import java.util.zip.ZipException;
 
@@ -53,6 +54,15 @@ import java.util.zip.ZipException;
  * @author Apache Ant, Maxence Bernard
  */
 public class AsiExtraField implements ZipExtraField, UnixStat, Cloneable {
+
+    /** Encoding for the symlink-target byte sequence in the extra field.
+     *  Filesystem paths on POSIX are opaque byte sequences; the Info-ZIP
+     *  Unix extra-field spec doesn't pin an encoding. UTF-8 matches what
+     *  Linux / macOS use for paths in 2026; CP437 would be wrong here
+     *  because this isn't a Zip name field (which IS bound by APPNOTE
+     *  bit-11 / CP437 fallback). */
+    private static final java.nio.charset.Charset LINK_ENCODING =
+        StandardCharsets.UTF_8;
 
     private static final ZipShort HEADER_ID = new ZipShort(0x756E);
 
@@ -107,7 +117,7 @@ public class AsiExtraField implements ZipExtraField, UnixStat, Cloneable {
                           + 4         // SizDev
                           + 2         // UID
                           + 2         // GID
-                          + getLinkedFile().getBytes().length);
+                          + getLinkedFile().getBytes(LINK_ENCODING).length);
     }
 
     /**
@@ -128,7 +138,7 @@ public class AsiExtraField implements ZipExtraField, UnixStat, Cloneable {
         byte[] data = new byte[getLocalFileDataLength().getValue() - 4];
         ZipShort.getBytes(getMode(), data, 0);
 
-        byte[] linkArray = getLinkedFile().getBytes();
+        byte[] linkArray = getLinkedFile().getBytes(LINK_ENCODING);
         ZipLong.getBytes(linkArray.length, data, 2);
         ZipShort.getBytes(getUserId(), data, 6);
         ZipShort.getBytes(getGroupId(), data, 8);
@@ -279,7 +289,7 @@ public class AsiExtraField implements ZipExtraField, UnixStat, Cloneable {
             link = "";
         } else {
             System.arraycopy(tmp, 10, linkArray, 0, linkArray.length);
-            link = new String(linkArray);
+            link = new String(linkArray, LINK_ENCODING);
         }
         setDirectory((newMode & DIR_FLAG) != 0);
         setMode(newMode);

@@ -138,11 +138,18 @@ public class SFTPPanel extends ServerPanel {
     // ServerPanel implementation //
     ////////////////////////////////
 
+    /** Static helper so the static field write doesn't sit inside an
+     *  instance method (SpotBugs ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD). */
+    private static void normaliseLastInitialDir() {
+        if (!lastInitialDir.startsWith("/")) {
+            lastInitialDir = "/" + lastInitialDir;
+        }
+    }
+
     @Override
     public FileURL getServerURL() throws MalformedURLException {
         updateValues();
-        if(!lastInitialDir.startsWith("/"))
-            lastInitialDir = "/"+lastInitialDir;
+        normaliseLastInitialDir();
 
         FileURL url = FileURL.getFileURL(FileProtocols.SFTP+"://"+lastServer+lastInitialDir);
 

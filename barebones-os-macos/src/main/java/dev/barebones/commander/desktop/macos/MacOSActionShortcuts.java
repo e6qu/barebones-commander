@@ -26,9 +26,14 @@ import dev.barebones.commander.desktop.ActionType;
 /**
  * For macOS, CTRL is replaced with META key for action shortcuts and the original shortcuts (with CTRL) become the default
  * alternative shortcuts.
+ *
+ * Renamed from {@code ActionShortcuts} to avoid SpotBugs
+ * NM_SAME_SIMPLE_NAME_AS_SUPERCLASS — having the macOS subclass and
+ * the parent class share the unqualified name made every IDE-import
+ * an attention tax.
  * @author Arik Hadas
  */
-public class ActionShortcuts extends dev.barebones.commander.desktop.ActionShortcuts {
+public class MacOSActionShortcuts extends dev.barebones.commander.desktop.ActionShortcuts {
 
     @Override
     public KeyStroke getDefaultKeystroke(ActionType actionId) {

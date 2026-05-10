@@ -154,8 +154,10 @@ public class LicenseDialog extends FocusDialog implements ActionListener {
      */
     private String getLicenseText() {
         StringBuilder text = new StringBuilder();
+        // Bundled resource — we control its encoding (UTF-8).
         try (InputStreamReader in = new InputStreamReader(
-                LicenseDialog.class.getResourceAsStream(RuntimeConstants.LICENSE))) {
+                LicenseDialog.class.getResourceAsStream(RuntimeConstants.LICENSE),
+                java.nio.charset.StandardCharsets.UTF_8)) {
             char[] buffer = new char[2048];
             int count;
             while ((count = in.read(buffer)) != -1)

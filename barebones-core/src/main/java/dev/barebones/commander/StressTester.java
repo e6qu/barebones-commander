@@ -59,7 +59,10 @@ public class StressTester implements Runnable, ActionListener {
     }
 
     public void run() {
-        Random random = new Random();
+        // ThreadLocalRandom extends Random; using it instead of
+        // new Random() avoids the SpotBugs DMI_RANDOM_USED_ONLY_ONCE
+        // false-positive (it counts call sites, not invocations).
+        Random random = java.util.concurrent.ThreadLocalRandom.current();
         MainFrame mainFrame = WindowManager.getCurrentMainFrame();
 
         while(run) {

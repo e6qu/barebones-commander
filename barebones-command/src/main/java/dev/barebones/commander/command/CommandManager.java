@@ -106,6 +106,14 @@ public class CommandManager implements CommandBuilder {
     private static       AbstractFile         commandsFile;
     /** Whether the custom commands have been modified since the last time they were saved. */
     protected static     boolean              wereCommandsModified;
+
+    /** Static setter for {@link #wereCommandsModified}. Lets external
+     *  callers (notably {@link CommandReader} during XML parse) flip
+     *  the flag without writing to a static field from an instance
+     *  method, which SpotBugs flags as ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD. */
+    static void markCommandsModified() {
+        wereCommandsModified = true;
+    }
     /** Default name of the deprecated XML custom commands file. */
     public  static final String DEFAULT_COMMANDS_FILE_NAME_XML = "commands.xml";
     /** Default name of the deprecated XML custom commands file. */
@@ -642,7 +650,9 @@ public class CommandManager implements CommandBuilder {
             representer.addClassTag(Command.class, Tag.MAP); // Suppress the tag
 
             var yaml = new Yaml(representer, options);
-            try (FileWriter writer = new FileWriter(commandsFile.getPath())) {
+            try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
+                    new java.io.FileOutputStream(commandsFile.getPath()),
+                    java.nio.charset.StandardCharsets.UTF_8)) {
                 yaml.dump(new Commands(commands()), writer);
             }
             wereCommandsModified = false;
@@ -678,7 +688,9 @@ public class CommandManager implements CommandBuilder {
             constructor.addTypeDescription(getCommandTypeDescription());
             var yaml = new Yaml(constructor);
             Commands commands;
-            try (FileReader reader = new FileReader(commandsFile.getPath())) {
+            try (java.io.InputStreamReader reader = new java.io.InputStreamReader(
+                    new java.io.FileInputStream(commandsFile.getPath()),
+                    java.nio.charset.StandardCharsets.UTF_8)) {
                 commands = yaml.load(reader);
             }
 

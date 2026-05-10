@@ -174,7 +174,10 @@ class FileEditorPanel extends ThemeEditorPanel implements PropertyChangeListener
     // - Misc. ---------------------------------------------------------------------------
     // -----------------------------------------------------------------------------------
     private void loadText() {
-        try (InputStreamReader in = new InputStreamReader(FileEditorPanel.class.getResourceAsStream(RuntimeConstants.LICENSE))){
+        // Bundled resource — we control its encoding (UTF-8).
+        try (InputStreamReader in = new InputStreamReader(
+                FileEditorPanel.class.getResourceAsStream(RuntimeConstants.LICENSE),
+                java.nio.charset.StandardCharsets.UTF_8)){
             char[] buffer = new char[2048];
 
             int count; // Number of characters read from the last read operation.

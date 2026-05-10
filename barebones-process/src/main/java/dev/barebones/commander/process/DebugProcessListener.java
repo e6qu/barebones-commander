@@ -73,7 +73,10 @@ class DebugProcessListener implements ProcessListener {
      * Ignored.
      */
     public void processOutput(byte[] buffer, int offset, int length) {
-        LOGGER.trace(command + ": " + new String(buffer, offset, length));
+        // Process output is bytes from a child that inherited the JVM
+        // default charset; decoding with anything else would mojibake.
+        LOGGER.trace(command + ": "
+            + new String(buffer, offset, length, java.nio.charset.Charset.defaultCharset()));
     }
 
     /**

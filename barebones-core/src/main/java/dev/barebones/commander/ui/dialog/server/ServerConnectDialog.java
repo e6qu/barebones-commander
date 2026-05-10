@@ -90,6 +90,13 @@ public class ServerConnectDialog extends FocusDialog implements ServerPanelListe
 	
     private static Class<? extends ServerPanel> lastPanelClass;
 
+    /** Static helper so dialog instances don't write to the static
+     *  "last opened panel" pseudo-singleton directly (SpotBugs
+     *  ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD). */
+    private static void rememberLastPanelClass(Class<? extends ServerPanel> cls) {
+        lastPanelClass = cls;
+    }
+
     private static Map<String, ProtocolPanelProvider> schemaToPanelProvider = new HashMap<>();
 
     public static void register(ProtocolPanelProvider panelProvider) {
@@ -120,7 +127,7 @@ public class ServerConnectDialog extends FocusDialog implements ServerPanelListe
     public ServerConnectDialog(FolderPanel folderPanel, Class<? extends ServerPanel> selectPanelClass) {
         super(folderPanel.getMainFrame().getJFrame(), ActionProperties.getActionLabel(ActionType.ConnectToServer), folderPanel.getMainFrame().getJFrame());
         this.folderPanel = folderPanel;
-        lastPanelClass = selectPanelClass;
+        rememberLastPanelClass(selectPanelClass);
 
         Container contentPane = getContentPane();
 		
@@ -282,7 +289,7 @@ public class ServerConnectDialog extends FocusDialog implements ServerPanelListe
 	
     public void stateChanged(ChangeEvent e) {
         currentServerPanel = getCurrentServerPanel();
-        lastPanelClass = currentServerPanel.getClass();
+        rememberLastPanelClass(currentServerPanel.getClass());
 
         // Enables 'save credentials' checkbox only if server panel/protocol uses credentials
         saveCredentialsCheckBox.setEnabled(currentServerPanel.usesCredentials());

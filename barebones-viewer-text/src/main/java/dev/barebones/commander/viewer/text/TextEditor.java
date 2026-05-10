@@ -209,9 +209,16 @@ class TextEditor extends BasicFileEditor implements DocumentListener, EncodingLi
     }
 
     private void write(OutputStream out) throws IOException {
-        var isUtf8 = "UTF-8".equalsIgnoreCase(textViewerDelegate.getEncoding());
-        textEditorImpl.write(isUtf8 ?
-                new OutputStreamWriter(out) : new BOMWriter(out, textViewerDelegate.getEncoding()));
+        // Write back in the encoding the file was read with — anything
+        // else silently changes the file's bytes. UTF-8 path skips the
+        // BOM (UTF-8 BOMs are optional and avoided for cross-tool
+        // compat); other encodings round-trip via BOMWriter.
+        String encoding = textViewerDelegate.getEncoding();
+        if ("UTF-8".equalsIgnoreCase(encoding)) {
+            textEditorImpl.write(new OutputStreamWriter(out, java.nio.charset.StandardCharsets.UTF_8));
+        } else {
+            textEditorImpl.write(new BOMWriter(out, encoding));
+        }
     }
 
     @Override

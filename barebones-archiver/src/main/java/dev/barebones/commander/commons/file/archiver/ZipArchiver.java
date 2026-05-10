@@ -107,10 +107,14 @@ class ZipArchiver extends Archiver {
     @Override
     public InputStream getContentStream(AbstractFile file) throws UnsupportedFileOperationException, IOException {
         if (file.getURL().getScheme() == LocalFile.SCHEMA && file.isSymlink()) {
-            // we return the target of the link here so it will be
-            // written to the "file" within the archive
+            // The "content" for a symlink is its target path. POSIX
+            // filesystem paths are opaque byte sequences; UTF-8 matches
+            // what Linux / macOS use in 2026. The archive entry that
+            // wraps these bytes is a symlink-content blob, not a Zip
+            // name field, so APPNOTE's CP437/EFS rules don't apply.
             Path path = Path.of(file.getAbsolutePath());
-            return new ByteArrayInputStream(Files.readSymbolicLink(path).toString().getBytes());
+            return new ByteArrayInputStream(
+                Files.readSymbolicLink(path).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         }
         return super.getContentStream(file);
     }

@@ -1098,8 +1098,12 @@ public class ZipFile implements ZipConstants {
             }
         }
 
-        // Fall back to platform's default encoding
-        return new String(bytes);
+        // No explicit encoding on the archive AND general-purpose bit 11
+        // not set. Zip APPNOTE.TXT mandates CP437 for this case. Any
+        // other choice (UTF-8, platform default) silently mojibakes
+        // legitimately-CP437 entries from older zips. CP437 is part of
+        // the JRE's required charset set per java.nio.charset.Charset.
+        return new String(bytes, java.nio.charset.Charset.forName("CP437"));
     }
 
 
