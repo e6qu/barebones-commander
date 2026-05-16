@@ -22,7 +22,7 @@ import dev.barebones.commander.commons.file.FileFactory;
 import dev.barebones.commander.commons.file.archive.ArchiveFormatProvider;
 
 /**
- * Plain-Java replacement for the Apache Felix container.
+ * Plain-Java bootstrap for module registration.
  *
  * Calls each module's {@code Activator.register()} (or, for modules that
  * need the property map, {@code Activator.register(Map)}) in dependency

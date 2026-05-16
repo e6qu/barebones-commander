@@ -299,8 +299,8 @@ public abstract class AbstractFile implements FileAttributes {
      * <p>
      * The notion of volume may or may not have a meaning depending on the kind of filesystem. On local filesystems,
      * the notion of volume can be assimilated into that of <i>mount point</i>. Volumes may also have a meaning for
-     * certain network filesystems such as SMB, for which
-     * shares can be considered as volumes. Filesystems that don't have a notion of volume should return the
+     * certain network filesystems for which a server-side share or export can be considered a volume. Filesystems
+     * that don't have a notion of volume should return the
      * {@link #getRoot() root folder}.
      * </p>
      * <p>

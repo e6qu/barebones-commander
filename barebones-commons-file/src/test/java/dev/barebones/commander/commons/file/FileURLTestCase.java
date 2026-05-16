@@ -352,7 +352,7 @@ public abstract class FileURLTestCase {
      * Tests {@link dev.barebones.commander.commons.file.FileURL#getRealm()} by ensuring that it returns the same URL only with the
      * path stripped out.
      * <p>
-     * <b>Important:</b> this method must be overridden for protocols that have a specific realm notion (like SMB) or
+     * <b>Important:</b> this method must be overridden for protocols that have a specific realm notion or
      * else the test will fail.
      * </p>
      *

@@ -59,12 +59,9 @@ import dev.barebones.commander.commons.file.util.PathUtils;
  * Built-in file protocols are:
  * <ul>
  *   <li>{@link FileProtocols#FILE Local} files.</li>
- *   <li>{@link FileProtocols#FTP FTP}.</li>
  *   <li>{@link FileProtocols#SFTP SFTP}.</li>
- *   <li>{@link FileProtocols#HTTP HTTP}.</li>
- *   <li>{@link FileProtocols#HTTPS HTTPS}.</li>
  *   <li>{@link FileProtocols#NFS NFS}.</li>
- *   <li>{@link FileProtocols#SMB SMB}.</li>
+ *   <li>{@link FileProtocols#S3 S3-compatible object storage}.</li>
  * </ul>
  * </p>
  * <h3>Archive formats</h3>
@@ -81,11 +78,7 @@ import dev.barebones.commander.commons.file.util.PathUtils;
  *   <li><code>TAR</code>, registered to tar, tar.gz, tgz, tar.bz2 and tbz2 files.</li>
  *   <li><code>GZIP</code>, registered to gz files.</li>
  *   <li><code>BZip2</code>, registered to bz2 files.</li>
- *   <li><code>ISO</code>, registered to iso and nrg files.</li>
- *   <li><code>AR</code>, registered to ar, a and deb files.</li>
- *   <li><code>LST</code>, registered to lst files.</li>
- *   <li><code>RAR</code>, registered to rar files.</li>
- *   <li><code>SEVENZIP</code>, registered to 7z files.</li>
+ *   <li><code>XZ</code>, registered to xz files.</li>
  * </ul>
  * </p>
  * @author Maxence Bernard, Nicolas Rinaudo

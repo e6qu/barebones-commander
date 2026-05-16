@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clean Java GUI Slop"
+  short_description: "Review Java/native GUI changes for AI slop"
+  default_prompt: "Use $clean-java-gui-slop to clean up a Java Swing or native GUI code change before shipping."

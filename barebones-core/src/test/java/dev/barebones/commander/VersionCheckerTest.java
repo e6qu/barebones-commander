@@ -60,18 +60,18 @@ public class VersionCheckerTest {
         String releaseJson = "{" +
                 "\"tag_name\": \"1.5.0\"," +
                 "\"target_commitish\": \"abc1234\"," +
-                "\"html_url\": \"https://github.com/mucommander/mucommander/releases/tag/1.5.0\"," +
+                "\"html_url\": \"https://github.com/e6qu/barebones-commander/releases/tag/1.5.0\"," +
                 "\"published_at\": \"2024-04-15T09:21:43Z\"" +
                 "}";
 
-        mockReader.addResponse("https://api.github.com/repos/mucommander/mucommander/releases/latest", releaseJson);
+        mockReader.addResponse("https://api.github.com/repos/e6qu/barebones-commander/releases/latest", releaseJson);
 
         VersionChecker checker = VersionChecker.getInstance(false, mockReader);
         assertNotNull(checker);
 
         String downloadURL = checker.getDownloadURL();
         assertNotNull(downloadURL);
-        assertEquals(downloadURL, "https://github.com/mucommander/mucommander/releases/tag/1.5.0");
+        assertEquals(downloadURL, "https://github.com/e6qu/barebones-commander/releases/tag/1.5.0");
     }
 
     @Test
@@ -89,19 +89,19 @@ public class VersionCheckerTest {
         String releaseJson = "{" +
                 "\"tag_name\": \"nightly\"," +
                 "\"target_commitish\": \"master\"," +
-                "\"html_url\": \"https://github.com/mucommander/mucommander/releases/tag/nightly\"," +
+                "\"html_url\": \"https://github.com/e6qu/barebones-commander/releases/tag/nightly\"," +
                 "\"published_at\": \"2024-03-28T12:34:56Z\"" +
                 "}";
 
-        mockReader.addResponse("https://api.github.com/repos/mucommander/mucommander/git/ref/tags/nightly", tagRefJson);
-        mockReader.addResponse("https://api.github.com/repos/mucommander/mucommander/releases/tags/nightly", releaseJson);
+        mockReader.addResponse("https://api.github.com/repos/e6qu/barebones-commander/git/ref/tags/nightly", tagRefJson);
+        mockReader.addResponse("https://api.github.com/repos/e6qu/barebones-commander/releases/tags/nightly", releaseJson);
 
         VersionChecker checker = VersionChecker.getInstance(true, mockReader);
         assertNotNull(checker);
 
         String downloadURL = checker.getDownloadURL();
         assertNotNull(downloadURL);
-        assertEquals(downloadURL, "https://github.com/mucommander/mucommander/releases/tag/nightly");
+        assertEquals(downloadURL, "https://github.com/e6qu/barebones-commander/releases/tag/nightly");
     }
 
     @Test
@@ -111,11 +111,11 @@ public class VersionCheckerTest {
         String releaseJson = "{" +
                 "\"tag_name\": \"1.5.0\"," +
                 "\"target_commitish\": \"abc1234\"," +
-                "\"html_url\": \"https://github.com/mucommander/mucommander/releases/tag/1.5.0\"," +
+                "\"html_url\": \"https://github.com/e6qu/barebones-commander/releases/tag/1.5.0\"," +
                 "\"published_at\": \"2024-04-15T09:21:43Z\"" +
                 "}";
 
-        mockReader.addResponse("https://api.github.com/repos/mucommander/mucommander/releases/latest", releaseJson);
+        mockReader.addResponse("https://api.github.com/repos/e6qu/barebones-commander/releases/latest", releaseJson);
 
         // Note: This test assumes BUILD_NUMBER is not "snapshot" (but a stable version)
         VersionChecker checker = VersionChecker.getInstance(false, mockReader);
@@ -129,11 +129,11 @@ public class VersionCheckerTest {
         String releaseJson = "{" +
                 "\"tag_name\": \"1.5.0\"," +
                 "\"target_commitish\": \"abc1234\"," +
-                "\"html_url\": \"https://github.com/mucommander/mucommander/releases/tag/1.5.0\"," +
+                "\"html_url\": \"https://github.com/e6qu/barebones-commander/releases/tag/1.5.0\"," +
                 "\"published_at\": \"2024-04-15T09:21:43Z\"" +
                 "}";
 
-        mockReader.addResponse("https://api.github.com/repos/mucommander/mucommander/releases/latest", releaseJson);
+        mockReader.addResponse("https://api.github.com/repos/e6qu/barebones-commander/releases/latest", releaseJson);
 
         // Note: This test assumes BUILD_NUMBER is not "snapshot" (but a stable version)
         VersionChecker checker = VersionChecker.getInstance(false, mockReader);
@@ -147,11 +147,11 @@ public class VersionCheckerTest {
         String releaseJson = "{" +
                 "\"tag_name\": \"1.5.0\"," +
                 "\"target_commitish\": \"abc1234\"," +
-                "\"html_url\": \"https://github.com/mucommander/mucommander/releases/tag/1.5.0\"," +
+                "\"html_url\": \"https://github.com/e6qu/barebones-commander/releases/tag/1.5.0\"," +
                 "\"published_at\": \"2024-04-15T09:21:43Z\"" +
                 "}";
 
-        mockReader.addResponse("https://api.github.com/repos/mucommander/mucommander/releases/latest", releaseJson);
+        mockReader.addResponse("https://api.github.com/repos/e6qu/barebones-commander/releases/latest", releaseJson);
 
         // Note: This test assumes BUILD_NUMBER is not "snapshot" (but a stable version)
         VersionChecker checker = VersionChecker.getInstance(false, mockReader);
@@ -172,7 +172,7 @@ public class VersionCheckerTest {
         MockReadFromURL mockReader = new MockReadFromURL();
 
         // Return null/invalid JSON
-        mockReader.addResponse("https://api.github.com/repos/mucommander/mucommander/releases/latest", "null");
+        mockReader.addResponse("https://api.github.com/repos/e6qu/barebones-commander/releases/latest", "null");
 
         VersionChecker checker = VersionChecker.getInstance(false, mockReader);
 

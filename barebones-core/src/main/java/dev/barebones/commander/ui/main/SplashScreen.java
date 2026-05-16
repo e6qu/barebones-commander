@@ -31,12 +31,12 @@ import java.awt.Graphics2D;
 import java.awt.MediaTracker;
 
 /**
- * Splash screen that gets displayed on muCommander startup.
+ * Splash screen that gets displayed on application startup.
  *
  * <p>
- * The splash screen is made of a logo image on top of which is displayed muCommander version number (in the top right
+ * The splash screen is made of a logo image on top of which is displayed the application version number (in the top right
  * corner) and a loading message (in the lower left corner) which is updated by {@link dev.barebones.commander.Application} to
- * show startup progress. It is then closed by {@link dev.barebones.commander.Application} when muCommander is fully started and
+ * show startup progress. It is then closed by {@link dev.barebones.commander.Application} when the app is fully started and
  * ready for use.
  * </p>
  *
@@ -44,7 +44,7 @@ import java.awt.MediaTracker;
  */
 public class SplashScreen extends JWindow {
 
-    /** muCommander version displayed on this splash screen */
+    /** Application version displayed on this splash screen */
     private String version;
 
     /** Current loading message displayed on this splash screen */
@@ -83,7 +83,7 @@ public class SplashScreen extends JWindow {
      * Creates and displays a new SplashScreen, with the given version string and initial loading message.
      *
      * @param version
-     *            muCommander version string which will be displayed in the top right corner
+     *            application version string which will be displayed in the top right corner
      * @param loadingMessage
      *            initial loading message, displayed in the lower left corner
      */

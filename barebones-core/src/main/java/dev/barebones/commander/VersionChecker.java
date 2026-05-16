@@ -29,9 +29,9 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Retrieves information about the latest release of muCommander from GitHub.
+ * Retrieves information about the latest release of barebones-commander from GitHub.
  * <p>
- * This class uses the GitHub REST API to check for the latest release from the mucommander/mucommander repository.
+ * This class uses the GitHub REST API to check for the latest release from the e6qu/barebones-commander repository.
  * For nightly builds, it checks for the latest pre-release tagged as "nightly".
  * For stable builds, it checks for the latest stable release.
  * </p>
@@ -43,9 +43,9 @@ import java.util.Map;
  * try {
  *     version = VersionChecker.getInstance();
  *     if(version.isNewVersionAvailable())
- *         System.out.println("A new version of muCommander is available");
+ *         System.out.println("A new version of barebones-commander is available");
  *     else
- *         System.out.println("You've got the latest muCommander version");
+ *         System.out.println("You've got the latest barebones-commander version");
  *    }
  * catch(Exception e) {System.err.println("An error occurred.");}
  * </pre>
@@ -71,12 +71,12 @@ public class VersionChecker {
     // - Constants --------------------------------------------------------------
     // --------------------------------------------------------------------------
     /** GitHub API URL for latest stable release. */
-    private static final String GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/mucommander/mucommander/releases/latest";
+    private static final String GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/e6qu/barebones-commander/releases/latest";
     /** GitHub API URL for nightly release by tag. */
-    private static final String GITHUB_NIGHTLY_RELEASE_URL = "https://api.github.com/repos/mucommander/mucommander/releases/tags/nightly";
+    private static final String GITHUB_NIGHTLY_RELEASE_URL = "https://api.github.com/repos/e6qu/barebones-commander/releases/tags/nightly";
     /** GitHub API URL for getting tag reference. */
     private static final String GITHUB_TAG_REF_URL =
-            "https://api.github.com/repos/mucommander/mucommander/git/ref/tags/nightly";
+            "https://api.github.com/repos/e6qu/barebones-commander/git/ref/tags/nightly";
 
     // - Instance fields --------------------------------------------------------
     // --------------------------------------------------------------------------
@@ -127,7 +127,7 @@ public class VersionChecker {
      * For nightly builds, checks for the latest nightly pre-release.
      * For stable builds, checks for the latest stable release.
      *
-     * @return a description of the latest release of muCommander.
+     * @return a description of the latest release of barebones-commander.
      * @throws Exception
      *         thrown if any error happens while retrieving the remote version.
      */
@@ -149,7 +149,7 @@ public class VersionChecker {
      * Package-private method that allows injection of a custom {@link ReadFromURL} for testing.
      *
      * @param urlReader the reader to use for fetching release information
-     * @return a description of the latest release of muCommander.
+     * @return a description of the latest release of barebones-commander.
      * @throws Exception
      *         thrown if any error happens while retrieving the remote version.
      */

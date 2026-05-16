@@ -1,6 +1,6 @@
 # barebones-commander — Architecture & Libraries
 
-Current inventory for `barebones-commander` after Phase 24.
+Current inventory for `barebones-commander` after Phase 31.
 
 ## At A Glance
 
@@ -102,7 +102,6 @@ Versions are declared in `gradle/libs.versions.toml`.
 
 | Library / plugin | Version | Purpose |
 |---|---:|---|
-| TestNG | 7.12.0 | Legacy test suite |
 | JUnit BOM | 5.14.4 | JUnit modules |
 | FindSecBugs plugin | 1.14.0 | SpotBugs security rules |
 | Grgit Gradle plugin | 5.3.3 | Git metadata in build |
@@ -121,12 +120,3 @@ Most catalog entries were already current stable releases. Intentional pins:
 | `junit-bom` | 5.14.4 | 6.1.0-RC1 | Latest metadata is a JUnit 6 release candidate; keep latest stable JUnit 5.x. |
 | `kotlin-stdlib` | 2.3.21 | 2.4.0-Beta2 | Latest metadata is beta; keep latest stable 2.3.x. |
 | `grgit` | 5.3.3 | marker says 5.0.0-rc.3 | Plugin marker metadata is stale/inconsistent; 5.3.3 is present in the version list and already works with the build. |
-
-## Removed Surfaces
-
-The fork intentionally removed Windows/OpenVMS support, OSGi/Felix runtime,
-FTP/HTTP/SMB/cloud-drive protocols, embedded terminal support, image/PDF/binary
-viewers, and heavyweight archive formats outside zip/tar/gzip/bzip2/xz.
-
-Phase 24 also removed the unused `barebones-commons-file` JNA dependency and
-its dead `libc`/`statvfs` wrapper.

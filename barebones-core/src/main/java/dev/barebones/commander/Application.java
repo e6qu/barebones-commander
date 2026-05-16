@@ -579,20 +579,6 @@ public class Application {
     }
 
     private static void configureFilesystems() {
-        // Configure the SMB subsystem (backed by jCIFS) to maintain compatibility with SMB servers that don't support
-        // NTLM v2 authentication such as Samba 3.0.x, which still is widely used and comes pre-installed on
-        // Mac OS X Leopard.
-        // Since jCIFS 1.3.0, the default is to use NTLM v2 authentication and extended security.
-        // SMBProtocolProvider.setLmCompatibility(MuConfigurations.getPreferences().getVariable(MuPreference.SMB_LM_COMPATIBILITY,
-        // MuPreferences.DEFAULT_SMB_LM_COMPATIBILITY));
-        // SMBProtocolProvider.setExtendedSecurity(MuConfigurations.getPreferences().getVariable(MuPreference.SMB_USE_EXTENDED_SECURITY,
-        // MuPreferences.DEFAULT_SMB_USE_EXTENDED_SECURITY));
-
-        // Use the FTP configuration option that controls whether to force the display of hidden files, or leave it for
-        // the servers to decide whether to show them.
-        // FTPProtocolProvider.setForceHiddenFilesListing(MuConfigurations.getPreferences().getVariable(MuPreference.LIST_HIDDEN_FILES,
-        // MuPreferences.DEFAULT_LIST_HIDDEN_FILES));
-
         // Use CredentialsManager for file URL authentication
         FileFactory.setDefaultAuthenticator(CredentialsManager.getAuthenticator());
     }

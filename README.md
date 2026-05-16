@@ -16,17 +16,25 @@ phased roadmap.
 
 ## Scope
 
-| Kept | Removed |
-|---|---|
-| Local file system | FTP, HTTP/HTTPS, SMB, Dropbox, Google Drive, OneDrive, GCS, oVirt, vSphere, Hadoop, ADB, Windows Registry, Bonjour |
-| **SFTP / SSH**, **NFS**, **S3-compatible storage** | Out-of-scope cloud and enterprise protocols |
-| Linux + macOS OS adapters | Windows, OpenVMS, macOS-Java-8 |
-| Basic archive formats: zip, tar, gzip, bzip2, xz | RAR, 7z, ISO, RPM, ar, cpio, lst, libguestfs |
-| Text viewer | Image viewer, PDF viewer, hex (binary) viewer |
-| Mouse-driven dual-pane GUI, drag & drop, keyboard bindings | Embedded terminal widget (use a real terminal app for SSH command sessions) |
+| Current scope |
+|---|
+| Local file system |
+| **SFTP / SSH**, **NFS**, **S3-compatible storage** |
+| Linux + macOS OS adapters |
+| Basic archive formats: zip, tar, gzip, bzip2, xz |
+| Text viewer |
+| Mouse-driven dual-pane GUI, drag & drop, keyboard bindings |
 
-See [`LIBRARIES.md`](LIBRARIES.md) for the upstream architecture and library inventory,
-and [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) for the audit that motivated this fork.
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the current runtime/module shape,
+[`LIBRARIES.md`](LIBRARIES.md) for the library inventory, and
+[`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) for the audit that motivated this fork.
+
+## Agent Skills
+
+Repo-local Codex skills live under [`.codex/skills`](.codex/skills). The
+current skill, `clean-java-gui-slop`, is a Java/Swing/native-GUI checklist for
+avoiding AI-generated UI, threading, warning-suppression, and verification
+slop in this desktop app.
 
 ## Build
 

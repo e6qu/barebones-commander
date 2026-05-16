@@ -44,7 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class takes care of retrieving the information about the latest muCommander version from a remote server and
+ * This class takes care of retrieving the information about the latest barebones-commander version from a remote server and
  * displaying the result to the end user.
  *
  * @author Maxence Bernard

@@ -49,7 +49,8 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **27** | done | **Platform process hardening** — centralized short-lived desktop helper command execution with timeouts and interrupt handling. | this PR |
 | **28** | done | **Remove dead FreeBSD mount shell-out** — deleted the unsupported `/sbin/mount -p` path and kept Linux mount discovery on `/proc/mounts`. | this PR |
 | **29** | done | **JUnit 5 + protocol scope cleanup** — migrate legacy tests to JUnit 5, improve S3 endpoint URL parsing, remove retired-protocol future scope, and evaluate NFSv4 replacement options. | landed in #37 |
-| **30** | in progress | **Architecture refactor batch** — archive format `ServiceLoader`, remove vendored `apache-bzip2`, centralize runtime tunables, and make javac unchecked/deprecation warnings fail the build. | this PR |
+| **30** | done | **Architecture refactor batch** — archive format `ServiceLoader`, remove vendored `apache-bzip2`, centralize runtime tunables, and make javac unchecked/deprecation warnings fail the build. | landed in #38 |
+| **31** | in progress | **Repo skill + architecture/docs sweep** — add repo-local Java GUI slop cleanup skill, document current architecture, and align stale docs/comments with the implementation. | this PR |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 

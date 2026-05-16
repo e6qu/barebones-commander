@@ -35,9 +35,8 @@ public interface SchemeParser {
      * The FileURL is empty when it is passed, with just the handler set. The scheme, host, port, login, password, path,
      * ... parts must all be set, using the corresponding setter methods.
      *
-     * <p>Some parts such as the query and fragment have a meaning only for certain schemes such as HTTP, other schemes
-     * may simply ignore the corresponding query/fragment delimiters ('?' and '#' resp.) and include them in the
-     * path part.</p>
+     * <p>Some parts such as the query and fragment are scheme-specific. Schemes that do not use those delimiters may
+     * include them in the path part.</p>
      *
      * @param url the URL to parse
      * @param fileURL the FileURL instance in which to set the different parsed parts

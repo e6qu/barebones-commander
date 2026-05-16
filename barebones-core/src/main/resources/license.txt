@@ -12,21 +12,13 @@ conditions.
 Additionally, muCommander uses the following third party works:
 - the Ant library under the terms of the Apache License
 - Apache Commons libraries under the terms of the Apache License
-- Apache Hadoop under the terms of the Apache License
 - the Furbelow library under the terms of the GNU Lesser General Public License
 - the ICU4J library under the terms of the ICU License
 - the JSCH library under the terms of the Berkeley Software Distribution License 
-- the J7Zip library under the terms of the GNU Lesser General Public License
-- the jCIFS library under the terms of the GNU Lesser General Public License
-- the JetS3t library under the terms of the Apache License
-- the JediTerm library under the terms of dual GNU Lesser General Public License and Apache License
-- the JmDNS library under the terms of the GNU Lesser General Public License
 - the JNA library under the terms of the GNU Lesser General Public License
-- the JUnRar library under the terms of the GNU Lesser General Public License
 - the RSyntaxTextArea library under the terms of BSD 3-Clause "New" or "Revised" License
 - the Yanfs library under the terms of the Berkeley Software Distribution License
 - the JCommander library under the terms of the Apache License
-- the ICEpdf library under the terms of the Apache License
 - Mark James' icons under the terms of the Creative Commons Attribution License
 
 All the above mentioned licenses are included in this file.
@@ -1089,4 +1081,3 @@ Except as contained in this notice, the name of a copyright holder shall
 not be used in advertising or otherwise to promote the sale, use or other
 dealings in this Software without prior written authorization of 
 the copyright holder.
-

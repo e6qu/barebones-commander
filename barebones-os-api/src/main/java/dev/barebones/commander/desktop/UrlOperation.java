@@ -142,10 +142,6 @@ public abstract class UrlOperation implements DesktopOperation {
         if(target[0] instanceof URL)
             return (URL)target[0];
 
-        // Deals with instances of HTTPFile.
-//        if(target[0] instanceof HTTPFile)
-//            return (URL)((AbstractFile)target[0]).getUnderlyingFileObject();
-
         // Deals with instances of String.
         if(target[0] instanceof String) {
             try {return URI.create((String)target[0]).toURL();}
