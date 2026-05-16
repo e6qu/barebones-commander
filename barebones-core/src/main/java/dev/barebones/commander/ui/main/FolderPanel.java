@@ -141,37 +141,35 @@ public class FolderPanel implements FocusListener, QuickListContainer, ActiveTab
 
         panel.add(locationPanel, BorderLayout.NORTH);
 
-        new Thread(() -> {
-            GridBagConstraints c = new GridBagConstraints();
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.gridy = 0;
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridy = 0;
 
-            // Create and add drive button
-            this.driveButton = new DrivePopupButton(this);
-            c.weightx = 0;
-            c.gridx = 0;
-            locationPanel.add(driveButton, c);
+        // Create and add drive button
+        this.driveButton = new DrivePopupButton(this);
+        c.weightx = 0;
+        c.gridx = 0;
+        locationPanel.add(driveButton, c);
 
-            // Create location text field and wrap it in a LocationBar that can
-            // alternate between the text field and a breadcrumb view (Ctrl key).
-            this.locationTextField = new LocationTextField(this);
-            LocationBar locationBar = new LocationBar(this, locationTextField);
+        // Create location text field and wrap it in a LocationBar that can
+        // alternate between the text field and a breadcrumb view (Ctrl key).
+        this.locationTextField = new LocationTextField(this);
+        LocationBar locationBar = new LocationBar(this, locationTextField);
 
-            // Give location field all the remaining space until the PoupupsButton
-            c.weightx = 1;
-            c.gridx = 1;
-            // Add some space between drive button and location combo box (none by default)
-            c.insets = new Insets(0, 4, 0, 0);
-            locationPanel.add(locationBar, c);
-            disableCtrlFocusTraversalKeys(locationTextField);
-            registerCycleThruFolderPanelAction(locationTextField);
+        // Give location field all the remaining space until the PoupupsButton
+        c.weightx = 1;
+        c.gridx = 1;
+        // Add some space between drive button and location combo box (none by default)
+        c.insets = new Insets(0, 4, 0, 0);
+        locationPanel.add(locationBar, c);
+        disableCtrlFocusTraversalKeys(locationTextField);
+        registerCycleThruFolderPanelAction(locationTextField);
 
-            // Allow the location field to change the current directory when a file/folder is dropped on it
-            FileDropTargetListener dropTargetListener = new FileDropTargetListener(this, true);
-            new DropTarget(locationTextField, dropTargetListener);
-            new DropTarget(driveButton, dropTargetListener);
-            locationTextField.addFocusListener(this);
-        }).start();
+        // Allow the location field to change the current directory when a file/folder is dropped on it
+        FileDropTargetListener dropTargetListener = new FileDropTargetListener(this, true);
+        new DropTarget(locationTextField, dropTargetListener);
+        new DropTarget(driveButton, dropTargetListener);
+        locationTextField.addFocusListener(this);
 
         // Initialize quick lists in background
         fileTablePopups =  CompletableFuture.supplyAsync(() -> {

@@ -122,8 +122,8 @@ public class Activator {
         if (ShutdownHook.performShutdownTasks() && shutdownHook != null) {
             try {
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
-            } catch (IllegalStateException ignored) {
-                // VM is already shutting down.
+            } catch (IllegalStateException e) {
+                LOGGER.debug("Shutdown hook could not be removed because the VM is already shutting down", e);
             }
         }
         System.exit(0);

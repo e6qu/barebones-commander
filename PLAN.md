@@ -50,7 +50,8 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **28** | done | **Remove dead FreeBSD mount shell-out** — deleted the unsupported `/sbin/mount -p` path and kept Linux mount discovery on `/proc/mounts`. | this PR |
 | **29** | done | **JUnit 5 + protocol scope cleanup** — migrate legacy tests to JUnit 5, improve S3 endpoint URL parsing, remove retired-protocol future scope, and evaluate NFSv4 replacement options. | landed in #37 |
 | **30** | done | **Architecture refactor batch** — archive format `ServiceLoader`, remove vendored `apache-bzip2`, centralize runtime tunables, and make javac unchecked/deprecation warnings fail the build. | landed in #38 |
-| **31** | in progress | **Repo skill + architecture/docs/check sweep** — add repo-local Java GUI slop cleanup skill, document current architecture, align stale docs/comments with the implementation, and harden CI against fake-green checks. | this PR |
+| **31** | done | **Repo skill + architecture/docs/check sweep** — add repo-local Java GUI slop cleanup skill, document current architecture, align stale docs/comments with the implementation, and harden CI against fake-green checks. | landed in #39 |
+| **32** | in progress | **Repo-wide Java GUI slop sweep** — run the repo-local slop-cleaning skill against current `origin/main`, record each finding in `BUGS.md`, fix actionable issues, and keep continuity docs current. | this PR |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -1241,12 +1242,70 @@ has passed `./gradlew cleanTest test --stacktrace`, `./gradlew check
 fatJar :cyclonedxDirectBom --stacktrace` plus the CI artifact assertions), after
 the Claude second-opinion fixes were applied. The requested noninteractive
 `claude` review was approved by the user and completed; actionable findings were
-applied. Before handing the PR back, push the branch and verify GitHub Actions on
-PR #39.
+applied. PR #39 was merged by the user.
 
 **Exit criteria**: repo-local skill and architecture docs are present; stale
 current-facing docs/comments are aligned without stripping authorship; no-op
 checks fail loudly; full checks and CI are green.
+
+### Phase 32 — Repo-wide Java GUI slop sweep (this PR)
+
+Phase 32 starts from `origin/main` after PR #39 was merged. The active branch is
+`phase-32/slop-sweep`; no PR exists yet. Scope is a single-PR sweep using the
+repo-local `clean-java-gui-slop` skill: search for fake-green checks, Swing/EDT
+mistakes, background work lifecycle leaks, swallowed failures, stale comments,
+and accidental Windows support. Every new finding must be recorded in
+`BUGS.md` before its fix is made, and this section must be updated after each
+substantial chunk so work survives compaction or a fresh context.
+
+Current state: local `main` was fast-forwarded to `origin/main`, this branch was
+created from `origin/main`, and the initial skill sweep recorded and fixed three
+findings in `BUGS.md`: SFTP stream-open cleanup now logs handler-close failures,
+S3 metadata probes now log non-missing lookup failures instead of silently
+returning false/zero, and `OsFamily` has been narrowed to macOS/Linux/unknown
+with focused tests. The OS/2-only `FileURL.pathEquals()` branch was removed.
+The next GUI pass recorded and fixed two EDT findings: native "Open With"
+application discovery now applies menu mutations from `SwingWorker.done()` and
+discards stale refresh results, while `FolderPanel` no longer creates Swing/AWT
+location controls from an unmanaged background thread. `AGENTS.md` now also
+states the live-code rule that authorship/copyright stays attached to code that
+remains in the repository. The follow-up GUI/threading pass recorded and fixed
+three more findings: `StatusBar` now marshals disk-space label updates onto the
+EDT, `FileTable` uses a Swing `Timer` for delayed single-click edit actions,
+and `QuickListWithIcons` starts only one icon loader per item while keeping
+spinner/repaint mutations on the EDT. The cleanup/interrupt pass then fixed
+queued-trash interrupt handling and made S3 spilled-upload temp-file cleanup
+failures visible in logs. The startup/text-viewer pass moved
+`CheckVersionDialog` to a `SwingWorker` split so network lookup stays in the
+background while dialog UI runs on the EDT, and coalesced text-editor miss beeps
+through a daemon single-thread executor. The connect-dialog pass made SFTP, NFS,
+and S3 invalid port commits fail visibly through `ServerConnectDialog` instead
+of silently reusing the previous spinner value. The ignored-catch pass then
+made SFTP random-access seek propagate close failures, surfaced About-dialog
+homepage browse failures, and logged S3 provider connection-close failures.
+It also made the benign shutdown-hook removal race visible at DEBUG instead of
+silently swallowing the state. Local validation passed with `git diff --check`,
+`./gradlew cleanTest test --stacktrace`, and `./gradlew check --stacktrace`.
+User added one more required deliverable for this same PR: add a MinIO-backed
+Testcontainers S3 integration path, alongside the existing LocalStack coverage,
+so S3-compatible endpoint behavior is tested against a real MinIO server as
+well. The MinIO image tag confirmed from Docker Hub metadata is
+`minio/minio:RELEASE.2025-09-07T16-13-09Z`; the implementation should keep the
+same Docker-unavailable skip behavior as the LocalStack tests. The new MinIO
+test exposed and fixed one additional S3 correctness issue: successful
+`S3Object.delete()` now invalidates local metadata so the same object instance
+does not keep reporting `exists() == true`. Next work is to rerun local
+validation, then commit, push, open the single Phase 32 PR, and monitor CI.
+Final local validation after the MinIO addition passed with
+`./gradlew :barebones-protocol-s3:test --tests ...S3MinIOIntegrationTest
+--stacktrace`, `./gradlew cleanTest test --stacktrace`, and `./gradlew check
+--stacktrace`.
+
+**Exit criteria**: all actionable findings discovered in this sweep are either
+fixed or explicitly documented as deferred; local validation includes at least
+`./gradlew cleanTest test --stacktrace`, `./gradlew check --stacktrace`,
+package-smoke artifact checks if CI/build wiring changes, and `git diff
+--check`; a single PR is opened and GitHub Actions are green.
 
 ## 7. Compatibility with upstream
 

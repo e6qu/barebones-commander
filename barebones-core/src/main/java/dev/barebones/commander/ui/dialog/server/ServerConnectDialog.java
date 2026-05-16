@@ -280,6 +280,10 @@ public class ServerConnectDialog extends FocusDialog implements ServerPanelListe
         catch(IOException ex) {
             InformationDialog.showErrorDialog(this, Translator.get("table.folder_access_error_title"), Translator.get("folder_does_not_exist"));
         }
+        catch(IllegalArgumentException ex) {
+            LOGGER.warn("Invalid server connection input", ex);
+            InformationDialog.showErrorDialog(this, Translator.get("error"), ex.getMessage());
+        }
     }
 	
 	

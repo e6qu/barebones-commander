@@ -192,7 +192,9 @@ public class SFTPFile extends ProtocolFile {
             LOGGER.error("failed to get output stream for {}", getURL());
             try {
                 connHandler.close();
-            } catch (Exception e1) {}
+            } catch (Exception closeException) {
+                LOGGER.warn("failed to close SFTP connection after output stream open failure for {}", getURL(), closeException);
+            }
             throw new IOException(e);
         }
     }
@@ -579,7 +581,9 @@ public class SFTPFile extends ProtocolFile {
             LOGGER.error("failed to get input stream {}", getURL());
             try {
                 connHandler.close();
-            } catch (Exception e1) {}
+            } catch (Exception closeException) {
+                LOGGER.warn("failed to close SFTP connection after input stream open failure for {}", getURL(), closeException);
+            }
             throw new IOException(e);
         }
     }
@@ -798,11 +802,7 @@ public class SFTPFile extends ProtocolFile {
         }
 
         public void seek(long offset) throws IOException {
-            try {
-                in.close();
-            }
-            catch(IOException e) {}
-
+            in.close();
             in = getInputStream(offset);
             this.offset = offset;
         }

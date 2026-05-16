@@ -144,8 +144,9 @@ public class S3Panel extends ServerPanel {
     public void dialogValidated() {
         try {
             portSpinner.commitEdit();
-        } catch (ParseException ignored) {
-            // editor commits unconditionally; ignored
+        } catch (ParseException e) {
+            JSpinner.DefaultEditor editor = (JSpinner.DefaultEditor) portSpinner.getEditor();
+            throw new IllegalArgumentException("Invalid port value: " + editor.getTextField().getText(), e);
         }
         updateValues();
     }

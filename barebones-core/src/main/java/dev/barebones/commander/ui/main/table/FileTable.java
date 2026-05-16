@@ -44,6 +44,7 @@ import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
@@ -1308,35 +1309,27 @@ public class FileTable extends JTable implements MouseListener, MouseMotionListe
                     // Not checking for this would cause a single click on the inactive table's current row to trigger
                     // the filename/date/permission editor
                     if (hasFocus() && System.currentTimeMillis() - focusGainedTime > 100) {
-                        // Create a new thread and sleep long enough to ensure that this click was not the first of a double click
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                try { sleep(800); }
-                                catch (InterruptedException e) {
-                                    Thread.currentThread().interrupt();
-                                    return;
+                        Timer editDelayTimer = new Timer(800, event -> {
+                            // Do not execute this block (cancel editing) if:
+                            // - a double click was made in the last second
+                            // - current row changed
+                            // - isEditing() is true which could happen if multiple clicks were made
+                            if ((System.currentTimeMillis() - lastDoubleClickTimestamp) > 1000 && row == currentRow) {
+                                if (column == Column.NAME) {
+                                    if(!isEditing())
+                                        editCurrentFilename();
                                 }
-
-                                // Do not execute this block (cancel editing) if:
-                                // - a double click was made in the last second
-                                // - current row changed
-                                // - isEditing() is true which could happen if multiple clicks were made
-                                if ((System.currentTimeMillis() - lastDoubleClickTimestamp) > 1000 && row == currentRow) {
-                                    if (column == Column.NAME) {
-                                        if(!isEditing())
-                                            editCurrentFilename();
-                                    }
-                                    else if(column == Column.DATE) {
-                                        ActionManager.performAction(ActionType.ChangeDate, mainFrame);
-                                    }
-                                    else if(column == Column.PERMISSIONS) {
-                                        if(getSelectedFile().getChangeablePermissions().getIntValue()!=0)
-                                            ActionManager.performAction(ActionType.ChangePermissions, mainFrame);
-                                    }
+                                else if(column == Column.DATE) {
+                                    ActionManager.performAction(ActionType.ChangeDate, mainFrame);
+                                }
+                                else if(column == Column.PERMISSIONS) {
+                                    if(getSelectedFile().getChangeablePermissions().getIntValue()!=0)
+                                        ActionManager.performAction(ActionType.ChangePermissions, mainFrame);
                                 }
                             }
-                        }.start();
+                        });
+                        editDelayTimer.setRepeats(false);
+                        editDelayTimer.start();
                     }
                 }
             }

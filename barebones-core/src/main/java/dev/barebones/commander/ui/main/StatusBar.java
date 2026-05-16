@@ -38,6 +38,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 
 import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
@@ -467,7 +468,11 @@ public class StatusBar extends JPanel {
                         long volumeFree = getFreeSpace(currentFolder);
                         long volumeTotal = getTotalSpace(currentFolder);
 
-                        volumeSpaceLabel.setVolumeSpace(volumeTotal, volumeFree);
+                        SwingUtilities.invokeLater(() -> {
+                            if (!mainFrameDisposed && isVisible()) {
+                                volumeSpaceLabel.setVolumeSpace(volumeTotal, volumeFree);
+                            }
+                        });
                     }
 
                     // Sleep for a while

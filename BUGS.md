@@ -351,6 +351,225 @@ updates, combo-box refreshes, and loading-state changes run from `done()` on the
 EDT. Look-and-feel install failures are logged and the failed class is not added
 to the custom list.
 
+### 1.35 ~~MED — SFTP stream-open cleanup swallows close failures~~ **FIXED**
+**`barebones-protocol-sftp/.../SFTPFile.java:191,582`**
+
+When `getOutputStream()` or `getInputStream(long)` fails after acquiring an
+`SFTPConnectionHandler`, the error path tries to close the handler but swallows
+any close failure in an empty catch. That hides leaked/dirty connection state
+from both logs and callers, exactly in the path where the original operation
+already failed.
+
+Phase 32 preserves the original stream-open failure and logs cleanup-close
+failures with the SFTP URL and thrown close exception.
+
+### 1.36 ~~MED — S3 metadata probes still hide transient failures~~ **FIXED**
+**`barebones-protocol-s3/.../S3Object.java:96-135`**
+
+`isDirectory()`, `exists()`, `getDate()`, and `getSize()` still catch
+`IOException` from `ensureMetadata()` and return `false` or `0` without a log or
+other signal. A transient 5xx, timeout, or auth failure can make an object look
+absent/empty/stale until refresh, and callers cannot distinguish "missing key"
+from "metadata lookup failed".
+
+Phase 32 keeps `NoSuchKey` as the normal "missing" path, records the last
+metadata failure, and logs every non-missing metadata lookup failure from
+`isDirectory()`, `exists()`, `getDate()`, and `getSize()` with URL context.
+Unknown metadata is not marked as a successful absence.
+
+### 1.37 ~~LOW — Runtime OS family still carries unsupported legacy platforms~~ **FIXED**
+**`barebones-commons-runtime/.../OsFamily.java`**,
+**`barebones-commons-file/.../FileURL.java:902`**
+
+The active product scope is macOS + Linux only, but `OsFamily` still recognizes
+Solaris, OS/2, FreeBSD, AIX, HP-UX, OpenVMS, and Haiku. That stale surface keeps
+dead branches such as OS/2 case-insensitive path comparison alive and makes
+`UNKNOWN_OS_FAMILY` report as Unix-based. After Windows and other platform
+support were removed, unknown/non-target OSes should not masquerade as supported
+Unix behavior.
+
+Phase 32 reduced runtime OS family handling to macOS, Linux, and unknown.
+Mac/Linux stay Unix-based; unknown does not. The OS/2-only case-insensitive
+`FileURL.pathEquals()` branch was removed with the OS/2 family.
+
+### 1.38 ~~MED — `OpenWithMenu` mutates Swing menus off the EDT~~ **FIXED**
+**`barebones-core/.../OpenWithMenu.java:121-142`**
+
+The "Open With" menu correctly pushes native application discovery off the
+event-dispatch thread, but the worker thread then adds separators/actions,
+stops the spinner, removes the loading item, changes enabled state, and repacks
+the popup directly. Those are Swing mutations and can race with menu refresh,
+painting, and popup lifecycle.
+
+Phase 32 keeps native application discovery in the background, then applies the
+menu changes from `SwingWorker.done()` on the EDT. Stale worker results are
+discarded if the selected file changed before discovery finished, and discovery
+failures are logged instead of leaving a spinning loading item behind.
+
+### 1.39 ~~MED — `FolderPanel` builds Swing components on a raw background thread~~ **FIXED**
+**`barebones-core/.../FolderPanel.java:144-176`**
+
+`FolderPanel` starts an anonymous thread to create and install the drive button,
+location field, breadcrumb bar, drop targets, and focus listener. Those are
+Swing/AWT component operations and must happen on the event-dispatch thread.
+The anonymous worker also has no lifecycle owner or error reporting.
+
+Phase 32 removes the raw thread and constructs the location controls
+synchronously with the rest of the panel initialization. The constructor is
+already called through the existing `MainFrame` panel-building path, so this
+keeps UI state deterministic without adding another background lifecycle.
+
+### 1.40 ~~MED — Status-bar volume updater writes Swing state off the EDT~~ **FIXED**
+**`barebones-core/.../StatusBar.java:455-475`**
+
+The status-bar disk-space updater runs on a daemon thread, which is correct for
+potentially slow filesystem probes, but it calls
+`volumeSpaceLabel.setVolumeSpace(...)` directly from that worker. That mutates
+Swing label state outside the event-dispatch thread once per minute while the
+main frame is active.
+
+Phase 32 keeps the filesystem probes on the daemon updater and marshals the
+label update back through `SwingUtilities.invokeLater(...)`.
+
+### 1.41 ~~MED — delayed file-table edit action runs off the EDT~~ **FIXED**
+**`barebones-core/.../FileTable.java:1312-1335`**
+
+A single click on the current row starts an anonymous thread, sleeps 800 ms, and
+then may open filename/date/permissions editing actions directly from that
+worker thread. The delay is UI event timing, not background I/O, and the action
+path mutates Swing state.
+
+Phase 32 replaces the custom sleep thread with a non-repeating Swing `Timer`, so
+the double-click delay stays event-driven and the edit/action path runs on the
+EDT.
+
+### 1.42 ~~MED — quick-list icon loading races Swing state and spawns duplicate workers~~ **FIXED**
+**`barebones-core/.../QuickListWithIcons.java:123-138`**
+
+While a quick-list icon is loading, every repaint that sees the waiting icon
+starts another anonymous worker for the same item. Those workers update the
+shared `HashMap`, stop the spinning icon, and repaint the Swing popup directly
+from background threads, racing both popup reopen/clear and rendering.
+
+Phase 32 switches the icon cache to a concurrent map, starts only the first
+loader per item, and marshals spinner/repaint changes back onto the EDT.
+
+### 1.43 ~~MED — queued trash swallows interrupts while waiting~~ **FIXED**
+**`barebones-os-api/.../QueuedTrash.java:105-107,144-146`**
+
+`waitForPendingOperations()` drops `InterruptedException` and continues as if
+the caller had waited successfully. The trash batching thread also drops
+interrupts during its debounce sleep, so shutdown/cancel paths cannot observe
+that the wait was interrupted.
+
+Phase 32 restores the interrupt flag in both paths. Callers waiting for pending
+trash work return with the interrupt preserved, and the batching thread stops
+debouncing and moves the currently queued files instead of hiding the signal.
+
+### 1.44 ~~LOW — S3 spilled-upload temp-file cleanup failure is invisible~~ **FIXED**
+**`barebones-protocol-s3/.../S3Object.java:323-329`**
+
+`SpillingPutOutputStream.close()` deletes the temporary upload spill file in a
+best-effort cleanup block, but an `IOException` from `Files.deleteIfExists(...)`
+is silently ignored. The OS may eventually sweep temp storage, but a failed
+delete is still useful diagnostic context for long-running sessions and disk
+pressure reports.
+
+Phase 32 logs a warning with the spill path and exception while preserving the
+primary upload/close result.
+
+### 1.45 ~~MED — update-check dialog builds and shows Swing UI from a worker thread~~ **FIXED**
+**`barebones-core/.../CheckVersionDialog.java:104-205`**
+
+`CheckVersionDialog` starts a raw background thread to avoid blocking on the
+version lookup, but the thread then calls `setTitle`, `init`, `addComponent`,
+`getActionValue`, `dispose`, and error-dialog code directly. The network lookup
+belongs off the EDT; dialog construction and interaction do not.
+
+Phase 32 replaces the raw `Thread`/`Runnable` path with `SwingWorker`: version
+lookup and browser-support probing run in `doInBackground()`, while result UI,
+modal interaction, preference persistence, and fallback error dialogs run from
+`done()` on the EDT.
+
+### 1.46 ~~LOW — text-editor miss beep creates unbounded anonymous threads~~ **FIXED**
+**`barebones-viewer-text/.../TextEditorImpl.java:281-288`**
+
+When search finds no match, the editor starts a new anonymous thread for each
+beep because `Toolkit.beep()` can block. Holding the shortcut at the end of a
+file can create repeated short-lived threads for a non-critical UI signal.
+
+Phase 32 routes beeps through a daemon single-thread executor and coalesces
+requests while a beep is already running.
+
+### 1.47 ~~MED — server connect panels silently ignore invalid port commits~~ **FIXED**
+**`barebones-protocol-sftp/.../SFTPPanel.java:173-178`**,
+**`barebones-protocol-nfs/.../NFSPanel.java:129-134`**,
+**`barebones-protocol-s3/.../S3Panel.java:144-150`**
+
+When the user edits a port spinner and confirms the connect dialog with Enter,
+each kept remote panel calls `commitEdit()` and swallows `ParseException`.
+Invalid text can therefore fall back to the previous spinner value with no
+visible error, making the dialog connect somewhere other than what the field
+appears to contain.
+
+Phase 32 converts the parse failure into an `IllegalArgumentException` with the
+offending value. `ServerConnectDialog` catches it, logs the validation failure,
+and leaves the dialog open with an error message instead of proceeding.
+
+### 1.48 ~~MED — SFTP random-access seek hides close failures~~ **FIXED**
+**`barebones-protocol-sftp/.../SFTPFile.java:804-810`**
+
+`SFTPRandomAccessInputStream.seek(long)` closes the current stream before
+opening a new one at the requested offset, but it silently ignores
+`IOException` from the close. A failed close can hide connection cleanup trouble
+and then report the seek as successful if the replacement stream opens.
+
+Phase 32 lets the close failure propagate from `seek(...)`, which already
+declares `IOException`, instead of fabricating a successful reposition.
+
+### 1.49 ~~LOW — About dialog hides homepage browse failures~~ **FIXED**
+**`barebones-core/.../AboutDialog.java:430-436`**
+
+Clicking the homepage button catches and ignores `IOException` from
+`DesktopManager.browse(...)`. On systems without a working browser/open handler,
+the button appears to do nothing and the failure is not logged.
+
+Phase 32 logs the failure and shows the same style of error dialog used by
+other browser-open paths.
+
+### 1.50 ~~LOW — S3 provider shutdown hides connection-close failures~~ **FIXED**
+**`barebones-protocol-s3/.../S3ProtocolProvider.java:51-57`**
+
+`S3ProtocolProvider.close()` catches and ignores `RuntimeException` from cached
+connection close. The method can run during normal app shutdown or explicit
+provider teardown, so close failures should not disappear entirely.
+
+Phase 32 adds provider logging and records a warning for each failed cached
+connection close while still continuing to close the rest of the cache.
+
+### 1.51 ~~LOW — shutdown-hook removal state is silently ignored~~ **FIXED**
+**`barebones-core/.../Activator.java:122-127`**
+
+`Activator.stopAll()` ignores `IllegalStateException` from
+`Runtime.removeShutdownHook(...)`. The VM-already-shutting-down case is benign,
+but it should still be visible when debug logging is enabled so shutdown
+ordering problems can be diagnosed.
+
+Phase 32 logs the already-shutting-down state at DEBUG and continues with the
+normal quit path.
+
+### 1.52 ~~MED — S3 object metadata cache survives delete on same instance~~ **FIXED**
+**`barebones-protocol-s3/.../S3Object.java:225-235`**
+
+The MinIO Testcontainers integration added in Phase 32 exposed that
+`S3Object.delete()` removes the remote key but leaves the same Java object with
+`metadataKnown=true` from a prior upload/head call. A following `exists()` on
+that instance can report `true` without re-checking the backend.
+
+Phase 32 updates local metadata state after a successful delete so the same
+object immediately reports absent, and rename source objects inherit that state
+through the existing copy-then-delete path.
+
 ---
 
 ## 2. UX gaps

@@ -34,7 +34,6 @@ import dev.barebones.commander.commons.file.protocol.local.LocalFile;
 import dev.barebones.commander.commons.file.protocol.search.SearchFile;
 import dev.barebones.commander.commons.file.protocol.search.SearchSchemeParser;
 import dev.barebones.commander.commons.file.util.PathUtils;
-import dev.barebones.commander.commons.runtime.OsFamily;
 import dev.barebones.commander.commons.util.StringUtils;
 
 /**
@@ -899,10 +898,8 @@ public class FileURL implements Cloneable {
      * @return <code>true</code> if the path of this URL and the given URL are equal
      */
     public boolean pathEquals(FileURL url) {
-        boolean isCaseSensitiveOS = !OsFamily.getCurrent().equals(OsFamily.OS_2);
-
-        String path1 = isCaseSensitiveOS ? this.getPath() : this.getPath().toLowerCase();
-        String path2 = isCaseSensitiveOS ? url.getPath() : url.getPath().toLowerCase();
+        String path1 = this.getPath();
+        String path2 = url.getPath();
 
         if(path1.equals(path2))
             return true;

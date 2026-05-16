@@ -34,6 +34,7 @@ import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.JCheckBox;
+import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
@@ -42,6 +43,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * This class takes care of retrieving the information about the latest barebones-commander version from a remote server and
@@ -49,7 +51,7 @@ import java.util.List;
  *
  * @author Maxence Bernard
  */
-public class CheckVersionDialog extends QuestionDialog implements Runnable {
+public class CheckVersionDialog extends QuestionDialog {
     private static final Logger LOGGER = LoggerFactory.getLogger(CheckVersionDialog.class);
 
     /**
@@ -67,6 +69,9 @@ public class CheckVersionDialog extends QuestionDialog implements Runnable {
      * Dialog's width has to be at least 240
      */
     private final static Dimension MINIMUM_DIALOG_DIMENSION = new Dimension(320, 0);
+
+    private record VersionCheckResult(boolean showDialog, String title, String message, URL downloadURL, boolean downloadOption) {
+    }
 
     public enum CheckVersionAction implements DialogAction {
 
@@ -101,17 +106,40 @@ public class CheckVersionDialog extends QuestionDialog implements Runnable {
         this.userInitiated = userInitiated;
 
         // Do all the hard work in a separate thread
-        new Thread(this, "CheckVersionDialog").start();
+        new SwingWorker<VersionCheckResult, Void>() {
+            @Override
+            protected VersionCheckResult doInBackground() {
+                return checkVersion();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    showVersionCheckResult(get());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    dispose();
+                } catch (ExecutionException e) {
+                    LOGGER.warn("Failed to complete version check", e.getCause());
+                    if (userInitiated) {
+                        showVersionCheckResult(new VersionCheckResult(true,
+                                Translator.get("version_dialog.not_available_title"),
+                                Translator.get("version_dialog.not_available"),
+                                null,
+                                false));
+                    } else {
+                        dispose();
+                    }
+                }
+            }
+        }.execute();
     }
 
 
     /**
      * Checks for updates and notifies the user of the outcome.
      */
-    public void run() {
-        Container contentPane = getContentPane();
-        contentPane.setLayout(new BorderLayout());
-
+    private VersionCheckResult checkVersion() {
         String message;
         String title;
         VersionChecker version;
@@ -147,8 +175,7 @@ public class CheckVersionDialog extends QuestionDialog implements Runnable {
                 // If the version check was not iniated by the user (i.e. was automatic),
                 // we do not need to inform the user that he already has the latest version
                 if (!userInitiated) {
-                    dispose();
-                    return;
+                    return new VersionCheckResult(false, null, null, null, false);
                 }
 
                 title = Translator.get("version_dialog.no_new_version_title");
@@ -160,26 +187,39 @@ public class CheckVersionDialog extends QuestionDialog implements Runnable {
             // If the version check was not initiated by the user (i.e. was automatic),
             // we do not need to inform the user that the check failed
             if (!userInitiated) {
-                dispose();
-                return;
+                LOGGER.debug("Automatic version check failed", e);
+                return new VersionCheckResult(false, null, null, null, false);
             }
 
+            LOGGER.warn("User-initiated version check failed", e);
             title = Translator.get("version_dialog.not_available_title");
             message = Translator.get("version_dialog.not_available");
         }
 
+        return new VersionCheckResult(true, title, message, downloadURL, downloadOption);
+    }
+
+    private void showVersionCheckResult(VersionCheckResult result) {
+        if (!result.showDialog()) {
+            dispose();
+            return;
+        }
+
+        Container contentPane = getContentPane();
+        contentPane.setLayout(new BorderLayout());
+
         // Set title
-        setTitle(title);
+        setTitle(result.title());
 
         List<DialogAction> actions = new ArrayList<>();
         actions.add(CheckVersionAction.OK);
 
         // 'Go to website' choice (if available)
-        if (downloadOption) {
+        if (result.downloadOption()) {
             actions.add(CheckVersionAction.GO_TO_WEBSITE);
         }
 
-        init(new InformationPane(message, null, Font.PLAIN, InformationPane.INFORMATION_ICON),
+        init(new InformationPane(result.message(), null, Font.PLAIN, InformationPane.INFORMATION_ICON),
                 actions,
                 0);
 
@@ -195,7 +235,7 @@ public class CheckVersionDialog extends QuestionDialog implements Runnable {
 
         if (action == CheckVersionAction.GO_TO_WEBSITE) {
             try {
-                DesktopManager.executeOperation(DesktopManager.BROWSE, new Object[]{downloadURL});
+                DesktopManager.executeOperation(DesktopManager.BROWSE, new Object[]{result.downloadURL()});
             } catch (Exception e) {
                 InformationDialog.showErrorDialog(this);
             }

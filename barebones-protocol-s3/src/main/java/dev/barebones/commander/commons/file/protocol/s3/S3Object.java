@@ -61,6 +61,7 @@ public class S3Object extends S3File {
     private boolean directory;
     private long size;
     private long lastModified;
+    private IOException lastMetadataFailure;
 
     public S3Object(FileURL url, S3Connection connection) {
         super(url, connection);
@@ -95,10 +96,22 @@ public class S3Object extends S3File {
                 ? h.lastModified().toEpochMilli() : 0L;
             this.directory = false;
             this.metadataKnown = true;
-        } catch (NoSuchKeyException ignored) {
+            this.lastMetadataFailure = null;
+        } catch (NoSuchKeyException missing) {
+            this.lastMetadataFailure = null;
             this.metadataKnown = true; // exists() answers via this state
         } catch (S3Exception e) {
-            throw toIOException(e, fileURL);
+            IOException failure = toIOException(e, fileURL);
+            this.lastMetadataFailure = failure;
+            throw failure;
+        }
+    }
+
+    private void logMetadataFailure(String operation, IOException failure) {
+        if (failure == lastMetadataFailure) {
+            LOGGER.warn("S3 metadata lookup failed during {} for {}", operation, getURL(), failure);
+        } else {
+            LOGGER.warn("S3 metadata state unavailable during {} for {}", operation, getURL(), failure);
         }
     }
 
@@ -106,7 +119,8 @@ public class S3Object extends S3File {
     public boolean isDirectory() {
         try {
             ensureMetadata();
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            logMetadataFailure("isDirectory", e);
             return false;
         }
         return directory;
@@ -116,7 +130,8 @@ public class S3Object extends S3File {
     public boolean exists() {
         try {
             ensureMetadata();
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            logMetadataFailure("exists", e);
             return false;
         }
         // metadataKnown == true after a HEAD; if directory or non-zero
@@ -126,13 +141,21 @@ public class S3Object extends S3File {
 
     @Override
     public long getDate() {
-        try { ensureMetadata(); } catch (IOException ignored) {}
+        try {
+            ensureMetadata();
+        } catch (IOException e) {
+            logMetadataFailure("getDate", e);
+        }
         return lastModified;
     }
 
     @Override
     public long getSize() {
-        try { ensureMetadata(); } catch (IOException ignored) {}
+        try {
+            ensureMetadata();
+        } catch (IOException e) {
+            logMetadataFailure("getSize", e);
+        }
         return size;
     }
 
@@ -206,6 +229,11 @@ public class S3Object extends S3File {
                     .bucket(parsed.bucket())
                     .key(parsed.key())
                     .build());
+            size = 0L;
+            lastModified = 0L;
+            directory = false;
+            metadataKnown = true;
+            lastMetadataFailure = null;
         } catch (S3Exception e) {
             throw toIOException(e, fileURL);
         }
@@ -300,9 +328,8 @@ public class S3Object extends S3File {
                 if (spillFile != null) {
                     try {
                         Files.deleteIfExists(spillFile);
-                    } catch (IOException ignored) {
-                        // Temp dir cleanup is best-effort; the OS
-                        // sweeps it eventually.
+                    } catch (IOException e) {
+                        LOGGER.warn("Failed to delete S3 upload spill file {}", spillFile, e);
                     }
                 }
             }

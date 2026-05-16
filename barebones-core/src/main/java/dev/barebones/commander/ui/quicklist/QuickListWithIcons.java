@@ -19,10 +19,11 @@ package dev.barebones.commander.ui.quicklist;
 
 import java.awt.Dimension;
 import java.awt.Image;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.SwingUtilities;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
@@ -42,8 +43,8 @@ import dev.barebones.commander.ui.quicklist.item.QuickListDataListWithIcons;
  */
 
 public abstract class QuickListWithIcons<T> extends QuickListWithDataList<T> {
-	// This HashMap's keys are items and its objects are the corresponding icon.
-	private final HashMap<T, Icon> itemToIconCacheMap = new HashMap<T, Icon>();
+	// This map's keys are items and its objects are the corresponding icon.
+	private final ConcurrentHashMap<T, Icon> itemToIconCacheMap = new ConcurrentHashMap<T, Icon>();
 	// This SpinningDial will appear until the icon fetching of an item is over.
 	private static final SpinningDial waitingIcon = new SpinningDial();
 	// If the icon fetching fails for some item, the following icon will appear for it. 
@@ -73,7 +74,7 @@ public abstract class QuickListWithIcons<T> extends QuickListWithDataList<T> {
 	private synchronized void waitingIconAddedToList() {
 		// If there was no other waitingIcon in the list before current addition - start the spinning dial.
 		if (numOfWaitingIconInList++ == 0)
-			waitingIcon.setAnimated(true);
+			setWaitingIconAnimated(true);
 	}
 	
 	/**
@@ -82,8 +83,15 @@ public abstract class QuickListWithIcons<T> extends QuickListWithDataList<T> {
 	private synchronized void waitingIconRemovedFromList() {
 		// If after current remove operation, there will be no waitingIcon in the list - stop the spinning dial.
 		if (--numOfWaitingIconInList == 0)
-			waitingIcon.setAnimated(false);
+			setWaitingIconAnimated(false);
 	}
+
+    private void setWaitingIconAnimated(boolean animated) {
+        if (SwingUtilities.isEventDispatchThread())
+            waitingIcon.setAnimated(animated);
+        else
+            SwingUtilities.invokeLater(() -> waitingIcon.setAnimated(animated));
+    }
 	
 	@Override
     protected QuickListDataList<T> getList() {
@@ -115,26 +123,25 @@ public abstract class QuickListWithIcons<T> extends QuickListWithDataList<T> {
 	}
 	
 	protected Icon getImageIconOfItemImp(final T item,  final Dimension preferredSize) {
-		synchronized(itemToIconCacheMap) {
-		    if (itemToIconCacheMap.putIfAbsent(item, waitingIcon) == null) {
-		        waitingIconAddedToList();
-		    }
-		}
+        boolean loadIcon = itemToIconCacheMap.putIfAbsent(item, waitingIcon) == null;
+        if (loadIcon) {
+            waitingIconAddedToList();
+        }
 
 		Icon icon = itemToIconCacheMap.get(item);
 
-		if (icon == waitingIcon)
-			new Thread() {
+		if (loadIcon)
+			new Thread("QuickListIconLoader") {
 				@Override
                 public void run() {
 					Icon icon = itemToIcon(item);
 					// If the item does not exist or is not accessible, show notAvailableIcon for it.
 					itemToIconCacheMap.put(item, icon != null ? icon : notAvailableIcon);
 					waitingIconRemovedFromList();
-					repaint();
+                    SwingUtilities.invokeLater(QuickListWithIcons.this::repaint);
 				}
 			}.start();
-		
+
 		return resizeIcon(icon, preferredSize);
 	}
 

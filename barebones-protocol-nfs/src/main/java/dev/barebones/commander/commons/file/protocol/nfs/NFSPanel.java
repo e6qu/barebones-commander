@@ -129,8 +129,12 @@ public class NFSPanel extends ServerPanel {
     public void dialogValidated() {
         // Commits the current spinner value in case it was being edited and 'enter' was pressed
         // (the spinner value would otherwise not be committed)
-        try { portSpinner.commitEdit(); }
-        catch(ParseException e) { }
+        try {
+            portSpinner.commitEdit();
+        } catch(ParseException e) {
+            JSpinner.DefaultEditor editor = (JSpinner.DefaultEditor) portSpinner.getEditor();
+            throw new IllegalArgumentException("Invalid port value: " + editor.getTextField().getText(), e);
+        }
 
         updateValues();
     }
