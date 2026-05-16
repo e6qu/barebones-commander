@@ -50,7 +50,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **28** | done | **Remove dead FreeBSD mount shell-out** — deleted the unsupported `/sbin/mount -p` path and kept Linux mount discovery on `/proc/mounts`. | this PR |
 | **29** | done | **JUnit 5 + protocol scope cleanup** — migrate legacy tests to JUnit 5, improve S3 endpoint URL parsing, remove retired-protocol future scope, and evaluate NFSv4 replacement options. | landed in #37 |
 | **30** | done | **Architecture refactor batch** — archive format `ServiceLoader`, remove vendored `apache-bzip2`, centralize runtime tunables, and make javac unchecked/deprecation warnings fail the build. | landed in #38 |
-| **31** | in progress | **Repo skill + architecture/docs sweep** — add repo-local Java GUI slop cleanup skill, document current architecture, and align stale docs/comments with the implementation. | this PR |
+| **31** | in progress | **Repo skill + architecture/docs/check sweep** — add repo-local Java GUI slop cleanup skill, document current architecture, align stale docs/comments with the implementation, and harden CI against fake-green checks. | this PR |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -1205,6 +1205,48 @@ split, and strongly typed action parameters.
 **Exit criteria**: `./gradlew check` green with `-Werror`; no vendored
 `apache-bzip2` project remains; archive format registration has no per-format
 Activator classes.
+
+### Phase 31 — Repo skill, architecture docs, and check hardening (this PR)
+
+Phase 31 adds a repo-local `clean-java-gui-slop` Codex skill adapted from the
+same vibe-coding discipline used in `e6qu/sockerless`, plus `AGENTS.md`
+project rules that make authorship/attribution preservation a hard requirement.
+The current architecture is documented in `ARCHITECTURE.md`, and the README,
+library inventory, notices, issue templates, comments, and removed TestNG suite
+files were swept to match the current implementation.
+
+The slop-cleaning pass also found fake-green verification risks. CI now forces
+test re-execution with `cleanTest test`; Gradle fails a subproject test task
+when `src/test` Java sources exist but JUnit discovers zero tests; package smoke
+checks require one fat JAR plus SBOM components; and SpotBugs SARIF merging fails
+if no SpotBugs reports were produced. The same pass replaced remaining own-code
+GUI `printStackTrace()` sites with logging/user-visible errors, converted the
+shortcuts preferences tooltip reset from a sleeping worker thread to a Swing
+`Timer`, and removed the appearance preferences `Thread.sleep(100)` polling loop
+around deferred look-and-feel loading. Follow-up GUI timing cleanup replaced the
+popup-button long-press and shortcut-editing timeout sleep threads with Swing
+timers, and moved custom look-and-feel import to a `SwingWorker` so only JAR
+scanning, extension-copy I/O, and reflective install work run off the EDT while
+UI updates and dialogs stay on the EDT. The Claude second-opinion review also
+tightened the implementation: additional look-and-feel loading now runs through
+a background worker instead of blocking preferences on a synchronized loader,
+SBOM checks require a non-empty components array, zero-test detection covers
+common JVM test languages and skips explicit filtered runs, stale popup-button
+thread comments/synchronization were removed, and the new Open-as error dialog
+is marshalled to the EDT when needed.
+
+Continuity status: branch `phase-31/repo-skill-docs`, PR #39. Local validation
+has passed `./gradlew cleanTest test --stacktrace`, `./gradlew check
+--stacktrace`, `git diff --check`, and the package-smoke path (`./gradlew
+fatJar :cyclonedxDirectBom --stacktrace` plus the CI artifact assertions), after
+the Claude second-opinion fixes were applied. The requested noninteractive
+`claude` review was approved by the user and completed; actionable findings were
+applied. Before handing the PR back, push the branch and verify GitHub Actions on
+PR #39.
+
+**Exit criteria**: repo-local skill and architecture docs are present; stale
+current-facing docs/comments are aligned without stripping authorship; no-op
+checks fail loudly; full checks and CI are green.
 
 ## 7. Compatibility with upstream
 

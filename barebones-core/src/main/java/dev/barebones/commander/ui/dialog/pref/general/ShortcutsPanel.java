@@ -263,7 +263,7 @@ public class ShortcutsPanel extends PreferencesPanel {
         private String lastActionTooltipShown;
         private String DEFAULT_MESSAGE;
         private static final int MESSAGE_SHOWING_TIME = 3000;
-        private MessageRemoverThread currentRemoverThread;
+        private final Timer messageRemoverTimer;
 
         public TooltipBar() {
             DEFAULT_MESSAGE = Translator.get("shortcuts_panel.default_message");
@@ -272,6 +272,8 @@ public class ShortcutsPanel extends PreferencesPanel {
             setHorizontalAlignment(JLabel.LEFT);
             setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
             setText(DEFAULT_MESSAGE);
+            messageRemoverTimer = new Timer(MESSAGE_SHOWING_TIME, e -> showActionTooltip(lastActionTooltipShown));
+            messageRemoverTimer.setRepeats(false);
         }
 
         public void showActionTooltip(String text) {
@@ -284,34 +286,7 @@ public class ShortcutsPanel extends PreferencesPanel {
 
         public void showErrorMessage(String text) {
             setText(text);
-            createMessageRemoverThread();
-        }
-
-        private void createMessageRemoverThread() {
-            if (currentRemoverThread != null) {
-                currentRemoverThread.neutralize();
-            }
-            (currentRemoverThread = new MessageRemoverThread()).start();
-        }
-
-        private class MessageRemoverThread extends Thread {
-            private boolean stopped = false;
-
-            public void neutralize() {
-                stopped = true;
-            }
-
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(MESSAGE_SHOWING_TIME);
-                } catch (InterruptedException e) {
-                }
-
-                if (!stopped) {
-                    showActionTooltip(lastActionTooltipShown);
-                }
-            }
+            messageRemoverTimer.restart();
         }
     }
 

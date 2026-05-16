@@ -70,7 +70,7 @@ public class WindowManager implements WindowListener, ConfigurationListener {
     /**
      * Whether additional LaFs are loaded.
      */
-    private boolean additionalLafsLoaded;
+    private volatile boolean additionalLafsLoaded;
 
     private static final WindowManager instance = new WindowManager();
 
@@ -123,13 +123,17 @@ public class WindowManager implements WindowListener, ConfigurationListener {
                 @Override
                 public void run() {
                     LOGGER.info("Loading additional Look and feels in background...");
-                    loadAdditionalLookAndFeels();
+                    ensureAdditionalLookAndFeelsLoaded();
                 }
             }, 5 * 1000);
         }
     }
 
-    private void loadAdditionalLookAndFeels() {
+    public synchronized void ensureAdditionalLookAndFeelsLoaded() {
+        if (additionalLafsLoaded) {
+            return;
+        }
+
         com.formdev.flatlaf.FlatDarculaLaf.installLafInfo();
         com.formdev.flatlaf.FlatDarkLaf.installLafInfo();
         com.formdev.flatlaf.FlatLightLaf.installLafInfo();
@@ -139,6 +143,10 @@ public class WindowManager implements WindowListener, ConfigurationListener {
         installCustomLookAndFeels();
 
         additionalLafsLoaded = true;
+    }
+
+    public boolean isAdditionalLookAndFeelsLoaded() {
+        return additionalLafsLoaded;
     }
 
     public static void setDefaultLookAndFeel() throws ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
@@ -281,7 +289,7 @@ public class WindowManager implements WindowListener, ConfigurationListener {
             } catch (UnsupportedLookAndFeelException e) {
                 LOGGER.info("The chosen Look and Feel (that is non-standard) must be loaded now...");
                 // TODO - load the required LaF and defer the rest?
-                loadAdditionalLookAndFeels(); // we defer that to that point as it takes some time :)
+                ensureAdditionalLookAndFeelsLoaded(); // we defer that to that point as it takes some time :)
                 try {
                     UIManager.setLookAndFeel(lnfName);
                 } catch (UnsupportedLookAndFeelException e2) {
@@ -424,9 +432,5 @@ public class WindowManager implements WindowListener, ConfigurationListener {
     		if(!UIManager.getLookAndFeel().getClass().getName().equals(lnfName))
     			setLookAndFeel(lnfName);
     	}
-    }
-
-    public boolean isAdditionalLafsLoaded() {
-        return additionalLafsLoaded;
     }
 }

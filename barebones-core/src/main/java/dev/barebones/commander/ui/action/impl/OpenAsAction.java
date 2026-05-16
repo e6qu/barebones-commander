@@ -20,8 +20,12 @@ package dev.barebones.commander.ui.action.impl;
 import java.io.IOException;
 import java.util.Map;
 
+import javax.swing.SwingUtilities;
+
 import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.FileFactory;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.desktop.ActionType;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.action.AbstractActionDescriptor;
@@ -37,6 +41,7 @@ import dev.barebones.commander.ui.main.MainFrame;
  * @author Arik Hadas
  */
 public class OpenAsAction extends OpenAction {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OpenAsAction.class);
 
     private String extension;
 
@@ -72,13 +77,28 @@ public class OpenAsAction extends OpenAction {
             resolvedFile = FileFactory.wrapArchive(resolvedFile, extension);
             resolvedFile.setCustomExtension(extension.substring(1));
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.warn("Could not open {} as {}", resolvedFile, extension, e);
+            showOpenAsError(e);
             return;
         }
 
         // Opens the currently selected file.
         open(resolvedFile, mainFrame.getActivePanel());
 
+    }
+
+    private void showOpenAsError(IOException exception) {
+        Runnable showDialog = () -> InformationDialog.showErrorDialog(
+                mainFrame.getJFrame(),
+                null,
+                Translator.get("generic_error"),
+                exception.getMessage(),
+                exception);
+        if (SwingUtilities.isEventDispatchThread()) {
+            showDialog.run();
+        } else {
+            SwingUtilities.invokeLater(showDialog);
+        }
     }
 
     @Override

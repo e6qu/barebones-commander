@@ -51,6 +51,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JViewport;
 import javax.swing.KeyStroke;
+import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
@@ -172,8 +173,9 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
      */
     private final TooltipBar tooltipBar;
 
-    /** Thread that cancels cell editing after the configured idle timeout. */
-    private CancelEditingStateThread cancelEditingStateThread;
+    /** Timer that cancels cell editing after the configured idle timeout. */
+    private final Timer cancelEditingStateTimer;
+    private TableCellEditor cancelEditingStateCellEditor;
 
     private final ShortcutsTableCellRenderer cellRenderer;
 
@@ -207,6 +209,13 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
         addFocusListener(this);
         getSelectionModel().addListSelectionListener(this);
         getColumnModel().getSelectionModel().addListSelectionListener(this);
+
+        cancelEditingStateTimer = new Timer(Tunables.SHORTCUT_EDITING_TIMEOUT_MS, event -> {
+            if (cancelEditingStateCellEditor != null) {
+                cancelEditingStateCellEditor.stopCellEditing();
+            }
+        });
+        cancelEditingStateTimer.setRepeats(false);
     }
 
     /**
@@ -270,14 +279,11 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
     }
 
     /**
-     * Create thread that will cancel the editing state of the given TableCellEditor after the configured timeout.
-     * time in which with no pressing was made.
+     * Schedule cancellation of the given TableCellEditor after the configured idle timeout.
      */
-    public void createCancelEditingStateThread(TableCellEditor cellEditor) {
-        if (cancelEditingStateThread != null) {
-            cancelEditingStateThread.neutralize();
-        }
-        (cancelEditingStateThread = new CancelEditingStateThread(cellEditor)).start();
+    public void scheduleCancelEditingState(TableCellEditor cellEditor) {
+        cancelEditingStateCellEditor = cellEditor;
+        cancelEditingStateTimer.restart();
     }
 
     @Override
@@ -412,7 +418,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
 
             setClickCountToStart(Tunables.SHORTCUT_EDITING_CLICKS);
 
-            createCancelEditingStateThread(this);
+            scheduleCancelEditingState(this);
         }
 
         @Override
@@ -427,31 +433,6 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
         @Override
         public Object getCellEditorValue() {
             return rec.getLastKeyStroke();
-        }
-    }
-
-    private class CancelEditingStateThread extends Thread {
-        private boolean stopped = false;
-        private final TableCellEditor cellEditor;
-
-        public CancelEditingStateThread(TableCellEditor cellEditor) {
-            this.cellEditor = cellEditor;
-        }
-
-        public void neutralize() {
-            stopped = true;
-        }
-
-        @Override
-        public void run() {
-            try {
-                Thread.sleep(Tunables.SHORTCUT_EDITING_TIMEOUT_MS);
-            } catch (InterruptedException e) {
-            }
-
-            if (!stopped && cellEditor != null) {
-                cellEditor.stopCellEditing();
-            }
         }
     }
 
@@ -595,7 +576,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
                     tooltipBar.setToolTipText(Translator.get("shortcuts_panel.already_assigned",
                             KeyStrokeUtils.getKeyStrokeDisplayableRepresentation(pressedKeyStroke),
                             ActionProperties.getActionDescription(actionId)));
-                    createCancelEditingStateThread(getCellEditor());
+                    scheduleCancelEditingState(getCellEditor());
                 } else {
                     lastKeyStroke = pressedKeyStroke;
                     setText(KeyStrokeUtils.getKeyStrokeDisplayableRepresentation(lastKeyStroke));

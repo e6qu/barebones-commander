@@ -18,6 +18,8 @@
 package dev.barebones.commander.ui.dialog.customization;
 
 import dev.barebones.commander.commons.collections.AlteredVector;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.commons.util.ui.layout.YBoxPanel;
 import dev.barebones.commander.desktop.ActionType;
 import dev.barebones.commander.text.Translator;
@@ -63,7 +65,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -72,6 +73,7 @@ import java.util.Set;
  * @author Arik Hadas
  */
 public class CommandBarDialog extends CustomizeDialog {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CommandBarDialog.class);
 	
 	/** List that contains all available buttons, i.e buttons that are not used by the command bar */
 	private DynamicHorizontalWrapList<JButton> commandBarAvailableButtonsList;
@@ -260,10 +262,8 @@ public class CommandBarDialog extends CustomizeDialog {
 					commandBarButtonsList.ensureIndexIsVisible(index);
 					commandBarButtonsList.repaint();
 					return true;
-				} catch (UnsupportedFlavorException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
+				} catch (UnsupportedFlavorException | IOException e) {
+					LOGGER.warn("Could not import command bar button transfer", e);
 				}
 				return false;
 			}
@@ -372,10 +372,8 @@ public class CommandBarDialog extends CustomizeDialog {
 					commandBarAlternateButtonsList.ensureIndexIsVisible(index);
 					commandBarAlternateButtonsList.repaint();
 					return true;
-				} catch (UnsupportedFlavorException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
+				} catch (UnsupportedFlavorException | IOException e) {
+					LOGGER.warn("Could not import command bar alternate-button transfer", e);
 				}
 				return false;
 			}
@@ -439,10 +437,8 @@ public class CommandBarDialog extends CustomizeDialog {
 					commandBarAvailableButtonsList.ensureIndexIsVisible(insertedIndex);
 					return true;
 				}
-				catch (UnsupportedFlavorException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
+				catch (UnsupportedFlavorException | IOException e) {
+					LOGGER.warn("Could not return command bar button to the available-actions list", e);
 				}
 				return false;
 			}
