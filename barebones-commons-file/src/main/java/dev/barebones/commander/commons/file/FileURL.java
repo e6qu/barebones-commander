@@ -55,11 +55,11 @@ import dev.barebones.commander.commons.util.StringUtils;
  * In addition to standard URL features, FileURL gives access to scheme-specific attributes:
  * <dl>
  *  <dt>{@link #getStandardPort() standard port}</dt><dd>the standard port implied when no port is defined in the URL,
- * e.g. 21 for FTP</dd>
+ * e.g. 22 for SFTP or 2049 for NFS</dd>
  *  <dt>{@link #getPathSeparator() path separator}</dt><dd>the character(s) that separates path fragments, e.g. '/' for
  * most schemes.</dd>
- *  <dt>{@link #getGuestCredentials() guest credentials}</dt><dd>credentials to authenticate as a guest, e.g. 'GUEST'
- * for SMB, 'anonymous' for FTP.</dd>
+ *  <dt>{@link #getGuestCredentials() guest credentials}</dt><dd>credentials to authenticate as a guest, when a
+ * supported scheme exposes that concept.</dd>
  *  <dt>{@link #getRealm() authentication realm}</dt><dd>the base URL throughout which a set of credentials can be used.
  * </dd>
  * </dl>
@@ -68,8 +68,8 @@ import dev.barebones.commander.commons.util.StringUtils;
  * <p>
  * In addition to providing those attributes, a SchemeHandler provides a {@link SchemeParser}
  * instance which takes care of the actual parsing of URLs of a particular scheme when {@link #getFileURL(String)} is
- * invoked. This allows for scheme-specific parsing, like for example for the query part which should only be parsed
- * and considered as a separate part for certain schemes such as HTTP.
+ * invoked. This allows for scheme-specific parsing, such as S3 endpoints that carry connection properties outside
+ * the path itself.
  * </p>
  * <p>
  * This class registers a number of handlers for the schemes/protocols supported by the muCommander file API.

@@ -26,7 +26,7 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 /**
- * Defines various generic muCommander constants.
+ * Defines generic application constants.
  *
  * @author Nicolas Rinaudo
  */
@@ -62,13 +62,13 @@ public class RuntimeConstants {
      * software update - the JAR file is corrupt, so we might as well get the latest version.
      */
     private static final String DEFAULT_RELEASE_DATE = "20020101";
-    /** Current muCommander version (<code>MAJOR.MINOR.DEV</code>). */
+    /** Current application version (<code>MAJOR.MINOR.DEV</code>). */
     public static final String VERSION;
     /** Date at which the build was generated (<code>YYYYMMDD</code>). */
     public static final String BUILD_DATE;
-    /** String describing the software (<code>muCommander vMAJOR.MINOR.DEV</code>). */
+    /** String describing the software (<code>barebones-commander vMAJOR.MINOR.DEV</code>). */
     public static final String APP_STRING;
-    /** String describing the muCommander build number. */
+    /** String describing the application build number. */
     public static final String BUILD_NUMBER;
     /** Identifier of the last public commit that is included in the release. */
     public static final String GIT_HASH;
@@ -85,7 +85,7 @@ public class RuntimeConstants {
                 Manifest manifest = new Manifest();
                 manifest.read(in);
                 attributes = manifest.getMainAttributes();
-                LOGGER.info("muCommander version: {}", attributes.getValue("Specification-Version"));
+                LOGGER.info("barebones-commander version: {}", attributes.getValue("Specification-Version"));
             } else {
                 LOGGER.warn("MANIFEST.MF not found, default values will be used");
             }

@@ -21,22 +21,17 @@ the barebones-commander contributors as copyright holders.
 
 Third-party libraries used (subset; see LIBRARIES.md for the full inventory):
 
-  Apache Felix (OSGi)         — Apache License 2.0   [removed in Phase 2]
   FlatLaf                     — Apache License 2.0
   ICU4J                       — Unicode-DFS-2016
   JNA                         — Apache License 2.0 / LGPL-2.1 (dual)
   SLF4J API (transitive)      — MIT License
   SnakeYAML                   — Apache License 2.0
-  Bouncy Castle               — MIT-style
   Apache Commons Compress     — Apache License 2.0
   XZ for Java                 — Public Domain
-  Apache Bzip2 (vendored)     — Apache License 2.0
-  Gson                        — Apache License 2.0
-  MBassador                   — MIT License
   JCommander                  — Apache License 2.0
-  Log4j (core, 1.2-api)       — Apache License 2.0
+  AWS SDK for Java v2         — Apache License 2.0
+  Testcontainers              — MIT License
   com.github.mwiede:jsch      — BSD 3-Clause License (used for SFTP)
-  TestNG                      — Apache License 2.0
   JUnit 5                     — Eclipse Public License 2.0
 
 All listed libraries are GPLv3-compatible.

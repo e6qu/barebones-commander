@@ -25,6 +25,7 @@ import java.awt.event.MouseListener;
 import javax.swing.Action;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
@@ -187,10 +188,17 @@ public abstract class PopupButton extends NonFocusableButton {
     /**
      * This inner class controls this button's behavior and actions when the mouse button is clicked or held down.
      */
-    private class PopupMenuHandler implements MouseListener, Runnable {
+    private class PopupMenuHandler implements MouseListener {
 
         /** Contains the time at which a mouse button was pressed, 0 when a mouse button is not currently being pressed */
         private long pressedTime;
+
+        private final Timer popupTimer;
+
+        private PopupMenuHandler() {
+            popupTimer = new Timer(POPUP_DELAY, event -> popupMenuIfStillPressed());
+            popupTimer.setRepeats(false);
+        }
 
         /** Returns true to indicate that a mouse event should currently be ignored because the popup menu
          * is visible, or was closed recently (less than POPUP_DELAY ms ago) */
@@ -198,11 +206,18 @@ public abstract class PopupButton extends NonFocusableButton {
             return isPopupMenuVisible() || System.currentTimeMillis() - popupMenuClosedTime<POPUP_DELAY;
         }
 
+        private void popupMenuIfStillPressed() {
+            // Popup menu if a popup menu is not already being displayed and if mouse is still pressed
+            if(!isPopupMenuVisible() && pressedTime!=0 && System.currentTimeMillis()-pressedTime>=POPUP_DELAY) {
+                popupMenu();
+            }
+        }
+
         //////////////////////////////////
         // MouseListener implementation //
         //////////////////////////////////
 
-        public synchronized void mousePressed(MouseEvent mouseEvent) {
+        public void mousePressed(MouseEvent mouseEvent) {
             LOGGER.trace("Popup button mousePressed");
             if (!isEnabled() || shouldIgnoreMouseEvent()) {   // Ignore event if button is disabled
                 LOGGER.trace("Popup button mousePressed, but not enabled or should be ignored");
@@ -214,22 +229,20 @@ public abstract class PopupButton extends NonFocusableButton {
             }
             else {
                 pressedTime = System.currentTimeMillis();
-
-                // Spawn a thread to check if mouse is still pressed in POPUP_DELAY ms. If that is the case, popup menu
-                // will be displayed.
-                new Thread(this).start();
+                popupTimer.restart();
             }
         }
 
-        public synchronized void mouseClicked(MouseEvent mouseEvent) {
+        public void mouseClicked(MouseEvent mouseEvent) {
             LOGGER.trace("Popup button mouseClicked");
             if (!isEnabled() || shouldIgnoreMouseEvent()) {   // Ignore event if button is disabled
                 LOGGER.trace("Popup button mouseClicked, but not enabled or should be ignored");
                 return;
             }
 
-            // Indicate to Thread spawn by mousePressed that mouse is not pressed anymore
+            // Cancel pending long-press popup detection.
             pressedTime = 0;
+            popupTimer.stop();
 
             if (buttonClickedAction !=null) {   // Perform the action if there is one
                 buttonClickedAction.actionPerformed(new ActionEvent(PopupButton.this, ActionEvent.ACTION_PERFORMED, "clicked"));
@@ -238,38 +251,20 @@ public abstract class PopupButton extends NonFocusableButton {
             }
         }
 
-        public synchronized void mouseReleased(MouseEvent mouseEvent) {
+        public void mouseReleased(MouseEvent mouseEvent) {
             LOGGER.trace("Popup button mouseReleased");
-            // Indicate to Thread spawn by mousePressed that mouse is not pressed anymore
+            // Cancel pending long-press popup detection.
             pressedTime = 0;
+            popupTimer.stop();
         }
 
-        public synchronized void mouseExited(MouseEvent mouseEvent) {
-            // Indicate to Thread spawn by mousePressed that mouse is not pressed anymore
+        public void mouseExited(MouseEvent mouseEvent) {
+            // Cancel pending long-press popup detection.
             pressedTime = 0;
+            popupTimer.stop();
         }
 
         public void mouseEntered(MouseEvent mouseEvent) {
-        }
-
-
-        /////////////////////////////
-        // Runnable implementation //
-        /////////////////////////////
-
-        public void run() {
-            try {
-                Thread.sleep(POPUP_DELAY);
-            } catch(InterruptedException e) {
-                LOGGER.trace("Sleep loop interrupted", e);
-            }
-
-            synchronized(this) {
-                // Popup menu if a popup menu is not already being displayed and if mouse is still pressed
-                if(!isPopupMenuVisible() && pressedTime!=0 && System.currentTimeMillis()-pressedTime>=POPUP_DELAY) {
-                    popupMenu();
-                }
-            }
         }
     }
 }

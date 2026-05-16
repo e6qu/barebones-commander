@@ -1,5 +1,5 @@
 name: Bug Report
-description: File a bug report for muCommander
+description: File a bug report for barebones-commander
 title: "[Bug] "
 labels: ["bug"]
 body:
@@ -11,7 +11,7 @@ body:
     id: exisitng-issue
     attributes:
       label: Is there an existing issue for this?
-      description: Please [search](https://github.com/mucommander/mucommander/issues?q=) to see if an issue already exists for the bug you encountered, including the closed ones.
+      description: Please search this repository to see if an issue already exists for the bug you encountered, including the closed ones.
       options:
       - label: I have searched the existing issues (including the closed ones)
         required: true
@@ -63,9 +63,9 @@ body:
   - type: textarea
     id: version
     attributes:
-      label: muCommander version
-      description: What version of muCommander are you running?
-      placeholder: Go to About of muCommander and copy-paste the version
+      label: barebones-commander version
+      description: What version of barebones-commander are you running?
+      placeholder: Go to About and copy-paste the version
       value:
     validations:
       required: true
@@ -73,8 +73,8 @@ body:
     id: java-version
     attributes:
       label: Java version
-      description: What version of Java muCommander is using?
-      placeholder: Go to About of muCommander and copy-paste the Java information
+      description: What version of Java is barebones-commander using?
+      placeholder: Go to About and copy-paste the Java information
       value:
     validations:
       required: true
@@ -82,8 +82,8 @@ body:
     id: os-version
     attributes:
       label: Operating System type and version
-      description: What type and version of Operating System you are running muCommander on?
-      placeholder: Go to About of muCommander and copy-paste the OS information
+      description: What type and version of Operating System are you running barebones-commander on?
+      placeholder: Go to About and copy-paste the OS information
       value:
     validations:
       required: true

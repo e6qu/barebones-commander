@@ -27,8 +27,12 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -39,6 +43,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
 
@@ -79,7 +84,7 @@ import dev.barebones.commander.ui.theme.ThemeManager;
  *
  * @author Maxence Bernard, Nicolas Rinaudo
  */
-class AppearancePanel extends PreferencesPanel implements ActionListener, Runnable {
+class AppearancePanel extends PreferencesPanel implements ActionListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(AppearancePanel.class);
 
     public enum AppearanceAction implements DialogAction {
@@ -123,12 +128,8 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
      * Used to notify the user that the system is working.
      */
     private SpinningDial dial;
-    /**
-     * File from which to import looks and feels.
-     */
-    private AbstractFile lookAndFeelLibrary;
-
-
+    private SwingWorker<Void, Void> additionalLookAndFeelsWorker;
+    private SwingWorker<?, ?> lookAndFeelImportWorker;
     // - Icon size fields ----------------------------------------------------------------
     // -----------------------------------------------------------------------------------
     /**
@@ -277,8 +278,15 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
      * Populates the look&feel combo box with all available look&feels.
      */
     private void populateLookAndFeels() {
+        populateLookAndFeelsFromInstalled();
+        if (!WindowManager.getInstance().isAdditionalLookAndFeelsLoaded()) {
+            loadAdditionalLookAndFeelsInBackground();
+        }
+    }
+
+    private void populateLookAndFeelsFromInstalled() {
         lookAndFeelComboBox.removeAllItems();
-        initializeAvailableLookAndFeels();
+        loadAvailableLookAndFeelsFromUIManager();
 
         // Populates the combo box.
         int currentIndex = -1;
@@ -295,6 +303,37 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
         if (currentIndex == -1)
             currentIndex = 0;
         lookAndFeelComboBox.setSelectedIndex(currentIndex);
+    }
+
+    private void loadAdditionalLookAndFeelsInBackground() {
+        if (additionalLookAndFeelsWorker != null && !additionalLookAndFeelsWorker.isDone()) {
+            return;
+        }
+
+        setLookAndFeelsLoading(true);
+        additionalLookAndFeelsWorker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() {
+                WindowManager.getInstance().ensureAdditionalLookAndFeelsLoaded();
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    populateLookAndFeelsFromInstalled();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.warn("Additional look and feel loading was interrupted", e);
+                } catch (ExecutionException e) {
+                    LOGGER.warn("Could not load additional look and feels", e.getCause());
+                } finally {
+                    setLookAndFeelsLoading(false);
+                }
+            }
+        };
+        additionalLookAndFeelsWorker.execute();
     }
 
     /**
@@ -340,16 +379,11 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
             }
         });
 
-        // Populates the look and feel combo box.
-        populateLookAndFeels();
-
         // Initialises buttons and event listening.
         importLookAndFeelButton = new JButton(Translator.get("prefs_dialog.import") + "...");
         deleteLookAndFeelButton = new JButton(Translator.get("delete"));
         importLookAndFeelButton.addActionListener(this);
         deleteLookAndFeelButton.addActionListener(this);
-        resetLookAndFeelButtons();
-        lookAndFeelComboBox.addActionListener(this);
 
         // Adds the look and feel list and the action buttons to the panel.
         JPanel flowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -358,6 +392,11 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
         flowPanel.add(deleteLookAndFeelButton);
         flowPanel.add(new JLabel(dial = new SpinningDial()));
         lnfPanel.add(flowPanel);
+
+        // Populates the look and feel combo box.
+        populateLookAndFeels();
+        resetLookAndFeelButtons();
+        lookAndFeelComboBox.addActionListener(this);
 
         return lnfPanel;
     }
@@ -632,15 +671,7 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
     /**
      * Initialises the list of available look&feels.
      */
-    private void initializeAvailableLookAndFeels() {
-        while (!WindowManager.getInstance().isAdditionalLafsLoaded()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-        }
+    private void loadAvailableLookAndFeelsFromUIManager() {
         // Loads all available look and feels.
         lookAndFeels = UIManager.getInstalledLookAndFeels();
 
@@ -780,17 +811,17 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
     }
 
     /**
-     * Tries to import the specified library in the extensions folder.
+     * Checks whether the specified library can be imported in the extensions folder.
      * <p>
      * If there is already a file with the same name in the extensions folder,
-     * this method will ask the user for confirmation before overwriting it.
+     * this method asks the user for confirmation before allowing an overwrite.
      * </p>
      *
      * @param library library to import in the extensions folder.
-     * @return <code>true</code> if the library was imported, <code>false</code> if the user cancelled the operation.
-     * @throws IOException if an I/O error occurred while importing the library
+     * @return <code>true</code> if the library may be imported, <code>false</code> if the user cancelled the operation.
+     * @throws IOException if an I/O error occurred while checking the destination
      */
-    private boolean importLookAndFeelLibrary(AbstractFile library) throws IOException {
+    private boolean confirmLookAndFeelLibraryImport(AbstractFile library) throws IOException {
         // Tries to import the file, but if a version of it is already present in the extensions folder,
         // asks the user for confirmation.
 
@@ -823,49 +854,126 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
             }
         }
 
-        return ExtensionManager.importLibrary(library, true);
+        return true;
     }
 
-    public void run() {
-        java.util.List<Class<?>> newLookAndFeels;
+    private record LookAndFeelImportResult(List<String> installedNames) {
+    }
 
+    private void importLookAndFeelInBackground(AbstractFile library) {
         setLookAndFeelsLoading(true);
-        try {
-            // Identifies all the look&feels contained by the new library and adds them to the list of custom
-            // If no look&feel was found, notifies the user.
-            if ((newLookAndFeels = new ClassFinder().find(lookAndFeelLibrary, new LookAndFeelFilter())).isEmpty())
-                InformationDialog.showWarningDialog(this, Translator.get("prefs_dialog.no_look_and_feel"));
-            else if (importLookAndFeelLibrary(lookAndFeelLibrary)) {
-                String currentName;
 
-                if (customLookAndFeels == null)
-                    customLookAndFeels = new Vector<String>();
+        lookAndFeelImportWorker = new SwingWorker<List<Class<?>>, Void>() {
+            @Override
+            protected List<Class<?>> doInBackground() throws Exception {
+                return new ClassFinder().find(library, new LookAndFeelFilter());
+            }
 
-                // Adds all new instances to the list of custom look&feels.
-                for (int i = 0; i < newLookAndFeels.size(); i++) {
-                    currentName = newLookAndFeels.get(i).getName();
-                    if (!customLookAndFeels.contains(currentName)) {
-                        customLookAndFeels.add(currentName);
-                        try {
-                            WindowManager.installLookAndFeel(currentName);
-                        } catch (Throwable e) {
-                        }
+            @Override
+            protected void done() {
+                boolean installStarted = false;
+                try {
+                    List<Class<?>> lookAndFeelClasses = get();
+                    if (lookAndFeelClasses.isEmpty()) {
+                        InformationDialog.showWarningDialog(AppearancePanel.this, Translator.get("prefs_dialog.no_look_and_feel"));
+                        return;
+                    }
+                    if (!confirmLookAndFeelLibraryImport(library)) {
+                        return;
+                    }
+                    installLookAndFeelClassesInBackground(library, lookAndFeelClasses);
+                    installStarted = true;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.warn("Look and feel import was interrupted", e);
+                    InformationDialog.showErrorDialog(AppearancePanel.this, null, null, null, e);
+                } catch (ExecutionException e) {
+                    LOGGER.warn("Could not inspect look and feel library {}", library, e.getCause());
+                    InformationDialog.showErrorDialog(AppearancePanel.this, null, null, null, e.getCause());
+                } catch (Exception e) {
+                    LOGGER.warn("Could not import look and feel library {}", library, e);
+                    InformationDialog.showErrorDialog(AppearancePanel.this, null, null, null, e);
+                } finally {
+                    if (!installStarted) {
+                        setLookAndFeelsLoading(false);
                     }
                 }
-
-                if (customLookAndFeels.isEmpty())
-                    customLookAndFeels = null;
-                else
-                    MuConfigurations.getPreferences().setVariable(MuPreference.CUSTOM_LOOK_AND_FEELS, customLookAndFeels, MuPreferences.CUSTOM_LOOK_AND_FEELS_SEPARATOR);
-
-                populateLookAndFeels();
             }
-        } catch (Exception e) {
-            LOGGER.debug("Exception caught", e);
+        };
+        lookAndFeelImportWorker.execute();
+    }
 
-            InformationDialog.showErrorDialog(this);
+    private void installLookAndFeelClassesInBackground(AbstractFile library, List<Class<?>> newLookAndFeels) {
+        Set<String> existingLookAndFeels = customLookAndFeels == null ? Set.of() : new HashSet<>(customLookAndFeels);
+        lookAndFeelImportWorker = new LookAndFeelInstallWorker(library, newLookAndFeels, existingLookAndFeels);
+        lookAndFeelImportWorker.execute();
+    }
+
+    private class LookAndFeelInstallWorker extends SwingWorker<LookAndFeelImportResult, Void> {
+        private final AbstractFile library;
+        private final List<Class<?>> newLookAndFeels;
+        private final Set<String> existingLookAndFeels;
+
+        private LookAndFeelInstallWorker(AbstractFile library, List<Class<?>> newLookAndFeels, Set<String> existingLookAndFeels) {
+            this.library = library;
+            this.newLookAndFeels = newLookAndFeels;
+            this.existingLookAndFeels = existingLookAndFeels;
         }
-        setLookAndFeelsLoading(false);
+
+        @Override
+        protected LookAndFeelImportResult doInBackground() throws Exception {
+            ExtensionManager.importLibrary(library, true);
+
+            List<String> installedNames = new java.util.ArrayList<>();
+            for (Class<?> newLookAndFeel : newLookAndFeels) {
+                String currentName = newLookAndFeel.getName();
+                if (existingLookAndFeels.contains(currentName)) {
+                    continue;
+                }
+                try {
+                    WindowManager.installLookAndFeel(currentName);
+                    installedNames.add(currentName);
+                } catch (ReflectiveOperationException | LinkageError e) {
+                    LOGGER.warn("Failed to install Look and Feel {}", currentName, e);
+                }
+            }
+            return new LookAndFeelImportResult(installedNames);
+        }
+
+        @Override
+        protected void done() {
+            try {
+                applyImportedLookAndFeels(get());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                LOGGER.warn("Look and feel install was interrupted", e);
+                InformationDialog.showErrorDialog(AppearancePanel.this, null, null, null, e);
+            } catch (ExecutionException e) {
+                LOGGER.warn("Could not install look and feel library {}", library, e.getCause());
+                InformationDialog.showErrorDialog(AppearancePanel.this, null, null, null, e.getCause());
+            } finally {
+                setLookAndFeelsLoading(false);
+            }
+        }
+    }
+
+    private void applyImportedLookAndFeels(LookAndFeelImportResult result) {
+        if (customLookAndFeels == null) {
+            customLookAndFeels = new Vector<String>();
+        }
+
+        for (String installedName : result.installedNames()) {
+            if (!customLookAndFeels.contains(installedName)) {
+                customLookAndFeels.add(installedName);
+            }
+        }
+
+        if (customLookAndFeels.isEmpty())
+            customLookAndFeels = null;
+        else
+            MuConfigurations.getPreferences().setVariable(MuPreference.CUSTOM_LOOK_AND_FEELS, customLookAndFeels, MuPreferences.CUSTOM_LOOK_AND_FEELS_SEPARATOR);
+
+        populateLookAndFeelsFromInstalled();
     }
 
     private void importLookAndFeel() {
@@ -889,9 +997,7 @@ class AppearancePanel extends PreferencesPanel implements ActionListener, Runnab
                 return;
             }
 
-            // Imports the JAR in a separate thread.
-            lookAndFeelLibrary = file;
-            new Thread(this).start();
+            importLookAndFeelInBackground(file);
         }
     }
 

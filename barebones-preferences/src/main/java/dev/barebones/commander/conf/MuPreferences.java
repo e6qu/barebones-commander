@@ -332,25 +332,25 @@ public class MuPreferences implements MuPreferencesAPI {
 
 
 
-    // - Variables used for FTP ----------------------------------------------
+    // - Legacy variables from removed FTP support ---------------------------
     // -----------------------------------------------------------------------
-    /** Section containing all FTP variables. */
+    /** Section retained so old preference files can still round-trip. */
     public static final String FTP_SECTION                        = "ftp";
-    /** Controls whether hidden files should be listed by the client (LIST -al instead of LIST -l). */
+    /** Removed FTP support used this to control hidden-file listing. */
     public static final String LIST_HIDDEN_FILES                  = FTP_SECTION + '.' + "list_hidden_files";
     /** Default value for {@link #LIST_HIDDEN_FILES}. */
     public static final boolean DEFAULT_LIST_HIDDEN_FILES         = false;
 
 
-    // - Variables used for SMB ----------------------------------------------
+    // - Legacy variables from removed SMB support ---------------------------
     // -----------------------------------------------------------------------
-    /** Section containing all SMB variables. */
+    /** Section retained so old preference files can still round-trip. */
     public static final String SMB_SECTION                        = "smb";
-    /** Controls the authentication protocol to use when connecting to SMB servers. */
+    /** Removed SMB support used this to control NTLM compatibility. */
     public static final String SMB_LM_COMPATIBILITY               = SMB_SECTION + '.' + "lm_compatibility";
     /** Default value for {@link #SMB_LM_COMPATIBILITY}. */
     public static final int DEFAULT_SMB_LM_COMPATIBILITY          = 0;
-    /** Controls the authentication protocol to use when connecting to SMB servers. */
+    /** Removed SMB support used this to control extended security. */
     public static final String SMB_USE_EXTENDED_SECURITY          = SMB_SECTION + '.' + "use_extended_security";
     /** Default value for {@link #SMB_USE_EXTENDED_SECURITY}. */
     public static final boolean DEFAULT_SMB_USE_EXTENDED_SECURITY = false;

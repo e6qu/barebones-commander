@@ -26,10 +26,9 @@ import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.protocol.ProtocolProvider;
 
 /**
- * This class is the provider for the FTP filesystem implemented by {@link dev.barebones.commander.commons.file.protocol.ftp.FTPFile}.
+ * Provider for the SFTP filesystem implemented by {@link SFTPFile}.
  *
  * @author Nicolas Rinaudo, Maxence Bernard
- * @see dev.barebones.commander.commons.file.protocol.sftp.SFTPFile
  */
 public class SFTPProtocolProvider implements ProtocolProvider {
 

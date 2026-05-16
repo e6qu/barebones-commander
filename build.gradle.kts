@@ -66,9 +66,44 @@ subprojects {
         }
     }
     tasks.withType<Test>().configureEach {
+        val testTask = this
+        val hasTestSources = project.layout.projectDirectory.dir("src/test").asFileTree
+            .matching {
+                include("**/*.java")
+                include("**/*.kt")
+                include("**/*.groovy")
+                include("**/*.scala")
+            }
+            .files
+            .isNotEmpty()
+        fun hasNoExplicitTestFilter(): Boolean =
+            testTask.filter.includePatterns.isEmpty()
+
         useJUnitPlatform()
         systemProperty("junit.jupiter.testinstance.lifecycle.default", "per_class")
         jvmArgs("--enable-native-access=ALL-UNNAMED")
+        addTestListener(object : org.gradle.api.tasks.testing.TestListener {
+            override fun beforeSuite(suite: org.gradle.api.tasks.testing.TestDescriptor) {
+            }
+
+            override fun beforeTest(testDescriptor: org.gradle.api.tasks.testing.TestDescriptor) {
+            }
+
+            override fun afterTest(
+                testDescriptor: org.gradle.api.tasks.testing.TestDescriptor,
+                result: org.gradle.api.tasks.testing.TestResult,
+            ) {
+            }
+
+            override fun afterSuite(
+                suite: org.gradle.api.tasks.testing.TestDescriptor,
+                result: org.gradle.api.tasks.testing.TestResult,
+            ) {
+                if (suite.parent == null && hasTestSources && hasNoExplicitTestFilter() && result.testCount == 0L) {
+                    throw GradleException("${testTask.path} discovered zero tests despite src/test sources")
+                }
+            }
+        })
         testLogging {
             events("failed", "standardError")
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

@@ -18,9 +18,9 @@
 package dev.barebones.commander.ui.main.table;
 
 import dev.barebones.commander.commons.file.AbstractFile;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.commons.runtime.Tunables;
-import dev.barebones.commander.ui.main.table.FileTableModel;
-// import dev.barebones.commander.ui.main.table.views.BaseFileTableModel;
 
 import javax.swing.SwingWorker;
 import java.io.IOException;
@@ -31,6 +31,8 @@ import java.util.List;
  * Created on 09/01/14.
  */
 public class CalculateDirectorySizeWorker extends SwingWorker<Long, Long> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CalculateDirectorySizeWorker.class);
+
     private final FileTableModel fileTableModel;
     private final AbstractFile path;
     private final FileTable table;
@@ -49,7 +51,7 @@ public class CalculateDirectorySizeWorker extends SwingWorker<Long, Long> {
         try {
             calcDirectorySize(path);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("Failed to calculate directory size for {}", path, e);
             size = -1;
         }
         return size;

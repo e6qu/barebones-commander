@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin'
 
       - uses: gradle/actions/setup-gradle@v6.1.0
-      - run: ./gradlew test --stacktrace
+      - run: ./gradlew cleanTest test --stacktrace
 
   package-smoke:
     runs-on: ubuntu-latest
@@ -37,9 +37,12 @@ jobs:
 
       - name: Verify package smoke artifacts
         run: |
-          test -s build/libs/*-all.jar
+          jar_count=$(find build/libs -maxdepth 1 -type f -name '*-all.jar' | wc -l | tr -d ' ')
+          test "$jar_count" -eq 1
+          test -s "$(find build/libs -maxdepth 1 -type f -name '*-all.jar')"
           test -s build/reports/bom.json
           test -s build/reports/bom.xml
+          python -c 'import json,sys; components=json.load(open(sys.argv[1])).get("components", []); sys.exit(0 if components else 1)' build/reports/bom.json
 
   # SECURITY_REVIEW.md §5.1: prevent the OSGi-era TLS bypass from
   # ever sneaking back in. The HTTP bundle that called

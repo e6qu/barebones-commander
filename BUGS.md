@@ -282,6 +282,75 @@ output, not stray debug. Kept.
 Zip spec allows non-UTF-8; an EFS-flagged entry is fine but legacy
 encoded ones (CP932 etc) round-trip wrong.
 
+### 1.29 ~~MED — Green checks could hide no-op test / analysis runs~~ **FIXED**
+Phase 31 found three ways CI could look green while proving too little:
+`./gradlew test` could reuse up-to-date outputs instead of re-executing tests,
+subprojects with `src/test` sources could still pass if JUnit discovered zero
+tests, and the SpotBugs SARIF merge step could upload an empty synthetic SARIF
+if no module reports were produced. The package smoke check also accepted any
+non-empty `*-all.jar` glob without proving the expected single artifact and SBOM
+shape.
+
+Fixed by running `cleanTest test` in CI, failing every subproject `Test` task
+that has Java/Kotlin/Groovy/Scala test sources but discovers zero tests during
+unfiltered runs, requiring exactly one fat JAR plus non-empty CycloneDX JSON/XML
+reports with a non-empty components array, and making the SpotBugs SARIF merge
+fail when no SpotBugs SARIF inputs exist.
+
+### 1.30 ~~LOW — GUI error paths still used `printStackTrace()`~~ **FIXED**
+The Phase 31 Java GUI slop sweep found own-code UI paths that still printed
+exceptions directly to stderr: directory-size background calculation,
+Open-as-archive wrapping, and command-bar drag/drop customization. These were
+not useful user feedback and could disappear in packaged app launches.
+
+Fixed by replacing direct stack-trace printing with the project logging facade,
+and by showing an actionable error dialog when `OpenAsAction` cannot wrap the
+selected file with the requested extension. A second-opinion review pointed out
+that this new dialog should not assume the caller is on the EDT, so the dialog
+display is now marshalled through `SwingUtilities` when needed.
+
+### 1.31 ~~MED — `ShortcutsPanel` error tooltip used sleep + off-EDT mutation~~ **FIXED**
+The shortcuts preferences panel displayed transient validation errors by
+starting a custom thread, sleeping for three seconds, then calling `setText`
+from that worker thread. That made a small UI state update timing-dependent and
+off the Swing event-dispatch thread.
+
+Fixed by replacing the custom thread with a non-repeating `javax.swing.Timer`,
+which runs on the EDT and restarts on each new error message.
+
+### 1.32 ~~MED — Appearance preferences polled look-and-feel loading on the EDT~~ **FIXED**
+`AppearancePanel.initializeAvailableLookAndFeels()` waited for
+`WindowManager`'s background look-and-feel loader with a `Thread.sleep(100)`
+polling loop. Opening preferences before that background timer completed could
+stall the Swing event-dispatch thread for up to several seconds.
+
+Fixed by replacing the polling loop with a `SwingWorker` that calls
+`WindowManager.ensureAdditionalLookAndFeelsLoaded()` off the EDT and repopulates
+the preferences combo box from `done()`. The loader itself is guarded by a
+volatile loaded flag plus synchronization so the background timer and
+preferences panel cannot run duplicate installs.
+
+### 1.33 ~~MED — GUI timeout behavior used one-off sleep threads~~ **FIXED**
+The slop sweep found two more own-code Swing paths that spawned threads only to
+sleep and later touch UI state: `PopupButton` long-press popup handling and
+`ShortcutsTable` shortcut-editing timeout. Both were event timing concerns that
+belong on the event-dispatch thread.
+
+Fixed by replacing both custom thread/sleep implementations with non-repeating
+`javax.swing.Timer` instances.
+
+### 1.34 ~~MED — Look-and-feel import mixed background work with Swing mutation~~ **FIXED**
+`AppearancePanel.importLookAndFeel()` spawned a raw `Thread` whose `run()` method
+scanned a JAR, opened dialogs, changed preferences, repopulated combo boxes, and
+updated loading controls. It also swallowed `Throwable` from
+`WindowManager.installLookAndFeel`, hiding failed custom look-and-feel installs.
+
+Fixed by using `SwingWorker`: JAR class scanning, extension-directory copy, and
+reflective look-and-feel installation run off the EDT; dialogs, preference
+updates, combo-box refreshes, and loading-state changes run from `done()` on the
+EDT. Look-and-feel install failures are logged and the failed class is not added
+to the custom list.
+
 ---
 
 ## 2. UX gaps

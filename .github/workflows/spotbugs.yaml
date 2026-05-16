@@ -51,9 +51,11 @@ jobs:
               }],
           }
           rules_seen = {}
+          sarif_count = 0
           for f in sorted(glob.glob("**/build/reports/spotbugs/*.sarif", recursive=True)):
               if os.path.getsize(f) == 0:
                   continue
+              sarif_count += 1
               with open(f) as fh:
                   d = json.load(fh)
               for run in d.get("runs", []):
@@ -62,6 +64,8 @@ jobs:
                       if rid and rid not in rules_seen:
                           rules_seen[rid] = rule
                   out["runs"][0]["results"].extend(run.get("results", []))
+          if sarif_count == 0:
+              raise SystemExit("no SpotBugs SARIF inputs found; analysis did not run")
           out["runs"][0]["tool"]["driver"]["rules"] = list(rules_seen.values())
           os.makedirs(os.environ["RUNNER_TEMP"], exist_ok=True)
           dest = os.path.join(os.environ["RUNNER_TEMP"], "spotbugs-merged.sarif")

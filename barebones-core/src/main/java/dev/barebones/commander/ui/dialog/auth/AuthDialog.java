@@ -65,7 +65,7 @@ import java.awt.event.ActionListener;
  */
 public class AuthDialog extends FocusDialog implements ActionListener, EditableComboBoxListener {
 
-    // Identical to SMBProtocolProvider.PROPERTY_SMB_USE_LEGACY
+    // Legacy SMB bookmark compatibility. The SMB backend is not shipped.
     public static final String PROPERTY_SMB_USE_LEGACY = "useLegacy";
 
     private JButton okButton;

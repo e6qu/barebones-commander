@@ -87,7 +87,7 @@ public interface DesktopOperation {
      * </p>
      * <p>
      * For example, an operation of type {@link dev.barebones.commander.core.desktop.DesktopManager#BROWSE} that accepts
-     * any and all HTTP URLs is available. However, an operation of type
+     * any regular URL is available. However, an operation of type
      * {@link dev.barebones.commander.core.desktop.DesktopManager#OPEN} that only accepts XML files isn't.
      * </p>
      * @return <code>true</code> if the operation is available, <code>false</code> otherwise.
