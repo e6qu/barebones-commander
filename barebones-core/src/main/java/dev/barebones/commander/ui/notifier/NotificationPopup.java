@@ -25,6 +25,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import java.awt.BorderLayout;
@@ -34,8 +35,6 @@ import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * A singleton class that shows notification popup in the provided frame (for example main frame).
@@ -54,8 +53,7 @@ final class NotificationPopup {
      */
     private static final float OPACITY = 0.8f;
 
-    private final Timer closingTimer;
-    private TimerTask closingTask;
+    private Timer closingTimer;
 
     private final CustomPopupMenu popup;
     private final JPanel panel;
@@ -119,7 +117,6 @@ final class NotificationPopup {
     }
 
     private NotificationPopup() {
-        closingTimer =  new Timer();
         popupListener = new CustomPopupMenuListener();
 
         popup = new CustomPopupMenu();
@@ -188,19 +185,16 @@ final class NotificationPopup {
     }
 
     private void scheduleClosing(long timeout) {
-        TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                closingTask = null;
-                popup.hidePopup();
-            }
-        };
-        TimerTask oldTask = closingTask;
-        closingTask = task;
-        if (oldTask != null) {
-            oldTask.cancel();
-        };
-        closingTimer.schedule(task, timeout);
+        if (closingTimer != null) {
+            closingTimer.stop();
+        }
+        int delay = (int) Math.min(timeout, Integer.MAX_VALUE);
+        closingTimer = new Timer(delay, event -> {
+            closingTimer = null;
+            popup.hidePopup();
+        });
+        closingTimer.setRepeats(false);
+        closingTimer.start();
     }
 
     private Point getPosition(JFrame mainFrame, int width) {

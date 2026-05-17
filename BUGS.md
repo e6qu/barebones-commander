@@ -570,6 +570,44 @@ Phase 32 updates local metadata state after a successful delete so the same
 object immediately reports absent, and rename source objects inherit that state
 through the existing copy-then-delete path.
 
+### 1.53 ~~MED — notification popup close timer mutates Swing off the EDT~~ **FIXED**
+**`barebones-core/.../NotificationPopup.java:57-58,191-203`**
+
+The notification popup schedules close events with a default `java.util.Timer`,
+which creates a non-daemon timer thread and invokes `popup.hidePopup()` directly
+from that background thread. Popup visibility is Swing state, so the hide must
+run on the event-dispatch thread; the non-daemon timer also gives a singleton UI
+helper an avoidable JVM-lifetime side effect.
+
+Phase 32 replaces the utility timer/task pair with a non-repeating Swing
+`Timer`. Closing now runs on the EDT, replacing a pending close cancels the old
+Swing timer, and no extra timer thread is kept alive by the popup singleton.
+
+### 1.54 ~~MED — async file-frame loader mutates frame UI off the EDT~~ **FIXED**
+**`barebones-core/.../FileFrame.java:88-107`**
+
+`FileFrame` uses `AsyncPanel` so viewer/editor file opening can run away from
+the event-dispatch thread, but the worker path also calls `setJMenuBar(...)`,
+`showGenericErrorDialog()`, and `dispose()` directly. Those are frame/dialog UI
+mutations and can race the viewer window lifecycle.
+
+Phase 32 leaves file-presenter opening on the existing background path, but
+moves menu-bar installation into the `AsyncPanel.updateLayout()` callback that
+already runs on the EDT. Error-dialog display and disposal are also marshalled
+through `SwingUtilities.invokeLater(...)`.
+
+### 1.55 ~~MED — async panel load failures leave a permanent loading spinner~~ **FIXED**
+**`barebones-core/.../AsyncPanel.java:106-115`**
+
+`AsyncPanel.loadTargetComponent()` starts a worker and calls
+`getTargetComponent()` with no error boundary. If a subclass throws a runtime
+exception while creating the target component, the worker dies, the wait
+component remains visible forever, and the failure is not logged.
+
+Phase 32 names the loader thread, logs runtime failures, and replaces the wait
+component with a small error label on the EDT instead of leaving a fake loading
+state behind.
+
 ---
 
 ## 2. UX gaps

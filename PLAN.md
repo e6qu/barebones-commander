@@ -1300,6 +1300,23 @@ Final local validation after the MinIO addition passed with
 `./gradlew :barebones-protocol-s3:test --tests ...S3MinIOIntegrationTest
 --stacktrace`, `./gradlew cleanTest test --stacktrace`, and `./gradlew check
 --stacktrace`.
+After PR #40 opened, the user requested one more sweep and a Claude Code CLI
+review attempt in the same PR. The extra sweep has so far recorded and fixed
+two more EDT issues: `NotificationPopup` now uses a non-repeating Swing timer
+instead of a non-daemon `java.util.Timer` that hid popups off the EDT, and
+`FileFrame` now installs viewer menu bars and shows/disposes error UI from the
+EDT path after async loading. It also made `AsyncPanel` loader failures logged
+and visible instead of leaving a permanent loading spinner. Claude Code CLI is installed locally
+(`claude --version` reports 2.1.143 and `claude --help` confirms `-p/--print`
+noninteractive mode), but the smoke invocation currently fails immediately with
+`Not logged in · Please run /login`; `claude doctor` then hung without output
+and the started process was stopped. `claude auth status` confirms
+`loggedIn: false`, and the dedicated noninteractive `claude ultrareview 40
+--timeout 1` path fails immediately with "Ultrareview is currently
+unavailable." Local validation after the extra sweep passed with `git diff
+--check`, `./gradlew cleanTest test --stacktrace`, and `./gradlew check
+--stacktrace`; next work is to commit/push these extra fixes onto PR #40 and
+watch CI again.
 
 **Exit criteria**: all actionable findings discovered in this sweep are either
 fixed or explicitly documented as deferred; local validation includes at least

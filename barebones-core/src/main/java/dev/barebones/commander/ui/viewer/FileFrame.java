@@ -24,6 +24,7 @@ import java.awt.Image;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
 import dev.barebones.commander.commons.logging.Logger;
@@ -93,18 +94,19 @@ public abstract class FileFrame extends JFrame {
                     filePresenter.open(file, fromSearchWithContent);
                 } catch(Exception e) {
                     LOGGER.error("Exception caught", e);
-                    showGenericErrorDialog();
-                    dispose();
+                    SwingUtilities.invokeLater(() -> {
+                        showGenericErrorDialog();
+                        dispose();
+                    });
                     return filePresenter == null ? new JPanel() : filePresenter;
                 }
-
-                setJMenuBar(filePresenter.getMenuBar());
 
                 return filePresenter;
             }
 
             @Override
             protected void updateLayout() {
+                setJMenuBar(filePresenter.getMenuBar());
                 // Request focus on the viewer when it is visible
                 FocusRequester.requestFocus(filePresenter);
             }

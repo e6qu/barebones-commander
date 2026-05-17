@@ -31,6 +31,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.icon.SpinningDial;
 
@@ -54,6 +56,7 @@ import dev.barebones.commander.ui.icon.SpinningDial;
  * @author Maxence Bernard
  */
 public abstract class AsyncPanel extends JPanel {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AsyncPanel.class);
 
     /** The component displayed while the target component is being loaded */
     private JComponent waitComponent;
@@ -105,14 +108,21 @@ public abstract class AsyncPanel extends JPanel {
      */
     private void loadTargetComponent() {
         new Thread(() -> {
-            JComponent targetComponent = getTargetComponent();
+            JComponent targetComponent;
+            try {
+                targetComponent = getTargetComponent();
+            } catch (RuntimeException e) {
+                LOGGER.error("Failed to load async panel target component", e);
+                targetComponent = new JLabel(Translator.get("error"));
+            }
+            JComponent finalTargetComponent = targetComponent;
             SwingUtilities.invokeLater(() -> {
                 remove(waitComponent);
                 setBorder(new EmptyBorder(0, 0, 0, 0));
-                add(targetComponent, BorderLayout.CENTER);
+                add(finalTargetComponent, BorderLayout.CENTER);
                 updateLayout();
             });
-        }).start();
+        }, "AsyncPanelLoader").start();
     }
 
     /**
