@@ -13,6 +13,8 @@ import dev.barebones.commander.commons.file.AbstractFile;
 import dev.barebones.commander.commons.file.Credentials;
 import dev.barebones.commander.commons.file.FileURL;
 import dev.barebones.commander.commons.file.protocol.ProtocolProvider;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -34,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * client (which would silently authorise as the wrong identity).
  */
 public class S3ProtocolProvider implements ProtocolProvider, AutoCloseable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3ProtocolProvider.class);
 
     /** Properties accepted on the FileURL — these become S3Configuration options. */
     public static final String PROPERTY_REGION = "region";
@@ -52,8 +55,8 @@ public class S3ProtocolProvider implements ProtocolProvider, AutoCloseable {
         for (S3Connection conn : connections.values()) {
             try {
                 conn.close();
-            } catch (RuntimeException ignored) {
-                // shutdown — log channels may already be down.
+            } catch (RuntimeException e) {
+                LOGGER.warn("Failed to close cached S3 connection", e);
             }
         }
         connections.clear();

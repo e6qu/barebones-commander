@@ -61,7 +61,6 @@ public class S3Object extends S3File {
     private boolean directory;
     private long size;
     private long lastModified;
-
     public S3Object(FileURL url, S3Connection connection) {
         super(url, connection);
         // If the URL ends with '/', the object is a directory by construction.
@@ -75,14 +74,18 @@ public class S3Object extends S3File {
      * Stash the metadata from a parent listing so we can answer
      * isDirectory / getSize / getDate without re-HEADing the object.
      */
-    void setListingMetadata(long size, long lastModified, boolean directory) {
+    synchronized void setListingMetadata(long size, long lastModified, boolean directory) {
+        setMetadata(size, lastModified, directory, true);
+    }
+
+    private synchronized void setMetadata(long size, long lastModified, boolean directory, boolean metadataKnown) {
         this.size = size;
         this.lastModified = lastModified;
         this.directory = directory;
-        this.metadataKnown = true;
+        this.metadataKnown = metadataKnown;
     }
 
-    private void ensureMetadata() throws IOException {
+    private synchronized void ensureMetadata() throws IOException {
         if (metadataKnown) return;
         try {
             HeadObjectResponse h = connection.client().headObject(
@@ -90,34 +93,42 @@ public class S3Object extends S3File {
                     .bucket(parsed.bucket())
                     .key(parsed.key())
                     .build());
-            this.size = h.contentLength() != null ? h.contentLength() : 0L;
-            this.lastModified = h.lastModified() != null
-                ? h.lastModified().toEpochMilli() : 0L;
-            this.directory = false;
-            this.metadataKnown = true;
-        } catch (NoSuchKeyException ignored) {
-            this.metadataKnown = true; // exists() answers via this state
+            setMetadata(
+                    h.contentLength() != null ? h.contentLength() : 0L,
+                    h.lastModified() != null ? h.lastModified().toEpochMilli() : 0L,
+                    false,
+                    true);
+        } catch (NoSuchKeyException missing) {
+            setMetadata(0L, 0L, false, true); // exists() answers via this state
         } catch (S3Exception e) {
             throw toIOException(e, fileURL);
         }
     }
 
+    private void logMetadataFailure(String operation, IOException failure) {
+        LOGGER.warn("S3 metadata lookup failed during {} for {}", operation, getURL(), failure);
+    }
+
     @Override
-    public boolean isDirectory() {
+    public synchronized boolean isDirectory() {
         try {
             ensureMetadata();
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            logMetadataFailure("isDirectory", e);
             return false;
         }
         return directory;
     }
 
     @Override
-    public boolean exists() {
+    public synchronized boolean exists() {
         try {
             ensureMetadata();
-        } catch (IOException ignored) {
-            return false;
+        } catch (IOException e) {
+            logMetadataFailure("exists", e);
+            // NoSuchKey is handled inside ensureMetadata as a known absence.
+            // Other failures mean the state is unknown, not that the object is gone.
+            return metadataKnown ? directory || size > 0 || lastModified > 0 : true;
         }
         // metadataKnown == true after a HEAD; if directory or non-zero
         // size or non-zero lastModified, we got a real response.
@@ -125,14 +136,22 @@ public class S3Object extends S3File {
     }
 
     @Override
-    public long getDate() {
-        try { ensureMetadata(); } catch (IOException ignored) {}
+    public synchronized long getDate() {
+        try {
+            ensureMetadata();
+        } catch (IOException e) {
+            logMetadataFailure("getDate", e);
+        }
         return lastModified;
     }
 
     @Override
-    public long getSize() {
-        try { ensureMetadata(); } catch (IOException ignored) {}
+    public synchronized long getSize() {
+        try {
+            ensureMetadata();
+        } catch (IOException e) {
+            logMetadataFailure("getSize", e);
+        }
         return size;
     }
 
@@ -149,7 +168,7 @@ public class S3Object extends S3File {
     }
 
     @Override
-    public void mkdir() throws IOException {
+    public synchronized void mkdir() throws IOException {
         // S3 has no real directories; create an empty object whose
         // key ends with '/'. That's what the AWS Console does and
         // it's what subsequent ListObjectsV2 with delimiter='/' picks
@@ -163,8 +182,7 @@ public class S3Object extends S3File {
                     .key(key)
                     .build(),
                 RequestBody.empty());
-            this.directory = true;
-            this.metadataKnown = true;
+            setMetadata(0L, System.currentTimeMillis(), true, true);
         } catch (S3Exception e) {
             throw toIOException(e, fileURL);
         }
@@ -199,13 +217,14 @@ public class S3Object extends S3File {
     }
 
     @Override
-    public void delete() throws IOException {
+    public synchronized void delete() throws IOException {
         try {
             connection.client().deleteObject(
                 DeleteObjectRequest.builder()
                     .bucket(parsed.bucket())
                     .key(parsed.key())
                     .build());
+            setMetadata(0L, 0L, false, true);
         } catch (S3Exception e) {
             throw toIOException(e, fileURL);
         }
@@ -292,17 +311,13 @@ public class S3Object extends S3File {
                     uploadSpilledFile();
                 }
                 // Whichever path: refresh local metadata.
-                size = bytesWritten;
-                lastModified = System.currentTimeMillis();
-                directory = false;
-                metadataKnown = true;
+                setMetadata(bytesWritten, System.currentTimeMillis(), false, true);
             } finally {
                 if (spillFile != null) {
                     try {
                         Files.deleteIfExists(spillFile);
-                    } catch (IOException ignored) {
-                        // Temp dir cleanup is best-effort; the OS
-                        // sweeps it eventually.
+                    } catch (IOException e) {
+                        LOGGER.warn("Failed to delete S3 upload spill file {}", spillFile, e);
                     }
                 }
             }

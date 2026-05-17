@@ -31,6 +31,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.icon.SpinningDial;
 
@@ -54,6 +56,7 @@ import dev.barebones.commander.ui.icon.SpinningDial;
  * @author Maxence Bernard
  */
 public abstract class AsyncPanel extends JPanel {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AsyncPanel.class);
 
     /** The component displayed while the target component is being loaded */
     private JComponent waitComponent;
@@ -105,14 +108,33 @@ public abstract class AsyncPanel extends JPanel {
      */
     private void loadTargetComponent() {
         new Thread(() -> {
-            JComponent targetComponent = getTargetComponent();
+            JComponent targetComponent;
+            boolean failed = false;
+            try {
+                targetComponent = getTargetComponent();
+            } catch (Throwable e) {
+                LOGGER.error("Failed to load async panel target component", e);
+                targetComponent = null;
+                failed = true;
+            }
+            JComponent finalTargetComponent = targetComponent;
+            boolean loadFailed = failed;
             SwingUtilities.invokeLater(() -> {
+                if (loadFailed && !isDisplayable()) {
+                    return;
+                }
                 remove(waitComponent);
                 setBorder(new EmptyBorder(0, 0, 0, 0));
-                add(targetComponent, BorderLayout.CENTER);
-                updateLayout();
+                if (loadFailed || finalTargetComponent == null) {
+                    add(new JLabel(Translator.get("error")), BorderLayout.CENTER);
+                    revalidate();
+                    repaint();
+                } else {
+                    add(finalTargetComponent, BorderLayout.CENTER);
+                    updateLayout();
+                }
             });
-        }).start();
+        }, "AsyncPanelLoader").start();
     }
 
     /**

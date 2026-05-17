@@ -19,12 +19,15 @@ package dev.barebones.commander.ui.dialog.about;
 
 import dev.barebones.commander.Activator;
 import dev.barebones.commander.RuntimeConstants;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.commons.util.ui.dialog.FocusDialog;
 import dev.barebones.commander.commons.util.ui.layout.FluentPanel;
 import dev.barebones.commander.core.desktop.DesktopManager;
 import dev.barebones.commander.desktop.ActionType;
 import dev.barebones.commander.text.Translator;
 import dev.barebones.commander.ui.action.ActionProperties;
+import dev.barebones.commander.ui.dialog.InformationDialog;
 import dev.barebones.commander.ui.icon.IconManager;
 import dev.barebones.commander.ui.main.MainFrame;
 import dev.barebones.commander.ui.theme.Theme;
@@ -62,6 +65,8 @@ import java.util.Locale;
  * @author Maxence Bernard, Nicolas Rinaudo
  */
 public class AboutDialog extends FocusDialog implements ActionListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AboutDialog.class);
+
     // - Styles -----------------------------------------------------------------
     // --------------------------------------------------------------------------
     /** Style for normal text. */
@@ -431,8 +436,13 @@ public class AboutDialog extends FocusDialog implements ActionListener {
             try {
                 DesktopManager.browse(URI.create(RuntimeConstants.HOMEPAGE_URL).toURL());
             }
-            // Ignores errors here as there really isn't anything we can do.
-            catch (IOException ignored) {
+            catch (IOException ex) {
+                LOGGER.warn("Failed to open homepage URL: {}", RuntimeConstants.HOMEPAGE_URL, ex);
+                InformationDialog.showErrorDialog(this,
+                        Translator.get("error"),
+                        Translator.get("cannot_open_url", RuntimeConstants.HOMEPAGE_URL),
+                        ex.getMessage(),
+                        ex);
             }
         } else if (e.getSource() == licenseButton)
             new LicenseDialog(this).showDialog();

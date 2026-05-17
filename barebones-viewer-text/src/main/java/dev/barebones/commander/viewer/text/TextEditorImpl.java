@@ -38,6 +38,7 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -79,6 +80,7 @@ import dev.barebones.commander.ui.theme.ThemeManager;
 class TextEditorImpl implements ThemeListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TextEditorImpl.class);
+    private static final AtomicBoolean BEEP_RUNNING = new AtomicBoolean();
 
     private JFrame frame;
 
@@ -279,13 +281,21 @@ class TextEditorImpl implements ThemeListener {
         }
 
         if (!found) {
-            // Beep when no match has been found.
-            // The beep method is called from a separate thread because this method seems to lock until the beep has
-            // been played entirely. If the 'Find next' shortcut is left pressed, a series of beeps will be played when
-            // the end of the file is reached, and we don't want those beeps to played one after the other as to:
-            // 1/ not lock the event thread
-            // 2/ have those beeps to end rather sooner than later
-            new Thread(Toolkit.getDefaultToolkit()::beep).start();
+            beep();
+        }
+    }
+
+    private static void beep() {
+        if (BEEP_RUNNING.compareAndSet(false, true)) {
+            Thread thread = new Thread(() -> {
+                try {
+                    Toolkit.getDefaultToolkit().beep();
+                } finally {
+                    BEEP_RUNNING.set(false);
+                }
+            }, "TextEditorBeep");
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 

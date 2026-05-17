@@ -48,7 +48,7 @@ public class S3Bucket extends S3File {
             connection.client().headBucket(
                 HeadBucketRequest.builder().bucket(parsed.bucket()).build());
             return true;
-        } catch (NoSuchBucketException ignored) {
+        } catch (NoSuchBucketException missing) {
             return false;
         } catch (S3Exception e) {
             // Permission errors come back as 403 — the bucket may

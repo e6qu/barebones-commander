@@ -21,11 +21,14 @@ import javax.swing.Action;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JSeparator;
+import javax.swing.SwingWorker;
 
 import dev.barebones.commander.command.Command;
 import dev.barebones.commander.command.CommandManager;
 import dev.barebones.commander.command.CommandType;
 import dev.barebones.commander.commons.file.AbstractFile;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.commons.util.ui.helper.MenuToolkit;
 import dev.barebones.commander.core.desktop.DesktopManager;
 import dev.barebones.commander.process.ProcessRunner;
@@ -39,6 +42,8 @@ import dev.barebones.commander.ui.main.MainFrame;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 
 /**
@@ -53,6 +58,8 @@ import java.util.Collections;
  * @author Nicolas Rinaudo
  */
 public class OpenWithMenu extends JMenu {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OpenWithMenu.class);
+
     private final MainFrame mainFrame;
 
     private AbstractFile selectedFile;
@@ -139,31 +146,31 @@ public class OpenWithMenu extends JMenu {
                 loadingItem.setIcon(spinningIcon);  // need to set both disabled and normal, otherwise it doesn't appear
                 loadingItem.setEnabled(false);
                 spinningIcon.setAnimated(true);
-                // going to run getCommandsForOpenWith in background as it may take some time to complete
-                // especially if a given file has a lot of apps that can be opened with...
-                new Thread(() -> {
-
-                    var commands = DesktopManager.getAppsForOpenWith(selectedFile);
-                    if (!commands.isEmpty() && getItemCount() > 1) {
-                        add(new JSeparator());
+                AbstractFile requestedFile = selectedFile;
+                var requestedFileURL = requestedFile.getURL();
+                new SwingWorker<List<Command>, Void>() {
+                    @Override
+                    protected List<Command> doInBackground() {
+                        return DesktopManager.getAppsForOpenWith(requestedFile);
                     }
-                    var separateDefault = commands.size() > 1;
-                    for (Command cmd : commands) {
-                        MuAction action = createMuAction(cmd);
-                        action.setLabel(cmd.getDisplayName());
-                        add(action).setIcon(cmd.getIcon());
-                        if (separateDefault) {
-                            add(new JSeparator());
-                            separateDefault = false;
+
+                    @Override
+                    protected void done() {
+                        try {
+                            List<Command> commands = get();
+                            if (selectedFile != null && requestedFileURL.equals(selectedFile.getURL())) {
+                                populateNativeApplications(commands);
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            LOGGER.warn("Interrupted while loading native Open With applications for {}", requestedFile, e);
+                        } catch (ExecutionException e) {
+                            LOGGER.warn("Failed to load native Open With applications for {}", requestedFile, e.getCause());
+                        } finally {
+                            removeLoadingItem(loadingItem, spinningIcon);
                         }
                     }
-                    spinningIcon.setAnimated(false);
-                    super.remove(loadingItem);
-                    if (getItemCount() == 0) {
-                        setEnabled(false);
-                    }
-                    super.getPopupMenu().pack();
-                }, "OpenWithAppThread").start();
+                }.execute();
             } else {
                 if (DesktopManager.canEnableOpenWithApps()) {
                     if (getItemCount() > 0) {
@@ -178,4 +185,26 @@ public class OpenWithMenu extends JMenu {
         }
     }
 
+    private void populateNativeApplications(List<Command> commands) {
+        if (!commands.isEmpty() && getItemCount() > 1) {
+            add(new JSeparator());
+        }
+        var separateDefault = commands.size() > 1;
+        for (Command cmd : commands) {
+            MuAction action = createMuAction(cmd);
+            action.setLabel(cmd.getDisplayName());
+            add(action).setIcon(cmd.getIcon());
+            if (separateDefault) {
+                add(new JSeparator());
+                separateDefault = false;
+            }
+        }
+    }
+
+    private void removeLoadingItem(JMenuItem loadingItem, SpinningDial spinningIcon) {
+        spinningIcon.setAnimated(false);
+        super.remove(loadingItem);
+        setEnabled(getItemCount() > 0);
+        super.getPopupMenu().pack();
+    }
 }

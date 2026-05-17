@@ -25,6 +25,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import java.awt.BorderLayout;
@@ -34,8 +35,7 @@ import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * A singleton class that shows notification popup in the provided frame (for example main frame).
@@ -54,8 +54,7 @@ final class NotificationPopup {
      */
     private static final float OPACITY = 0.8f;
 
-    private final Timer closingTimer;
-    private TimerTask closingTask;
+    private Timer closingTimer;
 
     private final CustomPopupMenu popup;
     private final JPanel panel;
@@ -119,7 +118,6 @@ final class NotificationPopup {
     }
 
     private NotificationPopup() {
-        closingTimer =  new Timer();
         popupListener = new CustomPopupMenuListener();
 
         popup = new CustomPopupMenu();
@@ -145,12 +143,34 @@ final class NotificationPopup {
         popup.add(panel, BorderLayout.CENTER);
     }
 
-    private static class NotificationPopupHolder {
-        private static final NotificationPopup INSTANCE = new NotificationPopup();
-    }
+    private static NotificationPopup instance;
 
     public static NotificationPopup getInstance() {
-        return NotificationPopupHolder.INSTANCE;
+        synchronized (NotificationPopup.class) {
+            if (instance != null) {
+                return instance;
+            }
+        }
+        if (SwingUtilities.isEventDispatchThread()) {
+            return createInstance();
+        }
+        final NotificationPopup[] result = new NotificationPopup[1];
+        try {
+            SwingUtilities.invokeAndWait(() -> result[0] = createInstance());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while creating notification popup", e);
+        } catch (InvocationTargetException e) {
+            throw new IllegalStateException("Failed to create notification popup", e.getCause());
+        }
+        return result[0];
+    }
+
+    private static synchronized NotificationPopup createInstance() {
+        if (instance == null) {
+            instance = new NotificationPopup();
+        }
+        return instance;
     }
 
     /**
@@ -165,6 +185,11 @@ final class NotificationPopup {
      */
     public void displayNotification(JFrame mainFrame, String notificationText,
                                     Color bgColor, Color fgColor, long timeout) {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(() ->
+                    displayNotification(mainFrame, notificationText, bgColor, fgColor, timeout));
+            return;
+        }
         if (notificationText == null || notificationText.isBlank()) {
             return; // noop
         }
@@ -188,19 +213,16 @@ final class NotificationPopup {
     }
 
     private void scheduleClosing(long timeout) {
-        TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                closingTask = null;
-                popup.hidePopup();
-            }
-        };
-        TimerTask oldTask = closingTask;
-        closingTask = task;
-        if (oldTask != null) {
-            oldTask.cancel();
-        };
-        closingTimer.schedule(task, timeout);
+        if (closingTimer != null) {
+            closingTimer.stop();
+        }
+        int delay = (int) Math.min(timeout, Integer.MAX_VALUE);
+        closingTimer = new Timer(delay, event -> {
+            closingTimer = null;
+            popup.hidePopup();
+        });
+        closingTimer.setRepeats(false);
+        closingTimer.start();
     }
 
     private Point getPosition(JFrame mainFrame, int width) {

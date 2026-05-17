@@ -32,20 +32,6 @@ public enum OsFamily {
     MAC_OS("macOS"),
     /** Linux */
     LINUX("Linux"),
-    /** Solaris */
-    SOLARIS("Solaris"),
-    /** OS/2 */
-    OS_2("OS/2"),
-    /** FreeBSD */
-    FREEBSD("FreeBSD"),
-    /** AIX */
-    AIX("AIX"),
-    /** HP-UX */
-    HP_UX("HP-UX"),
-    /** OpenVMS */
-    OPENVMS("OpenVMS"),
-    /** Haiku */
-    HAIKU("Haiku"),
     /** Other OS */
     UNKNOWN_OS_FAMILY("Unknown");
 
@@ -93,25 +79,13 @@ public enum OsFamily {
      * <ul>
      *  <li>{@link #LINUX}</li>
      *  <li>{@link #MAC_OS}</li>
-     *  <li>{@link #SOLARIS}</li>
-     *  <li>{@link #FREEBSD}</li>
-     *  <li>{@link #AIX}</li>
-     *  <li>{@link #HP_UX}</li>
-     *  <li>{@link #UNKNOWN_OS_FAMILY}: the reason for this being that most alternative OSes are Unix-based.</li>
      * </ul>
      *
      * @return <code>true</code> if the current OS is UNIX-based
      */
     public boolean isUnixBased() {
         return this==MAC_OS
-                || this==LINUX
-                || this==SOLARIS
-                || this==FREEBSD
-                || this==AIX
-                || this==HP_UX
-                || this== UNKNOWN_OS_FAMILY;
-
-        // Not UNIX-based: OS/2 and OpenVMS
+                || this==LINUX;
     }
 
     /**
@@ -137,32 +111,9 @@ public enum OsFamily {
         if (osNameProp.startsWith("Mac OS X")) {
             return MAC_OS;
         }
-        // OS/2 family
-        if (osNameProp.startsWith("OS/2")) {
-            return OS_2;
-        }
         // Linux family
         if (osNameProp.startsWith("Linux")) {
             return LINUX;
-        }
-        // Solaris family
-        if (osNameProp.startsWith("Solaris") || osNameProp.startsWith("SunOS")) {
-            return SOLARIS;
-        }
-        if (osNameProp.startsWith("FreeBSD")) {
-            return FREEBSD;
-        }
-        if (osNameProp.startsWith("AIX")) {
-            return AIX;
-        }
-        if (osNameProp.startsWith("HP-UX")) {
-            return HP_UX;
-        }
-        if (osNameProp.startsWith("OpenVMS")) {
-            return OPENVMS;
-        }
-        if (osNameProp.startsWith("Haiku")) {
-            return HAIKU;
         }
 
         // Any other OS
