@@ -505,6 +505,19 @@ public class GSSCredential {
         //all internal creds are equal, so we are equal too...
         return (true);
     }
+
+    public int hashCode() {
+
+        int hash = 0;
+        for (Enumeration e = m_mechCreds.elements();
+            e.hasMoreElements();) {
+
+            GSSCredSpi intCred = (GSSCredSpi)e.nextElement();
+            hash += intCred.getMechanism().hashCode();
+        }
+
+        return (hash);
+    }
     
 
     /**

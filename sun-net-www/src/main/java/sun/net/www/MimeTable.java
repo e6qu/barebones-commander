@@ -49,9 +49,8 @@ public class MimeTable implements FileNameMap {
         java.security.AccessController.doPrivileged(
             new java.security.PrivilegedAction<Void>() {
                 public Void run() {
-                tempFileTemplate =
-                    System.getProperty("content.types.temp.file.template",
-                                       "/tmp/%s");
+                setTempFileTemplate(System.getProperty(
+                    "content.types.temp.file.template", "/tmp/%s"));
 
                 mailcapLocations = new String[] {
                     System.getProperty("user.mailcap"),
@@ -212,6 +211,10 @@ public class MimeTable implements FileNameMap {
         return tempFileTemplate;
     }
 
+    private static void setTempFileTemplate(String value) {
+        tempFileTemplate = value;
+    }
+
     public synchronized Enumeration<MimeEntry> elements() {
         return entries.elements();
     }
@@ -255,7 +258,7 @@ public class MimeTable implements FileNameMap {
         String tempFileTemplate = (String)entries.get("temp.file.template");
         if (tempFileTemplate != null) {
             entries.remove("temp.file.template");
-            MimeTable.tempFileTemplate = tempFileTemplate;
+            setTempFileTemplate(tempFileTemplate);
         }
 
         // now, parse the mime-type spec's

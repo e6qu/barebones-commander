@@ -40,6 +40,7 @@ package com.sun.file;
 
 import com.sun.xfile.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * The XFileAccessor interface is implemented by filesystems that
@@ -105,7 +106,7 @@ public class XFileAccessor implements com.sun.xfile.XFileAccessor {
                 int d1 = hD.indexOf(s.toLowerCase().charAt(p2 + 1));
                 int d2 = hD.indexOf(s.toLowerCase().charAt(p2 + 2));
                 if (d1 > 0 && d2 > 0) {
-                    ns += new String(new byte[] {(byte)(d1 << 4 | d2)});
+                    ns += new String(new byte[] {(byte)(d1 << 4 | d2)}, StandardCharsets.ISO_8859_1);
                     p2 += 2;
                     continue;
                 }

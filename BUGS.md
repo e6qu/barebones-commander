@@ -742,6 +742,38 @@ constructing the notification popup singleton on the EDT, making quick-list
 spinners instance-owned, clearing SFTP random-access streams before close, and
 returning immediately when trash waiting is interrupted.
 
+### 1.60 ~~MED — SpotBugs still has ignored findings after the baseline drawdown~~ **FIXED**
+**`barebones-core/.../ThemeCache.java`**,
+**`barebones-protocol-nfs/src/main/java/com/sun/`**,
+**`sun-net-www/src/main/java/sun/net/www/`**
+
+Phase 20 intentionally left one own-code `MS_MUTABLE_ARRAY` suppression for
+`ThemeCache.foregroundColors` / `backgroundColors` and wholesale package
+suppressions for the vendored Sun NFS/RPC URL-handler code. That means
+SpotBugs can still report green while hiding known findings.
+
+Phase 33 is removing the filter instead of carrying another exception: the
+theme arrays are being made private with typed hot-path accessors, and the
+vendored package findings are being surfaced so they can be fixed or proven
+obsolete by the actual SpotBugs run.
+
+The first unfiltered run fails only in `sun-net-www` and
+`barebones-protocol-nfs`: 5 URL-handler findings
+(`ES_COMPARING_PARAMETER_STRING_WITH_EQ`, `PATH_TRAVERSAL_IN`,
+`ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD`, `NM_SAME_SIMPLE_NAME_AS_SUPERCLASS`)
+and 29 NFS/RPC/GSS/XFile findings covering default charset use,
+missing `hashCode()`, lazy static initialization, ignored close/flush
+failures, an impossible chooser cast, and one same-simple-name warning.
+
+Phase 33 fixes the last own-code mutable-array exposure by making the
+`ThemeCache` color arrays private and routing renderer reads through typed
+accessors. It also fixes the surfaced vendored findings directly: deterministic
+charsets, matching `hashCode()` implementations, synchronized/default static
+initialization, explicit exception propagation or thread interrupt handling,
+the chooser property-type bug, and compatibility wrapper classes for the two
+same-simple-name reports. The SpotBugs exclude filter has been deleted; the
+unfiltered `spotbugsMain spotbugsTest` run is green.
+
 ---
 
 ## 2. UX gaps
@@ -1067,12 +1099,11 @@ discovery does the wiring; others use `api` / `implementation`.
 The convention isn't documented; the pattern flips around Phase
 boundaries. Worth a written convention.
 
-### 5.12 SpotBugs baseline is technical debt with no decay schedule
-`config/spotbugs/exclude.xml` had 95 entries at Phase 9; we burned
-one in Phase 12 (`XORCipher`) and added zero new entries since.
-A target like "drop 5 entries per release" would force the file to
-shrink. 62 of the entries are real bugs in our own code waiting
-for someone to fix them.
+### 5.12 ~~SpotBugs baseline is technical debt with no decay schedule~~ **DONE**
+Phase 33 deleted the SpotBugs exclude filter after fixing the last own-code
+mutable-array exposure and the vendored Sun NFS/RPC URL-handler findings that
+the package filters had hidden. SpotBugs now fails on every high-confidence
+finding.
 
 ---
 
@@ -1123,33 +1154,12 @@ The mount-helper module was removed in PR #24.
 Single source of truth for the 30+ scattered timeout/poll
 constants noted in 5.10. Optional override via system property.
 
-### 6.10 SpotBugs baseline drawdown phase
-A dedicated short PR that picks one bug pattern (e.g. all 8
-remaining `HE_EQUALS_USE_HASHCODE` entries) and fixes them
-properly + removes the corresponding lines from `exclude.xml`.
-Repeat until the file is empty.
+### 6.10 ~~SpotBugs baseline drawdown phase~~ **DONE**
+Phase 33 completed the drawdown: there is no SpotBugs exclude filter left.
 
 ---
 
-## 7. SpotBugs baseline summary (carried over from Phase 9)
+## 7. SpotBugs baseline summary
 
-`config/spotbugs/exclude.xml` currently suppresses **~94** findings
-across our own code + vendored upstream:
-
-| Bucket | Count | Notes |
-|--------|------:|-------|
-| `DM_DEFAULT_ENCODING` | 41 | Charset-default reliance — most are in widget / dialog / archive code paths. |
-| `ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD` | 15 | Form-state caches; the Phase-10b/-11 panels avoid this via the `LastValues` holder pattern. |
-| `HE_EQUALS_USE_HASHCODE` | 8 | Real bugs (see 1.9). |
-| `DMI_RANDOM_USED_ONLY_ONCE` | 5 | Each `new Random()` for a single nextInt; trivial to fix. |
-| `MS_SHOULD_BE_FINAL` | 4 | Mutable static fields. |
-| `DE_MIGHT_IGNORE` | 3 | Catch-and-ignore exception types. |
-| `NM_SAME_SIMPLE_NAME_AS_SUPERCLASS` | 3 | Name shadowing across packages. |
-| `MS_MUTABLE_ARRAY` | 2 | Static `byte[]` exposed. |
-| `ES_COMPARING_PARAMETER_STRING_WITH_EQ` | 2 | `==` instead of `.equals()`. |
-| `CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE` | 2 | Broken `clone()`. |
-| various others | 8 | One each. |
-| Vendored (`com.sun.*`, `sun.net.www.*`) | 33 | Wholesale package suppressions; not ours to fix. |
-
-The baseline file's stated lifecycle is "delete a line, fix the
-underlying bug, repeat." See refactor proposal 6.10.
+There is no SpotBugs baseline left. Phase 33 removed the project-level exclude
+filter and fixed the remaining findings it exposed.

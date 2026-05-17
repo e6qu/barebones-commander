@@ -38,6 +38,7 @@
 package com.sun.nfs;
 
 import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * This is just a dumb URL parser class.
@@ -107,7 +108,7 @@ public class NfsURL {
             location = url.substring(0, q);
             r = url.indexOf(':', p);
             if (r > 0 && r < q) {
-                byte[] opts = url.substring(r + 1, q).toLowerCase().getBytes();
+                byte[] opts = url.substring(r + 1, q).toLowerCase().getBytes(StandardCharsets.US_ASCII);
                 for (int i = 0; i < opts.length; i++) {
                     if (opts[i] >= '0' && opts[i] <= '9') {
                         port = (port * 10) + (opts[i] - '0');

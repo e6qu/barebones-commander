@@ -47,29 +47,29 @@ public class FoldersTreeRenderer extends DefaultTreeCellRenderer {
     @Override
     public Color getBackgroundSelectionColor() {
     	if (tree!=null && tree.hasFocus()) {
-            return ThemeCache.backgroundColors[ThemeCache.ACTIVE][ThemeCache.SELECTED];    		
+            return ThemeCache.backgroundColor(ThemeCache.ACTIVE, ThemeCache.SELECTED);
     	} else {
-            return ThemeCache.backgroundColors[ThemeCache.INACTIVE][ThemeCache.SELECTED];    		
+            return ThemeCache.backgroundColor(ThemeCache.INACTIVE, ThemeCache.SELECTED);
     	}
     }
     
     @Override
     public Color getBackgroundNonSelectionColor() {
     	if (tree!=null && tree.hasFocus()) {
-    		return ThemeCache.backgroundColors[ThemeCache.ACTIVE][ThemeCache.NORMAL];
+            return ThemeCache.backgroundColor(ThemeCache.ACTIVE, ThemeCache.NORMAL);
     	} else {
-    		return ThemeCache.backgroundColors[ThemeCache.INACTIVE][ThemeCache.NORMAL];
+            return ThemeCache.backgroundColor(ThemeCache.INACTIVE, ThemeCache.NORMAL);
     	}
     }
     
     @Override
     public Color getForeground() {
     	if (tree!=null && tree.hasFocus()) {
-    		return selected ? ThemeCache.foregroundColors[ThemeCache.ACTIVE][ThemeCache.SELECTED][ThemeCache.FOLDER] : 
-    			ThemeCache.foregroundColors[ThemeCache.ACTIVE][ThemeCache.NORMAL][ThemeCache.FOLDER];
+            return selected ? ThemeCache.foregroundColor(ThemeCache.ACTIVE, ThemeCache.SELECTED, ThemeCache.FOLDER) :
+                    ThemeCache.foregroundColor(ThemeCache.ACTIVE, ThemeCache.NORMAL, ThemeCache.FOLDER);
     	} else {
-    		return selected ? ThemeCache.foregroundColors[ThemeCache.INACTIVE][ThemeCache.SELECTED][ThemeCache.FOLDER] : 
-    			ThemeCache.foregroundColors[ThemeCache.INACTIVE][ThemeCache.NORMAL][ThemeCache.FOLDER];
+            return selected ? ThemeCache.foregroundColor(ThemeCache.INACTIVE, ThemeCache.SELECTED, ThemeCache.FOLDER) :
+                    ThemeCache.foregroundColor(ThemeCache.INACTIVE, ThemeCache.NORMAL, ThemeCache.FOLDER);
     	}
     }
 

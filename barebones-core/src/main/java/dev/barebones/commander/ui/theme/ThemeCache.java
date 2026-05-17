@@ -32,8 +32,8 @@ public class ThemeCache implements ThemeListener {
     
     // - Color definitions -----------------------------------------------------------
     // -------------------------------------------------------------------------------
-    public static Color[][][] foregroundColors;
-    public static Color[][]   backgroundColors;
+    private static final Color[][][] foregroundColors = new Color[2][2][7];
+    private static final Color[][]   backgroundColors = new Color[2][4];
     public static Color       unmatchedForeground;
     public static Color       unmatchedBackground;
     public static Color       activeOutlineColor;
@@ -62,9 +62,6 @@ public class ThemeCache implements ThemeListener {
     // - Initialisation --------------------------------------------------------------
     // -------------------------------------------------------------------------------
     static {
-        foregroundColors = new Color[2][2][7];
-        backgroundColors = new Color[2][4];
-
         // Active background colors.
         backgroundColors[ACTIVE][NORMAL]    = ThemeManager.getCurrentColor(Theme.FILE_TABLE_BACKGROUND_COLOR);
         backgroundColors[ACTIVE][SELECTED]  = ThemeManager.getCurrentColor(Theme.FILE_TABLE_SELECTED_BACKGROUND_COLOR);
@@ -143,6 +140,14 @@ public class ThemeCache implements ThemeListener {
 
     public static void removeThemeListener(ThemeListener listener) {
         listeners.remove(listener);
+    }
+
+    public static Color foregroundColor(int focusIndex, int selectionIndex, int fileKindIndex) {
+        return foregroundColors[focusIndex][selectionIndex][fileKindIndex];
+    }
+
+    public static Color backgroundColor(int focusIndex, int backgroundIndex) {
+        return backgroundColors[focusIndex][backgroundIndex];
     }
 
     private static void fireColorChanged(ColorChangedEvent event) {
@@ -385,9 +390,8 @@ public class ThemeCache implements ThemeListener {
     // methods (forced to be instance because they implement
     // ThemeListener) don't write directly to scalar static fields,
     // which trips SpotBugs ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD.
-    // The array-element writes (foregroundColors[i][j][k] = ...)
-    // are not flagged because SpotBugs counts that as a write to
-    // an array, not to a static field reference.
+    // The color arrays stay private so callers cannot mutate cache
+    // storage; renderers read through the small static accessors above.
     private static void setUnmatchedForeground(java.awt.Color c) { unmatchedForeground = c; }
     private static void setUnmatchedBackground(java.awt.Color c) { unmatchedBackground = c; }
     private static void setActiveOutlineColor  (java.awt.Color c) { activeOutlineColor   = c; }

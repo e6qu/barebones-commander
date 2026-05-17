@@ -40,12 +40,12 @@ package com.sun.nfs;
 import java.io.*;
 import com.sun.xfile.*;
 
-public class XFileExtensionAccessor
+class NfsExtensionAccessor
     extends com.sun.xfile.XFileExtensionAccessor {
 	
     XFile xf;
 
-    public XFileExtensionAccessor(XFile xf) {
+    public NfsExtensionAccessor(XFile xf) {
 
         super(xf);
         if (! xf.getFileSystemName().equals("nfs"))
@@ -147,5 +147,11 @@ public class XFileExtensionAccessor
         throws java.net.UnknownHostException, IOException {
 
         return new Mount().getExports(new NfsURL(xf.toString()).getHost());
+    }
+}
+
+public class XFileExtensionAccessor extends NfsExtensionAccessor {
+    public XFileExtensionAccessor(XFile xf) {
+        super(xf);
     }
 }

@@ -331,7 +331,9 @@ public class XFile {
 
         try {	// applets will get a security exception here
             prefixList = System.getProperty("java.protocol.xfile");
-        } catch (SecurityException e) {};
+        } catch (SecurityException e) {
+            prefixList = null;
+        }
 
         if (prefixList == null)
             prefixList = "";
@@ -341,16 +343,24 @@ public class XFile {
 
         StringTokenizer pkgs = new StringTokenizer(prefixList, "|");
 
+        Throwable lastFailure = null;
         while (cl == null && pkgs.hasMoreTokens()) {
             String prefix = pkgs.nextToken().trim();
             String clname = prefix + "." + proto + "." + suffix;
             try {
                 cl = Class.forName(clname);
-            } catch (Exception e) {};
+            } catch (ReflectiveOperationException | LinkageError e) {
+                lastFailure = e;
+            }
         }
 
-        if (cl == null)
-            throw new ClassNotFoundException();
+        if (cl == null) {
+            ClassNotFoundException e = new ClassNotFoundException();
+            if (lastFailure != null) {
+                e.initCause(lastFailure);
+            }
+            throw e;
+        }
 
         ht.put(proto, cl);
 

@@ -37,6 +37,8 @@
 
 package com.sun.rpc;
 
+import java.nio.charset.StandardCharsets;
+
 import java.io.*;
 
 /**
@@ -206,12 +208,12 @@ public class CredUnix extends Cred {
      * obvious to a casual snooper.
      */
     private String disguise(String s) {
-        byte[] b = s.getBytes();
+        byte[] b = s.getBytes(StandardCharsets.ISO_8859_1);
 
         for (int i = 0; i < b.length; i++)
             b[i] = (byte)((b[i] & 0x7f) ^ 0x5b);
 
-        return (new String(b));
+        return (new String(b, StandardCharsets.ISO_8859_1));
     }
 
     /**

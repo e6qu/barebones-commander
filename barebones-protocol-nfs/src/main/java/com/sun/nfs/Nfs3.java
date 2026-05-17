@@ -38,6 +38,7 @@
 package com.sun.nfs;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import com.sun.rpc.*;
 
 /**
@@ -499,12 +500,12 @@ class Nfs3 extends Nfs {
             call.xdr_bytes(new byte[0]);  // v3 public file handle
  
             // send "0x81/sec_inext/pathname" over the wire
-            int len = name.getBytes().length + 2;
+            byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
+            int len = nameBytes.length + 2;
             byte[] b = new byte[len];
             b[0] = (byte) 0x81;
             b[1] = (byte) sec_index;
-            System.arraycopy(name.getBytes(), 0, b, 2,
-                        name.getBytes().length);
+            System.arraycopy(nameBytes, 0, b, 2, nameBytes.length);
             call.xdr_bytes(b);
  
             Xdr reply = rpc.rpc_call(call, 5 * 1000, 3);

@@ -251,7 +251,8 @@ class GSSClient {
 		print("\nWrapping message for server...");
 
 		MessageProp mInfo = new MessageProp(0, true);
-		byte []tok = aCtxt.wrap(msg.getBytes(), 0, msg.length(), mInfo);
+		byte[] msgBytes = msg.getBytes(StandardCharsets.UTF_8);
+		byte []tok = aCtxt.wrap(msgBytes, 0, msgBytes.length, mInfo);
 		DataOutputStream dos = new DataOutputStream(s.getOutputStream());
 		dos.writeInt(tok.length);
 		dos.write(tok);

@@ -38,6 +38,8 @@
 package com.sun.gssapi;
 
 import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * The JGSS accommodates the concept of caller-provided channel
@@ -156,16 +158,12 @@ public class ChannelBinding {
     
 	ChannelBinding cb = (ChannelBinding)obj;
     
-	//check for application data being null in one but not the other
-	if ((getApplicationData() == null &&
-			cb.getApplicationData() != null) ||
-			(getApplicationData() != null &&
-			cb.getApplicationData() == null))
-		return (false);
+	return (Objects.equals(this.m_initiator, cb.getInitiatorAddress()) &&
+		Objects.equals(this.m_acceptor, cb.getAcceptorAddress()) &&
+		Arrays.equals(this.m_appData, cb.getApplicationData()));
+    }
 
-	return (this.m_initiator.equals(cb.getInitiatorAddress()) &&
-		this.m_acceptor.equals(cb.getAcceptorAddress()) &&
-		(this.getApplicationData() == null ||
-		this.m_appData.equals(cb.getApplicationData())));
+    public int hashCode() {
+	return Objects.hash(m_initiator, m_acceptor, Arrays.hashCode(m_appData));
     }
 }

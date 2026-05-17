@@ -101,9 +101,7 @@ public class Buffer extends Thread {
         maxOffset = 0;
 
         setDaemon(true);	// NFS threads die when app exits
-        try {
-            setName("Buffer-" + (foffset / bufsize));
-        } catch (Exception e) {}; // non-essential, ignore
+        setName("Buffer-" + (foffset / bufsize));
         action = IDLE;
         start();
     }

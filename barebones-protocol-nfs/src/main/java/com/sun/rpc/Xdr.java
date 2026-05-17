@@ -37,6 +37,8 @@
 
 package com.sun.rpc;
 
+import java.nio.charset.StandardCharsets;
+
 import java.io.*;
 
 /**
@@ -293,7 +295,7 @@ public class Xdr {
     public String xdr_string() {
 	int len = xdr_int();
 
-	String s = new String(buf, off, len);
+	String s = new String(buf, off, len, StandardCharsets.UTF_8);
 	xdr_skip(len);
 	return s;
     }
@@ -304,7 +306,7 @@ public class Xdr {
      * @param s string
      */
     public void xdr_string(String s) {
-    	xdr_bytes(s.getBytes());
+        xdr_bytes(s.getBytes(StandardCharsets.UTF_8));
     }
 
     /**

@@ -203,7 +203,7 @@ public class GSSManager {
      * @exception GSSException with major code set to BAD_MECH if
      *     no jgss providers exist.
      */
-    public static Oid getDefaultMech() throws GSSException {
+    public static synchronized Oid getDefaultMech() throws GSSException {
 
         if (m_defaultMech != null)
             return (m_defaultMech.getOid());
@@ -717,9 +717,5 @@ class MechTable {
     
 
     //private table storing the mapping
-    private static Hashtable<Oid, MechInfo> M_table;
-    
-    static {
-        M_table = new Hashtable<>(13);
-    }
+    private static final Hashtable<Oid, MechInfo> M_table = new Hashtable<>(13);
 } //end of Class MechTable

@@ -45,6 +45,7 @@ package com.sun.gssapi.samples;
  
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 
 import com.sun.gssapi.*;
 
@@ -274,7 +275,7 @@ class GSSServer {
 		MessageProp mInfo = new MessageProp();
 
 		aCtxt.unwrap(dis, bos, mInfo);
-		print("\tMessage from peer:\t" + new String(bos.toByteArray()));
+		print("\tMessage from peer:\t" + new String(bos.toByteArray(), StandardCharsets.UTF_8));
 
 		mInfo.setQOP(0);
 		mInfo.setPrivacy(false);

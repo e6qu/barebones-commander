@@ -97,7 +97,7 @@ class MessageHeader {
     // return the location of the key
     public synchronized int getKey(String k) {
         for (int i = nkeys; --i >= 0;)
-            if ((keys[i] == k) ||
+            if ((keys[i] == null && k == null) ||
                 (k != null && k.equalsIgnoreCase(keys[i])))
                 return i;
         return -1;
@@ -131,14 +131,16 @@ class MessageHeader {
                 if (keys[i] == null)
                     if (foundV)
                         return values[i];
-                    else if (values[i] == v)
+                    else if ((values[i] == null && v == null) ||
+                             (values[i] != null && values[i].equals(v)))
                         foundV = true;
         } else
             for (int i = nkeys; --i >= 0;)
                 if (k.equalsIgnoreCase(keys[i]))
                     if (foundV)
                         return values[i];
-                    else if (values[i] == v)
+                    else if ((values[i] == null && v == null) ||
+                             (values[i] != null && values[i].equals(v)))
                         foundV = true;
         return null;
     }

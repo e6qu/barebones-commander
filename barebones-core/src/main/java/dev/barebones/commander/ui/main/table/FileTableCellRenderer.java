@@ -103,7 +103,7 @@ public class FileTableCellRenderer implements TableCellRenderer, ThemeListener {
     }
 
     public Color getBakgroundOfSelectedFileInInactiveTable() {
-        return ThemeCache.backgroundColors[ThemeCache.INACTIVE][ThemeCache.SELECTED];
+        return ThemeCache.backgroundColor(ThemeCache.INACTIVE, ThemeCache.SELECTED);
     }
 
     /**
@@ -204,7 +204,7 @@ public class FileTableCellRenderer implements TableCellRenderer, ThemeListener {
         else {
             String text = (String)value;
             if(matches || isSelected)
-                label.setForeground(ThemeCache.foregroundColors[focusedIndex][selectedIndex][colorIndex]);
+                label.setForeground(ThemeCache.foregroundColor(focusedIndex, selectedIndex, colorIndex));
             else
                 label.setForeground(ThemeCache.unmatchedForeground);
 
@@ -241,12 +241,12 @@ public class FileTableCellRenderer implements TableCellRenderer, ThemeListener {
 
         // Set background color depending on whether the row is selected or not, and whether the table has focus or not
         if(selectedIndex == ThemeCache.SELECTED)
-            label.setBackground(ThemeCache.backgroundColors[focusedIndex][ThemeCache.SELECTED], ThemeCache.backgroundColors[focusedIndex][ThemeCache.SECONDARY]);
+            label.setBackground(ThemeCache.backgroundColor(focusedIndex, ThemeCache.SELECTED), ThemeCache.backgroundColor(focusedIndex, ThemeCache.SECONDARY));
         else if(matches) {
             if(table.hasFocus() && search.isActive())
-                label.setBackground(ThemeCache.backgroundColors[focusedIndex][ThemeCache.NORMAL]);
+                label.setBackground(ThemeCache.backgroundColor(focusedIndex, ThemeCache.NORMAL));
             else
-                label.setBackground(ThemeCache.backgroundColors[focusedIndex][(rowIndex % 2 == 0) ? ThemeCache.NORMAL : ThemeCache.ALTERNATE]);
+                label.setBackground(ThemeCache.backgroundColor(focusedIndex, (rowIndex % 2 == 0) ? ThemeCache.NORMAL : ThemeCache.ALTERNATE));
         }
         else
             label.setBackground(ThemeCache.unmatchedBackground);

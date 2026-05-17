@@ -169,7 +169,7 @@ class RPCGSSClient {
 			replymsg = rpc.rpc_call(callmsg, 3 * 1000, 3);
 			name = replymsg.xdr_string();
 			addr = replymsg.xdr_string();
-			if (addr.getBytes().length != 0) {
+			if (!addr.isEmpty()) {
 				print(name + " = " + addr);
 			} else {
 				print("no value");
