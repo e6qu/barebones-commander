@@ -52,7 +52,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **30** | done | **Architecture refactor batch** — archive format `ServiceLoader`, remove vendored `apache-bzip2`, centralize runtime tunables, and make javac unchecked/deprecation warnings fail the build. | landed in #38 |
 | **31** | done | **Repo skill + architecture/docs/check sweep** — add repo-local Java GUI slop cleanup skill, document current architecture, align stale docs/comments with the implementation, and harden CI against fake-green checks. | landed in #39 |
 | **32** | done | **Repo-wide Java GUI slop sweep** — run the repo-local slop-cleaning skill against current `origin/main`, record each finding in `BUGS.md`, fix actionable issues, and keep continuity docs current. | landed in #40 |
-| **33** | in progress | **Clear remaining ignored SpotBugs findings** — remove the last `ThemeCache` own-code suppression and surface/fix vendored Sun NFS/RPC URL-handler findings so SpotBugs runs without an exclude filter. | this PR |
+| **33** | done | **Clear remaining ignored SpotBugs findings** — remove the last `ThemeCache` own-code suppression and surface/fix vendored Sun NFS/RPC URL-handler findings so SpotBugs runs without an exclude filter. | landed in #41 |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -1368,10 +1368,10 @@ compile plus MinIO S3 integration test, `./gradlew cleanTest test
 --stacktrace`, and `./gradlew check --stacktrace`. Next work is to commit/push
 to PR #40 and watch CI.
 
-### Phase 33 — Clear remaining ignored SpotBugs findings (this PR)
+### Phase 33 — Clear remaining ignored SpotBugs findings (PR landed)
 
-Phase 33 starts from `origin/main` after PR #40 was merged. The active branch is
-`phase-33/spotbugs-baseline-drawdown`; no PR was open at branch creation.
+Phase 33 started from `origin/main` after PR #40 was merged. The branch was
+`phase-33/spotbugs-baseline-drawdown`, and it landed as PR #41.
 
 Initial findings recorded in `BUGS.md` 1.60:
 - the only remaining own-code SpotBugs suppression was
@@ -1386,14 +1386,12 @@ exclude filter has been removed entirely. The first unfiltered run surfaced
 fixed without keeping any replacement filter. Local unfiltered
 `./gradlew spotbugsMain spotbugsTest --stacktrace` is green.
 Follow-up validation also passed with `git diff --check`, `./gradlew cleanTest
-test --stacktrace`, and `./gradlew check --stacktrace`. Next work is to commit,
-push, open the single Phase 33 PR, and watch CI.
+test --stacktrace`, and `./gradlew check --stacktrace`. PR #41 CI passed.
 
-**Exit criteria**: all actionable findings discovered in this sweep are either
-fixed or explicitly documented as deferred; local validation includes at least
-`./gradlew cleanTest test --stacktrace`, `./gradlew check --stacktrace`,
-package-smoke artifact checks if CI/build wiring changes, and `git diff
---check`; a single PR is opened and GitHub Actions are green.
+**Exit criteria** (met): all actionable findings discovered in this sweep are
+fixed; local validation included `git diff --check`, `./gradlew spotbugsMain
+spotbugsTest --stacktrace`, `./gradlew cleanTest test --stacktrace`, and
+`./gradlew check --stacktrace`; PR #41 GitHub Actions were green.
 
 ## 7. Compatibility with upstream
 
