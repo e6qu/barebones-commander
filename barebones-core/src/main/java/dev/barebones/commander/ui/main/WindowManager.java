@@ -40,6 +40,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 import java.awt.Frame;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Timer;
@@ -202,7 +203,22 @@ public class WindowManager implements WindowListener, ConfigurationListener {
      * @param mainFrameBuilder the mainFrame builder
      * @return the newly created MainFrame.
      */
-    public static synchronized void createNewMainFrame(MainFrameBuilder mainFrameBuilder) {
+    public static void createNewMainFrame(MainFrameBuilder mainFrameBuilder) {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            try {
+                SwingUtilities.invokeAndWait(() -> createNewMainFrameOnEdt(mainFrameBuilder));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while creating main frame", e);
+            } catch (InvocationTargetException e) {
+                throw new IllegalStateException("Failed to create main frame", e.getCause());
+            }
+            return;
+        }
+        createNewMainFrameOnEdt(mainFrameBuilder);
+    }
+
+    private static synchronized void createNewMainFrameOnEdt(MainFrameBuilder mainFrameBuilder) {
         LOGGER.debug("creating a new main frame...");
         Collection<MainFrame> newMainFrames = mainFrameBuilder.build();
 

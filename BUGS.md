@@ -47,7 +47,7 @@ What grew:
 
 ## 1. Real bugs
 
-### 1.1 HIGH — Zip-slip / TAR-slip on extraction
+### 1.1 ~~HIGH — Zip-slip / TAR-slip on extraction~~ **FIXED**
 **`barebones-format-zip/.../ZipArchiveFile.java:112-147`**,
 **`barebones-format-tar/.../TarEntryIterator.java:97-116`**
 
@@ -56,6 +56,10 @@ Entry paths are taken straight from `ZipEntry.getName()` /
 normalisation, no leading-`/` rejection, no backslash rejection.
 A crafted archive with `../../etc/passwd` writes outside the
 extraction root.
+
+Fixed before this pass: archive iterators validate entry names through
+`SafePath`, skip and log unsafe entries, and tests cover leading slash,
+drive-prefix, backslash, NUL, and parent-escape rejection.
 
 ### 1.2 ~~HIGH — SFTP host-key verification not configured~~ **FIXED**
 Fixed in Phase 14: new `HostKeyPolicy` enum (YES / ASK / NO,
@@ -89,7 +93,7 @@ Per-receive `setSoTimeout` was already wired upstream. Still
 missing: a global "fail RPC after N seconds" budget that bounds
 the retry loop in `Rpc.rpc_call`.
 
-### 1.5 HIGH — TransferFileJob has no network timeouts
+### 1.5 ~~HIGH — TransferFileJob has no network timeouts~~ **FIXED**
 **`barebones-core/.../job/impl/TransferFileJob.java`**, plus the
 underlying SFTP connect:
 **`barebones-protocol-sftp/.../SFTPConnectionHandler.java:91`**
@@ -97,6 +101,11 @@ underlying SFTP connect:
 Connect timeout is 5 s (probably too short on slow VPN), but the
 ongoing transfer has no socket-read timeout — a half-open TCP
 connection wedges the copy-job thread indefinitely.
+
+Fixed before this pass: `SftpTimeouts` now exposes configurable
+connect, read, and keepalive bounds, and `SFTPConnectionHandler` applies
+them to the JSch session/channel so wedged SFTP transfers fail in bounded
+time instead of hanging the job thread indefinitely.
 
 ### 1.6 ~~HIGH — macOS Keychain item-ref leaked~~ **FIXED**
 Fixed in Phase 14: new `CFRelease` JNA binding in
@@ -124,11 +133,15 @@ existing `equals()` contract. `CredentialsMappingTest`
 round-trips through `HashSet` to prove the fix. SpotBugs
 baseline shrunk by 4 entries.
 
-### 1.10 MED — `ZipInputStream` leaked on iteration error
+### 1.10 ~~MED — `ZipInputStream` leaked on iteration error~~ **FIXED**
 **`barebones-format-zip/.../ZipArchiveFile.java:250-258`**
 
 If an exception is thrown mid-iteration the stream is never closed
 in a finally. Each failed lookup leaks an FD.
+
+Fixed before this pass: the non-random-access zip-entry lookup now
+closes the `ZipInputStream` on every failure path and attaches close
+failures as suppressed exceptions.
 
 ### 1.11 ~~MED — S3 connection-cache key contains plaintext access+secret keys~~ **FIXED**
 Fixed in Phase 14: cache key now uses
@@ -146,32 +159,49 @@ serialised, or appears in a heap dump, the secret is exposed.
 Fix: hash credentials (SHA-256) into the cache key.
 -->
 
-### 1.12 MED — `S3TransferManager.completionFuture().join()` blocks EDT
+### 1.12 ~~MED — `S3TransferManager.completionFuture().join()` blocks EDT~~ **RESOLVED**
 **`barebones-protocol-s3/.../S3Object.java:329-330`**
 
 `SpillingPutOutputStream.close()` is reachable from a Swing copy-job
 on the EDT. A 40 MiB upload then freezes the UI for the full upload
 duration. Needs a SwingWorker shim.
 
-### 1.13 MED — Decompression-bomb / per-entry size limits absent
+Resolved before this pass: file transfers run in `FileJob.start()` on a
+dedicated job thread, not on the EDT, and S3 multipart uploads publish
+status-bar progress while the job thread waits for transfer completion.
+The synchronous `OutputStream.close()` contract is preserved so callers
+do not observe a successful close before the upload is durable.
+
+### 1.13 ~~MED — Decompression-bomb / per-entry size limits absent~~ **FIXED**
 **`barebones-format-zip/`**, **`barebones-format-tar/`**, **`barebones-archiver/`**
 
 No per-entry or cumulative size cap during extraction. A 1 MB zip
 that expands to 50 GB will exhaust memory or disk. Same for entry
 count: a million-entry zip parses its central directory unbounded.
 
-### 1.14 MED — Text viewer loads entire file into memory
+Fixed before this pass: archive listing wraps iterators with
+`BoundedExtraction`, enforcing per-entry, cumulative declared-size, and
+entry-count caps. `BoundedExtractionTest` covers the cap behavior.
+
+### 1.14 ~~MED — Text viewer loads entire file into memory~~ **FIXED**
 **`barebones-viewer-text/.../TextViewer.java`**
 
 No size check before handing the bytes to `RSyntaxTextArea`.
 Opening a multi-GB log file crashes the JVM.
 
-### 1.15 MED — `AbstractArchiveFile.createEntriesTree()` is not thread-safe (TODO admits)
+Fixed before this pass: `TextViewer` prompts before loading files above
+the large-file threshold and aborts the open if the user declines.
+
+### 1.15 ~~MED — `AbstractArchiveFile.createEntriesTree()` is not thread-safe (TODO admits)~~ **FIXED**
 **`barebones-commons-file/.../AbstractArchiveFile.java:122`**
 
 Multiple threads calling `ls()` simultaneously can race on the
 shared tree-build state. Latent because the file table mostly
 serialises calls, but parallel directory listings hit it.
+
+Fixed before this pass: `createEntriesTree()` and `checkEntriesTree()`
+are synchronized, so concurrent listings cannot race on
+`entryTreeRoot`, `entryTreeDate`, or `archiveEntryFiles`.
 
 ### 1.16 ~~MED — `AppleScript.outputBuffer` is unbounded~~ **FIXED**
 `ScriptOutputListener` now caps at 1 MiB
@@ -200,11 +230,16 @@ and `writesAfterTruncationAreDropped`.
   shared daemon thread, not an EDT freeze. Conversion to
   `wait/notify` would touch every call site for negligible benefit.
 
-### 1.18 MED — S3 `isDirectory()` / `exists()` swallow IOException → false-negative
+### 1.18 ~~MED — S3 `isDirectory()` / `exists()` swallow IOException → false-negative~~ **FIXED**
 **`barebones-protocol-s3/.../S3Object.java:96-116`**
 
 `HeadObject` returning a transient 5xx makes the file look like it
 doesn't exist; the user sees their files vanish until refresh.
+
+Phase 32 now treats `NoSuchKey` as the only normal missing-object path.
+Other metadata lookup failures are logged and `exists()` reports the
+last known state, or true for unknown state, instead of turning a
+transient lookup failure into a false absence.
 
 ### 1.19 ~~MED — S3 connection cache grows unbounded, never closed~~ **FIXED (shutdown)**
 `S3ProtocolProvider` now implements `AutoCloseable`; the bootstrap
@@ -278,9 +313,15 @@ The `main` is a CLI utility (`java EncodingDetector <file>` →
 prints the detected encoding). The println is the CLI's only
 output, not stray debug. Kept.
 
-### 1.28 LOW — `ZipArchiveFile.java:154` hard-codes UTF-8 for symlink targets
+### 1.28 ~~LOW — `ZipArchiveFile.java:154` hard-codes UTF-8 for symlink targets~~ **RESOLVED**
 Zip spec allows non-UTF-8; an EFS-flagged entry is fine but legacy
 encoded ones (CP932 etc) round-trip wrong.
+
+Resolved before this pass: the supported platform scope is macOS/Linux,
+where symlink targets are treated as UTF-8 path text for this Java UI.
+The legacy non-EFS zip filename encoding path remains handled by the zip
+provider; symlink payload bytes do not carry an EFS bit or a reliable zip
+metadata encoding to apply instead.
 
 ### 1.29 ~~MED — Green checks could hide no-op test / analysis runs~~ **FIXED**
 Phase 31 found three ways CI could look green while proving too little:
@@ -649,7 +690,7 @@ checks stale Open With results by requested file URL, and loads quick-list icons
 through `SwingWorker` so icon lookups stay off the EDT while cache updates and
 repaints return through Swing's lifecycle.
 
-### 1.58 MED — Main frame startup still constructs Swing state off the EDT
+### 1.58 ~~MED — Main frame startup still constructs Swing state off the EDT~~ **FIXED**
 **`barebones-core/.../Application.java`**,
 **`barebones-core/.../MainFrame.java`**,
 **`barebones-core/.../FolderPanel.java`**
@@ -664,6 +705,12 @@ construction and filesystem/model initialization.
 
 Phase 32 documents this as the next GUI-threading refactor candidate instead of
 making a narrow partial change that would leave the startup invariant unclear.
+
+Phase 32 now routes non-EDT `WindowManager.createNewMainFrame(...)`
+callers through `SwingUtilities.invokeAndWait(...)` and removes the
+`MainFrame` worker executor that previously built folder panels, toolbar,
+menu bar, status bar, and command bar off the EDT. The delayed startup
+version-check dialog construction is also marshalled back to the EDT.
 
 ### 1.59 ~~MED — Second Claude review found more async/lifecycle edges~~ **FIXED**
 **`barebones-core/.../AsyncPanel.java`**,
@@ -894,9 +941,9 @@ hanging forever.
 ### 4.2 ~~No retry / backoff on transient mount failures~~ **OBSOLETE**
 The mount-helper module was removed in PR #24.
 
-### 4.3 S3 connection cache never closes connections (see 1.19)
+### 4.3 ~~S3 connection cache never closes connections (see 1.19)~~ **FIXED**
 
-### 4.4 AES-GCM key never zeroed on close (see 1.8)
+### 4.4 ~~AES-GCM key never zeroed on close (see 1.8)~~ **FIXED**
 
 ### 4.5 ~~`WeakHashMap`-keyed listeners GC'd silently~~ **FIXED**
 `ThemeManager`, `ThemeData`, and `ThemeCache` now hold listeners
@@ -908,22 +955,27 @@ model — listeners just GC'd themselves out of existence). Other
 WeakHashMap usages in the codebase are real key→value caches,
 not listener pseudo-sets, and are unaffected.
 
-### 4.6 PARTIALLY FIXED — Shutdown hook registered for `SecretStore`
+### 4.6 ~~PARTIALLY FIXED — Shutdown hook registered for `SecretStore`~~ **FIXED**
 Phase 14 wires `Bootstrap.shutdown()` as a JVM shutdown hook
 that closes the active `SecretStoreService.store()` (frees
 libsecret schema, zeroes AES-GCM key). Cached `S3Connection`s
 are NOT yet cleaned up — to land in
 Phase 16 alongside the rest of the shutdown / lifecycle work.
 
-### 4.7 S3 `SpillingPutOutputStream` temp file: deletion-error masks upload error
+Fixed before this pass: the shutdown path now closes cached S3
+connections through the provider shutdown hook as described in 1.19.
+
+### 4.7 ~~S3 `SpillingPutOutputStream` temp file: deletion-error masks upload error~~ **FIXED**
 **`barebones-protocol-s3/.../S3Object.java:319-338`** — if the
 finally's `Files.deleteIfExists` throws, it shadows the original
 upload exception. Catch + log the deletion failure, never let it
 escape from the finally.
 
-### 4.8 NFS code → see 1.4
+### 4.8 ~~NFS code → see 1.4~~ **PARTIALLY FIXED**
 
-### 4.9 SFTP fixed 5s connect timeout (see 1.5) — make configurable
+### 4.9 ~~SFTP fixed 5s connect timeout (see 1.5) — make configurable~~ **FIXED**
+`SftpTimeouts` now exposes configurable connect, read, and keepalive
+settings.
 
 ---
 

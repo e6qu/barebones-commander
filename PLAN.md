@@ -1354,6 +1354,21 @@ focused compile plus `:barebones-protocol-s3:test --tests
 dev.barebones.commander.commons.file.protocol.s3.S3MinIOIntegrationTest`,
 `./gradlew cleanTest test --stacktrace`, and `./gradlew check --stacktrace`.
 Next work is to commit/push the Phase 32 follow-up patch and watch PR #40 CI.
+The user then requested fixing all remaining bugs in the same open PR. The pass
+confirmed the old open real-bug entries were either already fixed by earlier
+Phase 32 code or still concrete. The concrete changes in this pass route
+non-EDT `WindowManager.createNewMainFrame(...)` calls through the EDT, remove
+the `MainFrame` worker executor that built Swing components off the EDT,
+marshal the delayed startup update-check dialog back to the EDT, and make S3
+`exists()` treat non-missing metadata lookup failures as unknown/last-known
+state instead of false absence. `BUGS.md` now marks the stale/fixed real-bug
+entries as fixed/resolved and leaves only architecture/refactor review notes as
+open headings. Next work is to rerun validation, commit/push to PR #40, and
+watch CI.
+Validation for this all-bugs pass passed with `git diff --check`, focused core
+compile plus MinIO S3 integration test, `./gradlew cleanTest test
+--stacktrace`, and `./gradlew check --stacktrace`. Next work is to commit/push
+to PR #40 and watch CI.
 
 **Exit criteria**: all actionable findings discovered in this sweep are either
 fixed or explicitly documented as deferred; local validation includes at least

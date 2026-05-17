@@ -126,7 +126,9 @@ public class S3Object extends S3File {
             ensureMetadata();
         } catch (IOException e) {
             logMetadataFailure("exists", e);
-            return false;
+            // NoSuchKey is handled inside ensureMetadata as a known absence.
+            // Other failures mean the state is unknown, not that the object is gone.
+            return metadataKnown ? directory || size > 0 || lastModified > 0 : true;
         }
         // metadataKnown == true after a HEAD; if directory or non-zero
         // size or non-zero lastModified, we got a real response.

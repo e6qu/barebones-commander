@@ -542,7 +542,8 @@ public class Application {
             if (MuConfigurations.getPreferences()
                     .getVariable(MuPreference.CHECK_FOR_UPDATE, MuPreferences.DEFAULT_CHECK_FOR_UPDATE)) {
                 CompletableFuture.runAsync(() -> {
-                    new CheckVersionDialog(WindowManager.getCurrentMainFrame(), false);
+                    SwingUtilities.invokeLater(() ->
+                            new CheckVersionDialog(WindowManager.getCurrentMainFrame(), false));
                 }, CompletableFuture.delayedExecutor(10L, TimeUnit.SECONDS));
             }
 
