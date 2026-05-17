@@ -608,6 +608,93 @@ Phase 32 names the loader thread, logs runtime failures, and replaces the wait
 component with a small error label on the EDT instead of leaving a fake loading
 state behind.
 
+### 1.56 ~~MED — Claude review found follow-up GUI/S3 edge cases~~ **FIXED**
+**`barebones-core/.../FileFrame.java`**,
+**`barebones-core/.../OpenWithMenu.java`**,
+**`barebones-core/.../NotificationPopup.java`**,
+**`barebones-core/.../AsyncPanel.java`**,
+**`barebones-protocol-s3/.../S3Object.java`**,
+**`barebones-protocol-s3/.../S3MinIOIntegrationTest.java`**
+
+The authenticated noninteractive Claude Code review of PR #40 found several
+actionable follow-ups in the sweep changes: `FileFrame.updateLayout()` could
+still run after an async presenter-open failure and dereference a failed
+presenter path; `OpenWithMenu` could insert a leading separator because the
+loading item was still counted; `NotificationPopup`'s new Swing timer assumed
+all callers were already on the EDT; `AsyncPanel` still built its fallback error
+label on the worker thread; S3 metadata failure logging compared exception
+identity outside the synchronized metadata section; and the MinIO integration
+test relied on the repo-wide JUnit PER_CLASS lifecycle setting instead of
+declaring its own lifecycle.
+
+Phase 32 fixed those review findings by short-circuiting the failed
+`FileFrame` layout path, restoring the "more than just loading item" separator
+condition, marshaling notification display to the EDT, constructing the async
+fallback label on the EDT, simplifying S3 metadata failure logging, and adding
+an explicit `@TestInstance(PER_CLASS)` annotation to the MinIO test.
+
+### 1.57 ~~LOW — Claude review found remaining async cleanup issues~~ **FIXED**
+**`barebones-viewer-text/.../TextEditorImpl.java`**,
+**`barebones-core/.../OpenWithMenu.java`**,
+**`barebones-core/.../QuickListWithIcons.java`**
+
+The follow-up Claude review also found lower-risk async cleanup issues that
+were not part of the first patch: the editor's coalesced beep helper used a
+static executor with no application shutdown ownership, `OpenWithMenu` treated
+only the exact same `AbstractFile` instance as the same async request, and
+quick-list icon loading still created a raw thread for each uncached item.
+
+Phase 32 replaces the static beep executor with a bounded one-shot daemon task,
+checks stale Open With results by requested file URL, and loads quick-list icons
+through `SwingWorker` so icon lookups stay off the EDT while cache updates and
+repaints return through Swing's lifecycle.
+
+### 1.58 MED — Main frame startup still constructs Swing state off the EDT
+**`barebones-core/.../Application.java`**,
+**`barebones-core/.../MainFrame.java`**,
+**`barebones-core/.../FolderPanel.java`**
+
+The same sweep found that the application still creates the initial main frames
+from a `MainFrameInit` thread and `MainFrame` builds both `FolderPanel`
+instances through a worker executor. That means substantial Swing state is
+constructed outside the EDT. This is broader than the focused quick-list and
+notification fixes: safely moving it requires changing the startup lifecycle,
+preload behavior, frame visibility timing, and the async work split between UI
+construction and filesystem/model initialization.
+
+Phase 32 documents this as the next GUI-threading refactor candidate instead of
+making a narrow partial change that would leave the startup invariant unclear.
+
+### 1.59 ~~MED — Second Claude review found more async/lifecycle edges~~ **FIXED**
+**`barebones-core/.../AsyncPanel.java`**,
+**`barebones-core/.../FileFrame.java`**,
+**`barebones-core/.../CheckVersionDialog.java`**,
+**`barebones-core/.../NotificationPopup.java`**,
+**`barebones-core/.../QuickListWithIcons.java`**,
+**`barebones-os-api/.../QueuedTrash.java`**,
+**`barebones-protocol-s3/.../S3Object.java`**,
+**`barebones-protocol-sftp/.../SFTPFile.java`**
+
+A second authenticated noninteractive Claude review of the updated PR diff
+found additional lifecycle issues: failed `FileFrame` presenter opens could
+still return a half-initialized presenter to `AsyncPanel`; `AsyncPanel` only
+caught `RuntimeException`, so linkage and other loader errors could still leave
+the spinner up forever; S3 metadata cache fields were still unsynchronized
+across lookups, upload metadata refresh, and delete invalidation; the version
+check dialog opened a modal dialog directly from `SwingWorker.done()`; the
+notification popup singleton could be constructed off the EDT; quick lists used
+a shared static spinner across instances; SFTP random-access seek left the old
+stream reference in place if close failed; and `QueuedTrash` interrupt handling
+was easier to misread than necessary.
+
+Phase 32 fixes those by treating failed presenter opens as async-panel loader
+failures, skipping async-panel replacement after a disposed failure path,
+catching and logging loader `Throwable`, synchronizing S3 metadata mutation and
+reads, scheduling version-result dialogs after the worker completion event,
+constructing the notification popup singleton on the EDT, making quick-list
+spinners instance-owned, clearing SFTP random-access streams before close, and
+returning immediately when trash waiting is interrupted.
+
 ---
 
 ## 2. UX gaps

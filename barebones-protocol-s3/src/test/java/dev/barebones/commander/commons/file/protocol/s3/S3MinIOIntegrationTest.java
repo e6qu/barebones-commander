@@ -23,6 +23,7 @@ import dev.barebones.commander.commons.file.protocol.ProtocolProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.opentest4j.TestAbortedException;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -46,6 +47,7 @@ import static dev.barebones.commander.test.TestAssertions.assertTrue;
  * S3-compatible/path-style endpoint behavior used by self-hosted
  * deployments.
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class S3MinIOIntegrationTest {
 
     private static final DockerImageName MINIO_IMAGE =

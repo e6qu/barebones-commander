@@ -34,6 +34,7 @@ import dev.barebones.commander.commons.logging.Logger;
 import dev.barebones.commander.commons.logging.LoggerFactory;
 
 import javax.swing.JCheckBox;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -115,18 +116,20 @@ public class CheckVersionDialog extends QuestionDialog {
             @Override
             protected void done() {
                 try {
-                    showVersionCheckResult(get());
+                    VersionCheckResult result = get();
+                    SwingUtilities.invokeLater(() -> showVersionCheckResult(result));
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     dispose();
                 } catch (ExecutionException e) {
                     LOGGER.warn("Failed to complete version check", e.getCause());
                     if (userInitiated) {
-                        showVersionCheckResult(new VersionCheckResult(true,
+                        VersionCheckResult result = new VersionCheckResult(true,
                                 Translator.get("version_dialog.not_available_title"),
                                 Translator.get("version_dialog.not_available"),
                                 null,
-                                false));
+                                false);
+                        SwingUtilities.invokeLater(() -> showVersionCheckResult(result));
                     } else {
                         dispose();
                     }

@@ -147,6 +147,7 @@ public class OpenWithMenu extends JMenu {
                 loadingItem.setEnabled(false);
                 spinningIcon.setAnimated(true);
                 AbstractFile requestedFile = selectedFile;
+                var requestedFileURL = requestedFile.getURL();
                 new SwingWorker<List<Command>, Void>() {
                     @Override
                     protected List<Command> doInBackground() {
@@ -157,7 +158,7 @@ public class OpenWithMenu extends JMenu {
                     protected void done() {
                         try {
                             List<Command> commands = get();
-                            if (selectedFile == requestedFile) {
+                            if (selectedFile != null && requestedFileURL.equals(selectedFile.getURL())) {
                                 populateNativeApplications(commands);
                             }
                         } catch (InterruptedException e) {
@@ -185,7 +186,7 @@ public class OpenWithMenu extends JMenu {
     }
 
     private void populateNativeApplications(List<Command> commands) {
-        if (!commands.isEmpty() && getItemCount() > 0) {
+        if (!commands.isEmpty() && getItemCount() > 1) {
             add(new JSeparator());
         }
         var separateDefault = commands.size() > 1;

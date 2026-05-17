@@ -109,6 +109,7 @@ public abstract class QueuedTrash extends AbstractTrash {
                 }
                 catch(InterruptedException e) {
                     Thread.currentThread().interrupt();
+                    return;
                 }
             }
         }

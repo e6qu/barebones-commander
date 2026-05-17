@@ -98,7 +98,7 @@ public abstract class FileFrame extends JFrame {
                         showGenericErrorDialog();
                         dispose();
                     });
-                    return filePresenter == null ? new JPanel() : filePresenter;
+                    throw new IllegalStateException("Failed to open file presenter", e);
                 }
 
                 return filePresenter;

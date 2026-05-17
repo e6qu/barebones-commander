@@ -1317,6 +1317,43 @@ unavailable." Local validation after the extra sweep passed with `git diff
 --check`, `./gradlew cleanTest test --stacktrace`, and `./gradlew check
 --stacktrace`; next work is to commit/push these extra fixes onto PR #40 and
 watch CI again.
+The user confirmed Claude login, and rerunning outside the sandbox showed
+`claude auth status` logged in. A tool-using `claude -p` review launched but
+hit `Reached max turns (20)` without findings, so the PR diff was piped into a
+one-turn `claude -p` review. Claude reported actionable follow-ups that were
+recorded in `BUGS.md` and fixed: explicit MinIO `@TestInstance(PER_CLASS)`,
+failed `FileFrame` async layout short-circuit, `OpenWithMenu` loading-item
+separator guard, EDT marshaling for `NotificationPopup.displayNotification`,
+EDT construction of `AsyncPanel` fallback label, and simplified S3 metadata
+failure logging without unsynchronized identity comparison. Next work is to
+rerun validation, commit/push, and watch PR #40 CI again.
+The continued Claude-guided sweep recorded and fixed three lower-risk async
+cleanup items: `TextEditorImpl` no longer owns an unclosed static beep
+executor, `OpenWithMenu` now accepts same-URL async Open With results instead
+of requiring the same `AbstractFile` instance, and `QuickListWithIcons` now
+uses `SwingWorker` for icon loading instead of raw per-item threads. The same
+sweep also recorded a larger remaining GUI-threading issue: initial
+`MainFrame`/`FolderPanel` construction still happens from `MainFrameInit` and a
+worker executor instead of consistently on the EDT. That requires a dedicated
+startup lifecycle refactor because a partial constructor-only edit would leave
+the frame visibility and preload invariants ambiguous. Next work is to rerun
+validation, commit/push, and watch PR #40 CI again.
+A second current-diff Claude review eventually completed. Its concrete findings
+were recorded as `BUGS.md` 1.59 and patched: failed file-presenter opens now
+throw through `AsyncPanel` instead of returning half-initialized UI; async panel
+loader failures include `Throwable` and skip replacement after the panel has
+been disposed; `QueuedTrash.waitForPendingOperations()` returns immediately
+after preserving interruption; `CheckVersionDialog` schedules modal result UI
+after `SwingWorker.done()` returns; `NotificationPopup` is constructed on the
+EDT; quick-list spinners are instance-owned; S3 metadata state is synchronized
+across reads and mutations; and SFTP random-access streams clear stale handles
+when seek/close closes the old stream. Next work is to rerun local validation,
+commit/push, and watch PR #40 CI again.
+Local validation after the second-review fixes passed with `git diff --check`,
+focused compile plus `:barebones-protocol-s3:test --tests
+dev.barebones.commander.commons.file.protocol.s3.S3MinIOIntegrationTest`,
+`./gradlew cleanTest test --stacktrace`, and `./gradlew check --stacktrace`.
+Next work is to commit/push the Phase 32 follow-up patch and watch PR #40 CI.
 
 **Exit criteria**: all actionable findings discovered in this sweep are either
 fixed or explicitly documented as deferred; local validation includes at least

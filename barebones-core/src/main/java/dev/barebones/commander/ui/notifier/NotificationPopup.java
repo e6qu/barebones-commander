@@ -35,6 +35,7 @@ import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * A singleton class that shows notification popup in the provided frame (for example main frame).
@@ -142,12 +143,34 @@ final class NotificationPopup {
         popup.add(panel, BorderLayout.CENTER);
     }
 
-    private static class NotificationPopupHolder {
-        private static final NotificationPopup INSTANCE = new NotificationPopup();
-    }
+    private static NotificationPopup instance;
 
     public static NotificationPopup getInstance() {
-        return NotificationPopupHolder.INSTANCE;
+        synchronized (NotificationPopup.class) {
+            if (instance != null) {
+                return instance;
+            }
+        }
+        if (SwingUtilities.isEventDispatchThread()) {
+            return createInstance();
+        }
+        final NotificationPopup[] result = new NotificationPopup[1];
+        try {
+            SwingUtilities.invokeAndWait(() -> result[0] = createInstance());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while creating notification popup", e);
+        } catch (InvocationTargetException e) {
+            throw new IllegalStateException("Failed to create notification popup", e.getCause());
+        }
+        return result[0];
+    }
+
+    private static synchronized NotificationPopup createInstance() {
+        if (instance == null) {
+            instance = new NotificationPopup();
+        }
+        return instance;
     }
 
     /**
@@ -162,6 +185,11 @@ final class NotificationPopup {
      */
     public void displayNotification(JFrame mainFrame, String notificationText,
                                     Color bgColor, Color fgColor, long timeout) {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(() ->
+                    displayNotification(mainFrame, notificationText, bgColor, fgColor, timeout));
+            return;
+        }
         if (notificationText == null || notificationText.isBlank()) {
             return; // noop
         }

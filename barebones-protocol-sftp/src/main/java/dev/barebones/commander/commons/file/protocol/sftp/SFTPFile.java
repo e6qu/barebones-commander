@@ -775,7 +775,7 @@ public class SFTPFile extends ProtocolFile {
 
         @Override
         public int read(byte b[], int off, int len) throws IOException {
-            int nbRead = in.read(b, off, len);
+            int nbRead = requireOpen().read(b, off, len);
 
             if(nbRead!=-1)
                 offset += nbRead;
@@ -785,7 +785,7 @@ public class SFTPFile extends ProtocolFile {
 
         @Override
         public int read() throws IOException {
-            int read = in.read();
+            int read = requireOpen().read();
 
             if(read!=-1)
                 offset += 1;
@@ -802,14 +802,27 @@ public class SFTPFile extends ProtocolFile {
         }
 
         public void seek(long offset) throws IOException {
-            in.close();
+            InputStream previous = requireOpen();
+            in = null;
+            previous.close();
             in = getInputStream(offset);
             this.offset = offset;
         }
 
         @Override
         public void close() throws IOException {
-            in.close();
+            InputStream previous = in;
+            in = null;
+            if (previous != null) {
+                previous.close();
+            }
+        }
+
+        private InputStream requireOpen() throws IOException {
+            if (in == null) {
+                throw new IOException("stream closed");
+            }
+            return in;
         }
     }
 }

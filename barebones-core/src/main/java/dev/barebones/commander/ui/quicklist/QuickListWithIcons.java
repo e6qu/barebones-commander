@@ -20,14 +20,18 @@ package dev.barebones.commander.ui.quicklist;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.SwingWorker;
 import javax.swing.SwingUtilities;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
 import dev.barebones.commander.commons.file.AbstractFile;
+import dev.barebones.commander.commons.logging.Logger;
+import dev.barebones.commander.commons.logging.LoggerFactory;
 import dev.barebones.commander.ui.icon.CustomFileIconProvider;
 import dev.barebones.commander.ui.icon.FileIcons;
 import dev.barebones.commander.ui.icon.IconManager;
@@ -43,10 +47,11 @@ import dev.barebones.commander.ui.quicklist.item.QuickListDataListWithIcons;
  */
 
 public abstract class QuickListWithIcons<T> extends QuickListWithDataList<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(QuickListWithIcons.class);
 	// This map's keys are items and its objects are the corresponding icon.
 	private final ConcurrentHashMap<T, Icon> itemToIconCacheMap = new ConcurrentHashMap<T, Icon>();
 	// This SpinningDial will appear until the icon fetching of an item is over.
-	private static final SpinningDial waitingIcon = new SpinningDial();
+	private final SpinningDial waitingIcon = new SpinningDial();
 	// If the icon fetching fails for some item, the following icon will appear for it. 
 	private static final Icon notAvailableIcon = IconManager.getIcon(IconManager.FILE_ICON_SET, CustomFileIconProvider.NOT_ACCESSIBLE_FILE);
 	// Saves the number of waiting-icons (SpinningDials) appearing in the list.
@@ -131,16 +136,31 @@ public abstract class QuickListWithIcons<T> extends QuickListWithDataList<T> {
 		Icon icon = itemToIconCacheMap.get(item);
 
 		if (loadIcon)
-			new Thread("QuickListIconLoader") {
-				@Override
-                public void run() {
-					Icon icon = itemToIcon(item);
-					// If the item does not exist or is not accessible, show notAvailableIcon for it.
-					itemToIconCacheMap.put(item, icon != null ? icon : notAvailableIcon);
-					waitingIconRemovedFromList();
-                    SwingUtilities.invokeLater(QuickListWithIcons.this::repaint);
-				}
-			}.start();
+            new SwingWorker<Icon, Void>() {
+                @Override
+                protected Icon doInBackground() {
+                    return itemToIcon(item);
+                }
+
+                @Override
+                protected void done() {
+                    Icon icon = notAvailableIcon;
+                    try {
+                        Icon loadedIcon = get();
+                        if (loadedIcon != null) {
+                            icon = loadedIcon;
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } catch (ExecutionException e) {
+                        LOGGER.warn("Failed to load quick-list icon for {}", item, e.getCause());
+                    } finally {
+                        itemToIconCacheMap.put(item, icon);
+                        waitingIconRemovedFromList();
+                        repaint();
+                    }
+                }
+            }.execute();
 
 		return resizeIcon(icon, preferredSize);
 	}

@@ -109,18 +109,30 @@ public abstract class AsyncPanel extends JPanel {
     private void loadTargetComponent() {
         new Thread(() -> {
             JComponent targetComponent;
+            boolean failed = false;
             try {
                 targetComponent = getTargetComponent();
-            } catch (RuntimeException e) {
+            } catch (Throwable e) {
                 LOGGER.error("Failed to load async panel target component", e);
-                targetComponent = new JLabel(Translator.get("error"));
+                targetComponent = null;
+                failed = true;
             }
             JComponent finalTargetComponent = targetComponent;
+            boolean loadFailed = failed;
             SwingUtilities.invokeLater(() -> {
+                if (loadFailed && !isDisplayable()) {
+                    return;
+                }
                 remove(waitComponent);
                 setBorder(new EmptyBorder(0, 0, 0, 0));
-                add(finalTargetComponent, BorderLayout.CENTER);
-                updateLayout();
+                if (loadFailed || finalTargetComponent == null) {
+                    add(new JLabel(Translator.get("error")), BorderLayout.CENTER);
+                    revalidate();
+                    repaint();
+                } else {
+                    add(finalTargetComponent, BorderLayout.CENTER);
+                    updateLayout();
+                }
             });
         }, "AsyncPanelLoader").start();
     }

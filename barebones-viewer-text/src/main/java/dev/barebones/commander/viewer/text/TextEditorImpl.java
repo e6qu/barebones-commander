@@ -38,8 +38,6 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -83,11 +81,6 @@ class TextEditorImpl implements ThemeListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TextEditorImpl.class);
     private static final AtomicBoolean BEEP_RUNNING = new AtomicBoolean();
-    private static final ExecutorService BEEP_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
-        Thread thread = new Thread(r, "TextEditorBeep");
-        thread.setDaemon(true);
-        return thread;
-    });
 
     private JFrame frame;
 
@@ -294,13 +287,15 @@ class TextEditorImpl implements ThemeListener {
 
     private static void beep() {
         if (BEEP_RUNNING.compareAndSet(false, true)) {
-            BEEP_EXECUTOR.execute(() -> {
+            Thread thread = new Thread(() -> {
                 try {
                     Toolkit.getDefaultToolkit().beep();
                 } finally {
                     BEEP_RUNNING.set(false);
                 }
-            });
+            }, "TextEditorBeep");
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 
