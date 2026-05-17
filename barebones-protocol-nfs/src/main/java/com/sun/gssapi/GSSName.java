@@ -37,6 +37,7 @@
  
 package com.sun.gssapi;
 
+import java.util.Arrays;
 import java.util.Vector;
 import java.util.Enumeration;
 
@@ -67,7 +68,7 @@ import java.util.Enumeration;
  * @see Oid
  */
 
-public class GSSName {
+public class GSSName implements Cloneable {
 
     /**
      * Name type used to indicate a host-based service name form. It
@@ -302,6 +303,24 @@ public class GSSName {
             
         } catch (GSSException e) { return false; }
     }
+
+    public int hashCode() {
+
+        if (m_mechNames.size() < 1) {
+            int hash = 17;
+            hash = 31 * hash + (m_nameType == null ? 0 : m_nameType.hashCode());
+            hash = 31 * hash + (m_nameStr == null ? 0 : m_nameStr.hashCode());
+            hash = 31 * hash + Arrays.hashCode(m_nameBytes);
+            return (hash);
+        }
+
+        int hash = 0;
+        for (Enumeration e = m_mechNames.elements(); e.hasMoreElements(); ) {
+            GSSNameSpi mechName = (GSSNameSpi)e.nextElement();
+            hash += mechName.getMech().hashCode();
+        }
+        return (hash);
+    }
     
 
     /**
@@ -335,7 +354,7 @@ public class GSSName {
                 return (m_nameStr.equals(another.m_nameStr));
                 
             if (m_nameBytes != null && another.m_nameBytes != null)
-                return (m_nameBytes.equals(another.m_nameBytes));
+                return (Arrays.equals(m_nameBytes, another.m_nameBytes));
                 
             return false;
         }

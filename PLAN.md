@@ -39,7 +39,7 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **17** | done | **Concurrency + correctness sweep** — `Hashtable` → `ConcurrentHashMap` (`ActionProperties`); `synchronized` on `CredentialsManager` read-modify-write; `WeakHashMap` listener pseudo-set → `CopyOnWriteArraySet` (`BookmarkManager`); all 33 `barebones-core` empty catches surfaced (try-with-resources for stream close, `AssertionError` for `Cloneable` swallows, restore-interrupt for `InterruptedException`, error dialogs for user-visible failures, WARN logs for cleanup-after-error); `EditBookmarksDialog` no-selection NPE replaced with `IllegalStateException`; principle established: no silent fallbacks in logic | this PR |
 | **18** | done | **Observability + logging** — S3 module gains logger fields + WARN on every AWS error, INFO on connection open/close, DEBUG on each list page, INFO on activator register/shutdown; `ThemeManager` save-failure carries theme type/name/file path; AppleScript decoder logs REPLACE-branch substitutions at DEBUG and caps `outputBuffer` at 1 MiB with a visible truncation marker; SFTP auth failures logged at WARN. `System.err` in CLI bootstrap (`Application.printError`, `Main` headless detection) and `EncodingDetector.main` documented as kept-by-design. | this PR |
 | **19** | done | **UX polish** — `S3ErrorHandler` typed 401/403/404; error-dialog throwable plumbed through Phase-17 + every `FileJob` error site (~25 catches across 10 job classes); `DynamicList.RemoveAction` prompts before deletion; `FileDropTargetListener` rejects drops on non-writable target folders; `ProgressNotifier` SPI wires producer-side hints into the MainFrame status bar; `S3Object.StatusBarProgressListener` publishes byte-accurate S3 upload progress ("47.3 MiB / 100.0 MiB (47%)") throttled to 250 ms; `CredentialsWriter` posts a status-bar explainer before the first keychain prompt. Default-button focus, huge-file open, folder-browse cursor, prefs Cancel-revert, and batch-rename preview audit-confirmed as already-fixed / as-designed. | this PR |
-| **20** | done | **SpotBugs baseline drawdown to ~zero** — fixed every own-code suppression in `config/spotbugs/exclude.xml` (DM_DEFAULT_ENCODING ×17, ST_WRITE_TO_STATIC ×12, DMI_RANDOM_USED_ONLY_ONCE ×4, MS_SHOULD_BE_FINAL ×4, plus 7 one-off patterns). Encoding fixes are explicit, NOT silent UTF-8 fallbacks: CP437 for Zip APPNOTE-spec entries, NPE-on-null for `ZipOutputStream.setEncoding`, `Charset.defaultCharset()` for process I/O, BOMWriter for the text editor's read-encoding round-trip. One suppression remains: `ThemeCache.foregroundColors`/`backgroundColors` MS_MUTABLE_ARRAY — documented architectural tradeoff (per-cell-render hot path). Vendored `com.sun.*` / `sun.net.www.*` package-level suppressions kept. | this PR |
+| **20** | done | **SpotBugs baseline drawdown to ~zero** — fixed the legacy own-code SpotBugs baseline entries (DM_DEFAULT_ENCODING ×17, ST_WRITE_TO_STATIC ×12, DMI_RANDOM_USED_ONLY_ONCE ×4, MS_SHOULD_BE_FINAL ×4, plus 7 one-off patterns). Encoding fixes are explicit, NOT silent UTF-8 fallbacks: CP437 for Zip APPNOTE-spec entries, NPE-on-null for `ZipOutputStream.setEncoding`, `Charset.defaultCharset()` for process I/O, BOMWriter for the text editor's read-encoding round-trip. One suppression remained temporarily: `ThemeCache.foregroundColors`/`backgroundColors` MS_MUTABLE_ARRAY. Vendored `com.sun.*` / `sun.net.www.*` package-level suppressions were also kept temporarily. Phase 33 removes that remaining baseline. | this PR |
 | **21+** | open | **Architecture refactors — REVIEW REQUIRED.** Tracked separately; do NOT execute without explicit approval per `BUGS.md` §5/§6. | n/a |
 | **22** | done | **Modern logging migration** — internal `barebones-logging` facade backed by JDK logging APIs; `--debug` support; SLF4J/logback removed from production dependencies. | landed in #30 |
 | **23** | done | **Systematic dependency upgrade pass** — audited every `gradle/libs.versions.toml` entry against Maven Central / Gradle Plugin Portal release metadata; removed `jsr305`; documented major/pre-release pins. | this PR |
@@ -51,7 +51,8 @@ Source: forked from https://github.com/mucommander/mucommander to https://github
 | **29** | done | **JUnit 5 + protocol scope cleanup** — migrate legacy tests to JUnit 5, improve S3 endpoint URL parsing, remove retired-protocol future scope, and evaluate NFSv4 replacement options. | landed in #37 |
 | **30** | done | **Architecture refactor batch** — archive format `ServiceLoader`, remove vendored `apache-bzip2`, centralize runtime tunables, and make javac unchecked/deprecation warnings fail the build. | landed in #38 |
 | **31** | done | **Repo skill + architecture/docs/check sweep** — add repo-local Java GUI slop cleanup skill, document current architecture, align stale docs/comments with the implementation, and harden CI against fake-green checks. | landed in #39 |
-| **32** | in progress | **Repo-wide Java GUI slop sweep** — run the repo-local slop-cleaning skill against current `origin/main`, record each finding in `BUGS.md`, fix actionable issues, and keep continuity docs current. | this PR |
+| **32** | done | **Repo-wide Java GUI slop sweep** — run the repo-local slop-cleaning skill against current `origin/main`, record each finding in `BUGS.md`, fix actionable issues, and keep continuity docs current. | landed in #40 |
+| **33** | in progress | **Clear remaining ignored SpotBugs findings** — remove the last `ThemeCache` own-code suppression and surface/fix vendored Sun NFS/RPC URL-handler findings so SpotBugs runs without an exclude filter. | this PR |
 
 **Hard rule**: only one branch / one PR is in flight at a time. The user — not the LLM — decides when a PR is ready and when the next one starts. The LLM does not autonomously open new PRs to fan out work in parallel.
 
@@ -364,17 +365,16 @@ that's otherwise mechanical.
 
 - Add **SpotBugs + FindSecBugs** as a Gradle-driven CI step
   (`.github/workflows/spotbugs.yaml`, PR + push-to-main triggered).
-  Fails the build on any HIGH-confidence finding not listed in
-  `config/spotbugs/exclude.xml`. SARIF uploaded to GitHub Code
-  Scanning.
+  Fails the build on every HIGH-confidence finding. SARIF uploaded
+  to GitHub Code Scanning.
 - Add **OWASP Dependency-Check** as a scheduled weekly CI run
   (`.github/workflows/dependency-check.yaml`, Monday 06:00 UTC +
   workflow_dispatch). Fails on CVSS ≥ 7.0 not suppressed in
   `config/dependency-check/suppression.xml`. SARIF uploaded to
   GitHub Code Scanning.
-- The Phase-9 SpotBugs baseline (`config/spotbugs/exclude.xml`)
-  captures **95 pre-existing HIGH-confidence findings** in the
-  brownfield muCommander code. Categorisation:
+- The Phase-9 SpotBugs baseline captured **95 pre-existing
+  HIGH-confidence findings** in the brownfield muCommander code.
+  Categorisation:
   * `com.sun.*` / `sun.net.www.*` — vendored upstream (33 findings)
     suppressed wholesale via `<Package>` matches.
   * Per-(class, bug-pattern) suppressions for our own code (62
@@ -382,9 +382,8 @@ that's otherwise mechanical.
   * Top patterns: `DM_DEFAULT_ENCODING` (charset reliance),
     `ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD` (static caches),
     `HE_EQUALS_USE_HASHCODE` (broken `equals/hashCode` contract).
-- Post-Phase-9 cleanup phases will progressively remove suppressions
-  from `config/spotbugs/exclude.xml` until empty (then the file can
-  be deleted and SpotBugs runs purely on regression).
+- Phase 33 removed the final baseline and deleted the SpotBugs
+  exclude filter; SpotBugs now runs purely on regression.
 
 ### Phase 12 — Keychain-backed credentials (one PR)
 
@@ -1025,20 +1024,19 @@ reassigned them; the `static` exposure was sloppy not load-bearing.
   progress <= 100)` — always true. Fixed to `&&` (the obvious
   intent).
 
-**Documented suppression kept**:
+**Temporary baseline left for Phase 33**:
 - `ThemeCache.foregroundColors` / `backgroundColors`
-  `MS_MUTABLE_ARRAY`: per-cell-render hot path; refactoring to
-  defensive-copy accessors would be unacceptable overhead. Setters
-  for the related fields were already extracted in the ST_WRITE
-  pass; only the array-element writes remain direct (and SpotBugs
-  doesn't flag those).
+  `MS_MUTABLE_ARRAY`: the arrays were still public static storage.
+- Vendored `com.sun.*` / `sun.net.www.*` package filters still hid
+  the NFS/RPC URL-handler findings.
 
-**Vendored `com.sun.*` / `sun.net.www.*` package suppressions kept**
-— upstream code, not ours to fix.
+Phase 33 removed both remainders: the theme arrays are private behind
+typed accessors, vendored findings were fixed, and the SpotBugs
+exclude filter was deleted.
 
-**Exit criteria** (met): `config/spotbugs/exclude.xml` contains the
-vendored packages plus exactly one documented own-code exception;
-`./gradlew test spotbugsMain` green.
+**Exit criteria** (met): `./gradlew test spotbugsMain` green with the
+then-current temporary baseline. Phase 33 supersedes this with a
+fully unfiltered SpotBugs run.
 
 ### Phase 21+ — Architecture refactors (parking lot)
 
@@ -1369,6 +1367,27 @@ Validation for this all-bugs pass passed with `git diff --check`, focused core
 compile plus MinIO S3 integration test, `./gradlew cleanTest test
 --stacktrace`, and `./gradlew check --stacktrace`. Next work is to commit/push
 to PR #40 and watch CI.
+
+### Phase 33 — Clear remaining ignored SpotBugs findings (this PR)
+
+Phase 33 starts from `origin/main` after PR #40 was merged. The active branch is
+`phase-33/spotbugs-baseline-drawdown`; no PR was open at branch creation.
+
+Initial findings recorded in `BUGS.md` 1.60:
+- the only remaining own-code SpotBugs suppression was
+  `ThemeCache.foregroundColors` / `backgroundColors` `MS_MUTABLE_ARRAY`;
+- the only other suppressions were wholesale vendored Sun NFS/RPC and
+  URL-handler package filters.
+
+Current status: the theme color arrays are private and direct
+renderer/table/tree reads now use tiny typed accessors. The SpotBugs
+exclude filter has been removed entirely. The first unfiltered run surfaced
+5 `sun-net-www` findings and 29 `barebones-protocol-nfs` findings; those were
+fixed without keeping any replacement filter. Local unfiltered
+`./gradlew spotbugsMain spotbugsTest --stacktrace` is green.
+Follow-up validation also passed with `git diff --check`, `./gradlew cleanTest
+test --stacktrace`, and `./gradlew check --stacktrace`. Next work is to commit,
+push, open the single Phase 33 PR, and watch CI.
 
 **Exit criteria**: all actionable findings discovered in this sweep are either
 fixed or explicitly documented as deferred; local validation includes at least

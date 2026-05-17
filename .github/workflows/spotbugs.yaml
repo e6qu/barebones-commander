@@ -1,10 +1,9 @@
 name: SpotBugs
 
 # SpotBugs + FindSecBugs static analysis. Runs on every PR and push
-# to main. Fails the build on any HIGH-confidence finding not listed
-# in config/spotbugs/exclude.xml (the Phase-9 baseline). SARIF output
-# is uploaded to GitHub Code Scanning so findings are visible in the
-# Security tab.
+# to main. Fails the build on every HIGH-confidence finding. SARIF
+# output is uploaded to GitHub Code Scanning so findings are visible
+# in the Security tab.
 
 on:
   pull_request:

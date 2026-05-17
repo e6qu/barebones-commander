@@ -226,6 +226,10 @@ public class Oid {
         return (true);
     }
 
+    public int hashCode() {
+        return (m_v.hashCode());
+    }
+
     
     /**
      * Returns the full ASN.1 DER encoding for this oid object.

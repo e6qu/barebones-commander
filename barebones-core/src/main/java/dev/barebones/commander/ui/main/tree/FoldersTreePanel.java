@@ -127,7 +127,7 @@ public class FoldersTreePanel implements TreeSelectionListener,
         model = new FilesTreeModel(treeFileFilter, sort);
         tree = new JTree(model);
 		tree.setFont(ThemeCache.tableFont);
-        tree.setBackground(ThemeCache.backgroundColors[ThemeCache.INACTIVE][ThemeCache.NORMAL]);
+        tree.setBackground(ThemeCache.backgroundColor(ThemeCache.INACTIVE, ThemeCache.NORMAL));
 
         tree.getSelectionModel().setSelectionMode(
                 TreeSelectionModel.SINGLE_TREE_SELECTION);
@@ -363,12 +363,12 @@ public class FoldersTreePanel implements TreeSelectionListener,
     // - FocusListener code ----------------------------------------------------
     // -------------------------------------------------------------------------
     
-    public void focusGained(FocusEvent e) {
-		tree.setBackground(ThemeCache.backgroundColors[ThemeCache.ACTIVE][ThemeCache.NORMAL]);	
+	public void focusGained(FocusEvent e) {
+		tree.setBackground(ThemeCache.backgroundColor(ThemeCache.ACTIVE, ThemeCache.NORMAL));
 	}
 
 	public void focusLost(FocusEvent e) {
-		tree.setBackground(ThemeCache.backgroundColors[ThemeCache.INACTIVE][ThemeCache.NORMAL]);	
+		tree.setBackground(ThemeCache.backgroundColor(ThemeCache.INACTIVE, ThemeCache.NORMAL));
 	}
 
 	
@@ -377,9 +377,9 @@ public class FoldersTreePanel implements TreeSelectionListener,
 	
 	public void colorChanged(ColorChangedEvent event) {
 		if (tree.hasFocus()) {
-			tree.setBackground(ThemeCache.backgroundColors[ThemeCache.ACTIVE][ThemeCache.NORMAL]);	
+			tree.setBackground(ThemeCache.backgroundColor(ThemeCache.ACTIVE, ThemeCache.NORMAL));
 		} else {
-			tree.setBackground(ThemeCache.backgroundColors[ThemeCache.INACTIVE][ThemeCache.NORMAL]);	
+			tree.setBackground(ThemeCache.backgroundColor(ThemeCache.INACTIVE, ThemeCache.NORMAL));
 		}
 		tree.repaint();
 	}

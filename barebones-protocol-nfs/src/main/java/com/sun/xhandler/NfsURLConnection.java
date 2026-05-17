@@ -49,6 +49,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -262,7 +263,7 @@ public class NfsURLConnection extends URLConnection {
             buf.append("</BODY>\n</HTML>\n");
         
 	    // Hand the input stream off to HotJava
-	    is = new ByteArrayInputStream(buf.toString().getBytes());
+	    is = new ByteArrayInputStream(buf.toString().getBytes(StandardCharsets.UTF_8));
 	    
         } else {
             // Mark the input stream we return as containing a certain file type

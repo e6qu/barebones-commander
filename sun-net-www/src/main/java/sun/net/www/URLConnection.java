@@ -35,7 +35,7 @@ import java.util.*;
  * @author  James Gosling
  */
 
-public abstract class URLConnection extends java.net.URLConnection {
+abstract class BarebonesURLConnection extends java.net.URLConnection {
 
     /** The URL that it is connected to */
 
@@ -50,7 +50,7 @@ public abstract class URLConnection extends java.net.URLConnection {
      * URL.openConnection.
      * @param  u       The URL that this connects to.
      */
-    public URLConnection (URL u) {
+    public BarebonesURLConnection (URL u) {
         super(u);
         properties = new MessageHeader();
     }
@@ -269,5 +269,11 @@ public abstract class URLConnection extends java.net.URLConnection {
 
     public static synchronized boolean isProxiedHost(String host) {
         return proxiedHosts.containsKey(host.toLowerCase());
+    }
+}
+
+public abstract class URLConnection extends BarebonesURLConnection {
+    public URLConnection(URL u) {
+        super(u);
     }
 }

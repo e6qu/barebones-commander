@@ -38,6 +38,7 @@
 package com.sun.xfile;
 
 import java.io.*;
+import java.nio.charset.Charset;
 
 /**
  * Convenience class for reading character files.
@@ -54,10 +55,10 @@ import java.io.*;
 public class XFileReader extends InputStreamReader {
 
     public XFileReader(String fileName) throws IOException {
-	super(new XFileInputStream(fileName));
+	super(new XFileInputStream(fileName), Charset.defaultCharset());
     }
 
     public XFileReader(XFile file) throws IOException {
-	super(new XFileInputStream(file));
+	super(new XFileInputStream(file), Charset.defaultCharset());
     }
 }

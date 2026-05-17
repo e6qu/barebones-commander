@@ -132,12 +132,10 @@ public class XFileChooser extends JFileChooser implements PropertyChangeListener
     public void propertyChange(PropertyChangeEvent e) {
         String prop = e.getPropertyName();
 	Object obj = e.getNewValue();
-	if ((obj == null) || (! (obj instanceof BeanXFile)))
-            return;
-
-	BeanXFile bf = (BeanXFile) obj;
 	
         if(prop == JFileChooser.DIRECTORY_CHANGED_PROPERTY) {
+            if (!(obj instanceof BeanXFile))
+                return;
 	    XFile oldValue = this.currentXDirectory;
 			       
 	    this.currentXDirectory = new XFile(((BeanXFile) obj).getAbsolutePath()); 
@@ -145,11 +143,15 @@ public class XFileChooser extends JFileChooser implements PropertyChangeListener
 			       this.currentXDirectory);
 
 	} else if (prop == JFileChooser.SELECTED_FILE_CHANGED_PROPERTY) {
+            if (!(obj instanceof File))
+                return;
 	    XFile oldValue = this.selectedXFile;
 	    this.selectedXFile = new XFile(((File) obj).getAbsolutePath());
 	    firePropertyChange(SELECTED_XFILES_CHANGED_PROPERTY, oldValue,
 			       this.selectedXFile);
 	} else if (prop == JFileChooser.SELECTED_FILES_CHANGED_PROPERTY) {
+            if (!(obj instanceof File[]))
+                return;
 	    XFile[] oldValue = this.selectedXFiles;
 	    File[] sfiles = (File[]) obj;
 	    
@@ -333,6 +335,5 @@ public class XFileChooser extends JFileChooser implements PropertyChangeListener
     
 
 }
-
 
 

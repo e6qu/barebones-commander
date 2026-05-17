@@ -511,8 +511,8 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
             setBorder(BorderFactory.createEmptyBorder());
             setHorizontalAlignment(JTextField.CENTER);
             setEditable(false);
-            setBackground(ThemeCache.backgroundColors[ThemeCache.ACTIVE][ThemeCache.SELECTED]);
-            setForeground(ThemeCache.foregroundColors[ThemeCache.ACTIVE][ThemeCache.SELECTED][ThemeCache.PLAIN_FILE]);
+            setBackground(ThemeCache.backgroundColor(ThemeCache.ACTIVE, ThemeCache.SELECTED));
+            setForeground(ThemeCache.foregroundColor(ThemeCache.ACTIVE, ThemeCache.SELECTED, ThemeCache.PLAIN_FILE));
             addKeyListener(this);
             // It is required to disable the traversal keys in order to support keys combination that include the TAB
             // key
@@ -535,7 +535,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
             paintDottedBorder(g,
                     getWidth(),
                     getHeight(),
-                    ThemeCache.backgroundColors[ThemeCache.ACTIVE][ThemeCache.NORMAL]);
+                    ThemeCache.backgroundColor(ThemeCache.ACTIVE, ThemeCache.NORMAL));
         }
 
         /////////////////////////////
@@ -884,7 +884,7 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
 
                 // set cell's foreground color
                 label.setForeground(
-                        ThemeCache.foregroundColors[ThemeCache.ACTIVE][ThemeCache.NORMAL][ThemeCache.PLAIN_FILE]);
+                        ThemeCache.foregroundColor(ThemeCache.ACTIVE, ThemeCache.NORMAL, ThemeCache.PLAIN_FILE));
             }
             // Any other column
             else {
@@ -919,17 +919,17 @@ public class ShortcutsTable extends PrefTable implements KeyListener, ListSelect
                         customized = false;
                     }
 
-                    label.setForeground(ThemeCache.foregroundColors[ThemeCache.ACTIVE][ThemeCache.NORMAL][customized
+                    label.setForeground(ThemeCache.foregroundColor(ThemeCache.ACTIVE, ThemeCache.NORMAL, customized
                             ? ThemeCache.PLAIN_FILE
-                            : ThemeCache.HIDDEN_FILE]);
+                            : ThemeCache.HIDDEN_FILE));
                 }
             }
 
             // set outline for the focused cell
-            label.setOutline(hasFocus ? ThemeCache.backgroundColors[ThemeCache.ACTIVE][ThemeCache.SELECTED] : null);
+            label.setOutline(hasFocus ? ThemeCache.backgroundColor(ThemeCache.ACTIVE, ThemeCache.SELECTED) : null);
             // set cell's background color
-            label.setBackground(ThemeCache.backgroundColors[ThemeCache.ACTIVE][rowIndex % 2 == 0 ? ThemeCache.NORMAL
-                    : ThemeCache.ALTERNATE]);
+            label.setBackground(ThemeCache.backgroundColor(ThemeCache.ACTIVE, rowIndex % 2 == 0 ? ThemeCache.NORMAL
+                    : ThemeCache.ALTERNATE));
 
             return label;
         }

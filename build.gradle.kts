@@ -228,13 +228,8 @@ tasks.named<org.cyclonedx.gradle.CyclonedxDirectTask>("cyclonedxDirectBom") {
 
 // SpotBugs + FindSecBugs across every Java subproject. Reports
 // HIGH-confidence findings to SARIF (uploaded to GitHub Code
-// Scanning by the CI workflow) and HTML, and **fails the build on
-// any finding** that isn't suppressed by config/spotbugs/exclude.xml.
-//
-// The exclude file holds the Phase-9 baseline — 95 (source, pattern)
-// pairs that pre-existed in the brownfield muCommander code. Each
-// suppression is a real bug to fix in a follow-up; deleting a line
-// from the exclude file surfaces the underlying finding.
+// Scanning by the CI workflow) and HTML, and fails the build on
+// every high-confidence finding without a project-level exclude filter.
 allprojects {
     plugins.withId("com.github.spotbugs") {
         dependencies {
@@ -245,7 +240,6 @@ allprojects {
             effort.set(com.github.spotbugs.snom.Effort.MAX)
             reportLevel.set(com.github.spotbugs.snom.Confidence.HIGH)
             ignoreFailures.set(false)
-            excludeFilter.set(rootProject.file("config/spotbugs/exclude.xml"))
         }
         tasks.withType<com.github.spotbugs.snom.SpotBugsTask>().configureEach {
             reports.create("sarif") { required.set(true) }

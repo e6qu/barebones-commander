@@ -150,8 +150,7 @@ public class MimeEntry implements Cloneable {
     }
 
     public synchronized void setImageFileName(String filename) {
-        File file = new File(filename);
-        if (file.getParent() == null) {
+        if (!hasPathComponent(filename)) {
             imageFileName = System.getProperty(
                                      "java.net.ftp.imagepath."+filename);
         }
@@ -162,6 +161,10 @@ public class MimeEntry implements Cloneable {
         if (filename.lastIndexOf('.') < 0) {
             imageFileName = imageFileName + ".gif";
         }
+    }
+
+    private static boolean hasPathComponent(String filename) {
+        return filename.indexOf('/') >= 0 || filename.indexOf('\\') >= 0;
     }
 
     public String getTempFileTemplate() {

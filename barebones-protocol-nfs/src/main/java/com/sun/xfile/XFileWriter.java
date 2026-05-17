@@ -38,6 +38,7 @@
 package com.sun.xfile;
 
 import java.io.*;
+import java.nio.charset.Charset;
 
 /**
  * Convenience class for writing character files.
@@ -53,14 +54,14 @@ import java.io.*;
 public class XFileWriter extends OutputStreamWriter {
 
     public XFileWriter(String fileName) throws IOException {
-	super(new XFileOutputStream(fileName));
+	super(new XFileOutputStream(fileName), Charset.defaultCharset());
     }
 
     public XFileWriter(String fileName, boolean append) throws IOException {
-	super(new XFileOutputStream(fileName, append));
+	super(new XFileOutputStream(fileName, append), Charset.defaultCharset());
     }
 
     public XFileWriter(XFile file) throws IOException {
-	super(new XFileOutputStream(file));
+	super(new XFileOutputStream(file), Charset.defaultCharset());
     }
 }
